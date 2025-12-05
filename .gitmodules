@@ -1,0 +1,6 @@
+[submodule "lib/threadpool"]
+	path = lib/threadpool
+	url = https://github.com/DeveloperPaul123/thread-pool.git
+[submodule "lib/fastcdr"]
+	path = lib/fastcdr
+	url = https://github.com/eProsima/Fast-CDR.git
