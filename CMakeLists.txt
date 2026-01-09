@@ -23,7 +23,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/pioasm)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/fastcdr)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/threadpool)
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME} SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/src/device/device.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/device/serial.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/logging/logger.cpp

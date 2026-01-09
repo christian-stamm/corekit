@@ -9,7 +9,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(mcap)
 
-add_library(mcap 
+add_library(mcap SHARED
     src/mcap.cpp
 )
 
