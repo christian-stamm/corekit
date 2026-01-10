@@ -1,34 +1,32 @@
 #include "corekit/logging/stream.hpp"
 
 namespace corekit {
-namespace logging {
+    namespace logging {
 
-    std::streambuf::int_type LogBuffer::overflow(std::streambuf::int_type c)
-    {
-        if (c != EOF) {
-            std::cout.put(static_cast<char>(c));
+        std::streambuf::int_type LogBuffer::overflow(
+            std::streambuf::int_type c) {
+            if (c != EOF) {
+                std::cout.put(static_cast<char>(c));
+            }
+
+            return c;
         }
 
-        return c;
-    }
+        std::streamsize LogBuffer::xsputn(const char*     s,
+                                          std::streamsize count) {
+            std::cout.write(s, count);
+            return count;
+        }
 
-    std::streamsize LogBuffer::xsputn(const char* s, std::streamsize count)
-    {
-        std::cout.write(s, count);
-        return count;
-    }
+        Logstream::Logstream(const std::string& prefix)
+            : std::ostream(&buffer)
+            , lock(mutex) {
+            std::cout << prefix;
+        }
 
-    Logstream::Logstream(const std::string& prefix)
-        : std::ostream(&buffer)
-        , lock(mutex)
-    {
-        std::cout << prefix;
-    }
+        Logstream::~Logstream() {
+            std::cout << std::endl << std::flush;
+        }
 
-    Logstream::~Logstream()
-    {
-        std::cout << std::endl << std::flush;
-    }
-
-}; // namespace logging
-}; // namespace corekit
+    };  // namespace logging
+};  // namespace corekit

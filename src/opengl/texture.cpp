@@ -1,235 +1,295 @@
 #include "corekit/opengl/texture.hpp"
 
+#include <opencv2/core/mat.hpp>
+#include <opencv2/opencv.hpp>
+
 #include "corekit/device/device.hpp"
 #include "corekit/opengl/context.hpp"
 #include "glad/glad.h"
 
-#include <opencv2/core/mat.hpp>
-#include <opencv2/opencv.hpp>
-
 namespace corekit {
-namespace opengl {
+    namespace opengl {
 
-    Texture::Texture(const Settings& settings)
-        : Device("Texture")
-        , hash(settings.hash)
-        , size(settings.size)
-        , fbo(settings.fbo)
-        , tex(settings.tex)
-        , type(settings.type)
-        , unit(settings.unit)
-        , wrap(settings.wrap)
-        , intern(settings.intern)
-        , filter(settings.filter)
-        , flip(settings.flip)
-        , srgb(settings.srgb)
-        , depth(settings.depth)
-    {
-    }
+        Texture::Texture(const Settings& settings)
+            : Device("Texture")
+            , hash(settings.hash)
+            , size(settings.size)
+            , fbo(settings.fbo)
+            , tex(settings.tex)
+            , type(settings.type)
+            , unit(settings.unit)
+            , wrap(settings.wrap)
+            , intern(settings.intern)
+            , filter(settings.filter)
+            , flip(settings.flip)
+            , srgb(settings.srgb)
+            , depth(settings.depth) {}
 
-    bool Texture::prepare()
-    {
-        if (fbo == GL_INVALID_INDEX) {
-            this->fbo = glRequestFbo();
-        }
-
-        if (tex == GL_INVALID_INDEX) {
-            this->tex = glRequestTex();
-        }
-
-        reconfigure();
-        return true;
-    }
-
-    bool Texture::cleanup()
-    {
-        unbind();
-        glReleaseFbo(&fbo);
-        glReleaseTex(&tex);
-        return true;
-    }
-
-    void Texture::reconfigure()
-    {
-        glCheckError(name);
-
-        verify();
-        bind();
-
-        instances.clear();
-
-        switch (type) {
-            case GL_TEXTURE_2D:
-            case GL_TEXTURE_2D_ARRAY:
-            case GL_TEXTURE_3D: instances = {type}; break;
-
-            case GL_TEXTURE_CUBE_MAP:
-                instances = {GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
-                             GL_TEXTURE_CUBE_MAP_POSITIVE_Y, GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
-                             GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
-                break;
-
-            default: throw std::runtime_error("Texture::Module => unsupported texture type");
-        }
-
-        switch (type) {
-            case GL_TEXTURE_2D:
-            case GL_TEXTURE_CUBE_MAP: {
-                for (GLuint instance : instances) {
-                    glTexImage2D(instance, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, intern, nullptr);
-                }
-                break;
+        bool Texture::prepare() {
+            if (fbo == GL_INVALID_INDEX) {
+                this->fbo = glRequestFbo();
             }
 
-            case GL_TEXTURE_3D:
-            case GL_TEXTURE_2D_ARRAY: {
-                glTexImage3D(type, 0, GL_RGBA, size.x, size.y, depth, 0, GL_RGBA, intern, nullptr);
-                break;
+            if (tex == GL_INVALID_INDEX) {
+                this->tex = glRequestTex();
             }
 
-            default: throw std::runtime_error("Texture::Module => unsupported texture type");
+            reconfigure();
+            return true;
         }
 
-        unbind();
-
-        fill(cv::Mat::zeros(size.y, size.x, CV_8UC4));
-        glCheckError(name);
-    }
-
-    void Texture::verify() const
-    {
-        if (!size) {
-            throw std::runtime_error("Texture::Module => constructed with zero size");
+        bool Texture::cleanup() {
+            unbind();
+            glReleaseFbo(&fbo);
+            glReleaseTex(&tex);
+            return true;
         }
 
-        switch (type) {
-            case GL_TEXTURE_2D:
-            case GL_TEXTURE_3D:
-            case GL_TEXTURE_2D_ARRAY:
-            case GL_TEXTURE_CUBE_MAP: break;
-            default: throw std::runtime_error("Texture::Module => unsupported texture type");
-        }
+        void Texture::reconfigure() {
+            glCheckError(name);
 
-        switch (intern) {
-            case GL_UNSIGNED_BYTE:
-            case GL_HALF_FLOAT:
-            case GL_FLOAT: break;
-            default: throw std::runtime_error("Texture::Module => unsupported texture format");
-        }
-    }
+            verify();
+            bind();
 
-    void Texture::bind() const
-    {
-        glCheckError(name);
-        glActiveTexture(unit);
-        glBindTexture(type, tex);
-        glTexParameteri(type, GL_TEXTURE_WRAP_S, wrap);
-        glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
-        glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filter.min);
-        glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filter.mag);
-        glCheckError(name);
-    }
+            instances.clear();
 
-    void Texture::unbind() const
-    {
-        glCheckError(name);
-        glActiveTexture(unit);
-        glBindTexture(type, 0);
-        glActiveTexture(GL_TEXTURE0);
-        glCheckError(name);
-    }
+            switch (type) {
+                case GL_TEXTURE_2D:
+                case GL_TEXTURE_2D_ARRAY:
+                case GL_TEXTURE_3D: instances = {type}; break;
 
-    void Texture::fill(cv::Mat image, uint layer, FillMode mode)
-    {
-        if (image.empty())
-            throw std::runtime_error("Texture::fill => empty image provided");
+                case GL_TEXTURE_CUBE_MAP:
+                    instances = {GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+                                 GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+                                 GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+                                 GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+                                 GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+                                 GL_TEXTURE_CUBE_MAP_NEGATIVE_Z};
+                    break;
 
-        if (depth <= layer)
-            throw std::runtime_error("Texture::fill => layer index out of bounds");
+                default:
+                    throw std::runtime_error(
+                        "Texture::Module => unsupported texture type");
+            }
 
-        glCheckError(name);
-        const Vec2 imsize(image.size.p[1], image.size.p[0]);
-
-        switch (mode) {
-            case RESIZE_TEXTURE: {
-
-                if (this->size != imsize) {
-                    this->size = imsize;
-                    reconfigure();
+            switch (type) {
+                case GL_TEXTURE_2D:
+                case GL_TEXTURE_CUBE_MAP: {
+                    for (GLuint instance : instances) {
+                        glTexImage2D(instance,
+                                     0,
+                                     GL_RGBA,
+                                     size.x,
+                                     size.y,
+                                     0,
+                                     GL_RGBA,
+                                     intern,
+                                     nullptr);
+                    }
+                    break;
                 }
 
-                break;
-            }
-
-            case RESIZE_IMAGE: {
-                if (this->size != imsize) {
-                    cv::resize(image, image, cv::Size(this->size.x, this->size.y));
+                case GL_TEXTURE_3D:
+                case GL_TEXTURE_2D_ARRAY: {
+                    glTexImage3D(type,
+                                 0,
+                                 GL_RGBA,
+                                 size.x,
+                                 size.y,
+                                 depth,
+                                 0,
+                                 GL_RGBA,
+                                 intern,
+                                 nullptr);
+                    break;
                 }
 
-                break;
+                default:
+                    throw std::runtime_error(
+                        "Texture::Module => unsupported texture type");
             }
 
-            default: throw std::runtime_error("Texture::fill => unknown FillMode");
+            unbind();
+
+            fill(cv::Mat::zeros(size.y, size.x, CV_8UC4));
+            glCheckError(name);
         }
 
-        bind();
-        glPixelStorei(GL_UNPACK_ALIGNMENT, (image.step & 3) ? 1 : 4);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, image.step / image.elemSize());
+        void Texture::verify() const {
+            if (!size) {
+                throw std::runtime_error(
+                    "Texture::Module => constructed with zero size");
+            }
 
-        switch (type) {
-            case GL_TEXTURE_2D:
-            case GL_TEXTURE_CUBE_MAP: {
-                for (GLuint instance : instances) {
-                    glTexSubImage2D(instance, 0, 0, 0, image.cols, image.rows, GL_RGBA, intern, image.data);
+            switch (type) {
+                case GL_TEXTURE_2D:
+                case GL_TEXTURE_3D:
+                case GL_TEXTURE_2D_ARRAY:
+                case GL_TEXTURE_CUBE_MAP: break;
+                default:
+                    throw std::runtime_error(
+                        "Texture::Module => unsupported texture type");
+            }
+
+            switch (intern) {
+                case GL_UNSIGNED_BYTE:
+                case GL_HALF_FLOAT:
+                case GL_FLOAT: break;
+                default:
+                    throw std::runtime_error(
+                        "Texture::Module => unsupported texture format");
+            }
+        }
+
+        void Texture::bind() const {
+            glCheckError(name);
+            glActiveTexture(unit);
+            glBindTexture(type, tex);
+            glTexParameteri(type, GL_TEXTURE_WRAP_S, wrap);
+            glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
+            glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filter.min);
+            glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filter.mag);
+            glCheckError(name);
+        }
+
+        void Texture::unbind() const {
+            glCheckError(name);
+            glActiveTexture(unit);
+            glBindTexture(type, 0);
+            glActiveTexture(GL_TEXTURE0);
+            glCheckError(name);
+        }
+
+        void Texture::fill(cv::Mat image, uint layer, FillMode mode) {
+            if (image.empty())
+                throw std::runtime_error(
+                    "Texture::fill => empty image provided");
+
+            if (depth <= layer)
+                throw std::runtime_error(
+                    "Texture::fill => layer index out of bounds");
+
+            glCheckError(name);
+            const Vec2 imsize(image.size.p[1], image.size.p[0]);
+
+            switch (mode) {
+                case RESIZE_TEXTURE: {
+                    if (this->size != imsize) {
+                        this->size = imsize;
+                        reconfigure();
+                    }
+
+                    break;
                 }
-                glGenerateMipmap(type);
-                break;
+
+                case RESIZE_IMAGE: {
+                    if (this->size != imsize) {
+                        cv::resize(image,
+                                   image,
+                                   cv::Size(this->size.x, this->size.y));
+                    }
+
+                    break;
+                }
+
+                default:
+                    throw std::runtime_error(
+                        "Texture::fill => unknown FillMode");
             }
 
-            case GL_TEXTURE_3D:
-            case GL_TEXTURE_2D_ARRAY: {
-                glTexSubImage3D(type, 0, 0, 0, 0, image.cols, image.rows, layer, GL_RGBA, intern, image.data);
-                break;
+            bind();
+            glPixelStorei(GL_UNPACK_ALIGNMENT, (image.step & 3) ? 1 : 4);
+            glPixelStorei(GL_UNPACK_ROW_LENGTH, image.step / image.elemSize());
+
+            switch (type) {
+                case GL_TEXTURE_2D:
+                case GL_TEXTURE_CUBE_MAP: {
+                    for (GLuint instance : instances) {
+                        glTexSubImage2D(instance,
+                                        0,
+                                        0,
+                                        0,
+                                        image.cols,
+                                        image.rows,
+                                        GL_RGBA,
+                                        intern,
+                                        image.data);
+                    }
+                    glGenerateMipmap(type);
+                    break;
+                }
+
+                case GL_TEXTURE_3D:
+                case GL_TEXTURE_2D_ARRAY: {
+                    glTexSubImage3D(type,
+                                    0,
+                                    0,
+                                    0,
+                                    0,
+                                    image.cols,
+                                    image.rows,
+                                    layer,
+                                    GL_RGBA,
+                                    intern,
+                                    image.data);
+                    break;
+                }
+
+                default:
+                    throw std::runtime_error(
+                        "Texture::updateGPUMem => unsupported texture type");
             }
 
-            default: throw std::runtime_error("Texture::updateGPUMem => unsupported texture type");
+            unbind();
+            glCheckError(name);
         }
 
-        unbind();
-        glCheckError(name);
-    }
+        void Texture::copyTo(const Ptr& target,
+                             GLenum     mask,
+                             GLuint     filter) const {
+            glCheckError(name);
 
-    void Texture::copyTo(const Ptr& target, GLenum mask, GLuint filter) const
-    {
-        glCheckError(name);
+            if (this->type != target->type) {
+                throw std::runtime_error("Texture::copyTo => type mismatch");
+            }
 
-        if (this->type != target->type) {
-            throw std::runtime_error("Texture::copyTo => type mismatch");
+            if (this->intern != target->intern) {
+                throw std::runtime_error("Texture::copyTo => format mismatch");
+            }
+
+            target->size = this->size;
+            target->reconfigure();
+
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
+                                   GL_COLOR_ATTACHMENT0,
+                                   instances.front(),
+                                   this->tex,
+                                   0);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->fbo);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+                                   GL_COLOR_ATTACHMENT0,
+                                   target->instances.front(),
+                                   target->tex,
+                                   0);
+
+            glBlitFramebuffer(0,
+                              0,
+                              this->size.x,
+                              this->size.y,  //
+                              0,
+                              0,
+                              target->size.x,
+                              target->size.y,  //
+                              mask,
+                              filter);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glGenerateMipmap(target->type);
+            target->unbind();
+
+            glCheckError(name);
         }
 
-        if (this->intern != target->intern) {
-            throw std::runtime_error("Texture::copyTo => format mismatch");
-        }
-
-        target->size = this->size;
-        target->reconfigure();
-
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
-        glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, instances.front(), this->tex, 0);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->fbo);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target->instances.front(), target->tex, 0);
-
-        glBlitFramebuffer(
-            0, 0, this->size.x, this->size.y,     //
-            0, 0, target->size.x, target->size.y, //
-            mask, filter);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glGenerateMipmap(target->type);
-        target->unbind();
-
-        glCheckError(name);
-    }
-
-}; // namespace opengl
-}; // namespace corekit
+    };  // namespace opengl
+};  // namespace corekit

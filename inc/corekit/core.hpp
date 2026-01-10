@@ -1,6 +1,6 @@
 #pragma once
 
-#include "corekit/logging/logger.hpp"
+#include <thread_pool/thread_pool.h>
 
 #include <chrono>
 #include <cmath>
@@ -15,101 +15,114 @@
 #include <stdexcept>
 #include <stop_token>
 #include <string>
-#include <thread_pool/thread_pool.h>
 #include <vector>
+
+#include "corekit/logging/logger.hpp"
+
+#ifndef RESSOURCE_DIR
+#    error "RESSOURCE_DIR not defined"
+#endif
 
 namespace corekit {
 
-namespace thread {
+    namespace types {
 
-    using Task = std::future<bool>;
+        using Name     = std::string;
+        using Hash     = std::string;
+        using Path     = std::filesystem::path;
+        using FileList = std::vector<Path>;
 
-    bool isDone(const Task& task, float timeout = 0.0f);
-    bool isRunning(const Task& task);
+    };  // namespace types
 
-}; // namespace thread
+    namespace thread {
 
-namespace file {
+        using Task = std::future<bool>;
 
-    using Path = std::filesystem::path;
-    using List = std::vector<Path>;
+        bool isDone(const Task& task, float timeout = 0.0f);
+        bool isRunning(const Task& task);
 
-    std::ifstream   open(const Path& file);
-    std::streamsize size(std::ifstream& stream);
-    bool            exists(const Path& file);
-    List            scan(const Path& dir, const std::string& ext);
+    };  // namespace thread
 
-    nlohmann::ordered_json loadJson(const Path& path);
-    std::string            loadTxt(const Path& file);
-    cv::Mat                loadImg(const Path& file, const bool vflip = false);
+    namespace file {
 
-}; // namespace file
+        using Path = std::filesystem::path;
+        using List = std::vector<Path>;
 
-namespace opengl {
+        std::ifstream   open(const Path& file);
+        std::streamsize size(std::ifstream& stream);
+        bool            exists(const Path& file);
+        List            scan(const Path& dir, const std::string& ext);
 
-    using Hash   = std::string;
-    using Status = std::string;
-    using Code   = std::string;
+        nlohmann::ordered_json loadJson(const Path& path);
+        std::string            loadTxt(const Path& file);
+        cv::Mat loadImg(const Path& file, const bool vflip = false);
 
-}; // namespace opengl
+    };  // namespace file
 
-namespace network {
+    namespace opengl {
 
-    using Topic  = uint16_t;
-    using Cookie = uint16_t;
+        using Hash   = std::string;
+        using Status = std::string;
+        using Code   = std::string;
 
-}; // namespace network
+    };  // namespace opengl
 
-namespace math {
+    namespace network {
 
-    template <typename T> T div(T dividend, T divisor, T fallback);
-    int                     wrap(int value, int length);
+        using Topic  = uint16_t;
+        using Cookie = uint16_t;
 
-}; // namespace math
+    };  // namespace network
 
-namespace system {
+    namespace math {
 
-    using namespace corekit::file;
-    using namespace corekit::logging;
+        template <typename T>
+        T   div(T dividend, T divisor, T fallback);
+        int wrap(int value, int length);
 
-    using Killreq    = std::stop_source;
-    using ThreadPool = dp::thread_pool<>;
+    };  // namespace math
 
-    std::string getEnv(const std::string& key);
+    namespace system {
 
-    void corecheck(
-        bool condition, const std::string& message = "<NO DESCRIPTION>",       //
-        const std::source_location& location = std::source_location::current() //
-    );
+        using namespace corekit::file;
+        using namespace corekit::logging;
 
-    struct Manager {
+        using Killreq    = std::stop_source;
+        using ThreadPool = dp::thread_pool<>;
 
-        struct Settings {
-            Settings(size_t workers = 4, Path dir = RESSOURCE_DIR)
-                : numWorker(workers)
-                , workdir(dir)
-            {
-            }
+        std::string getEnv(const std::string& key);
 
-            size_t numWorker;
-            Path   workdir;
+        void corecheck(bool               condition,
+                       const std::string& message = "<NO DESCRIPTION>",  //
+                       const std::source_location& location =
+                           std::source_location::current()  //
+        );
+
+        struct Manager {
+            struct Settings {
+                Settings(size_t workers = 4, Path dir = RESSOURCE_DIR)
+                    : numWorker(workers)
+                    , workdir(dir) {}
+
+                size_t numWorker;
+                Path   workdir;
+            };
+
+            Manager(const Settings& settings = Settings());
+            Manager& operator<<(const Settings& config);
+
+            void shutdown();
+            bool ok() const;
+
+            ThreadPool worker;
+            Path       workdir;
+            Logger     logger;
+
+           protected:
+            Killreq killreq;
         };
 
-        Manager(const Settings& settings = Settings());
-        Manager& operator<<(const Settings& config);
+        inline Manager sys;
 
-        void shutdown();
-        bool ok() const;
-
-        ThreadPool worker;
-        Path       workdir;
-        Logger     logger;
-
-      protected:
-        Killreq killreq;
-    };
-
-    inline Manager sys;
-
-}; // namespace system
-}; // namespace corekit
+    };  // namespace system
+};  // namespace corekit

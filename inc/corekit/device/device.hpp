@@ -1,44 +1,41 @@
 #pragma once
 
-#include "corekit/logging/logger.hpp"
-
 #include <atomic>
 
+#include "corekit/logging/logger.hpp"
+
 namespace corekit {
-namespace device {
+    namespace device {
 
-    using namespace corekit::logging;
+        using namespace corekit::logging;
 
-    class Device {
-      public:
-        using Ptr = std::shared_ptr<Device>;
+        class Device {
+           public:
+            using Ptr = std::shared_ptr<Device>;
 
-        Device(const std::string& name);
-        Device(const Device& other) = delete;
+            Device(const std::string& name);
+            Device(const Device& other) = delete;
 
-        virtual ~Device();
+            virtual ~Device();
 
-        bool load();
-        bool unload();
-        bool reload();
-        bool isLoaded() const;
+            bool load();
+            bool unload();
+            bool reload();
+            bool isLoaded() const;
 
-        std::string name;
-        Logger      logger;
+            std::string name;
+            Logger      logger;
 
-      private:
-        virtual bool prepare()
-        {
-            return true;
+           private:
+            virtual bool prepare() {
+                return true;
+            };
+            virtual bool cleanup() {
+                return true;
+            };
+
+            std::atomic_bool loaded;
         };
 
-        virtual bool cleanup()
-        {
-            return true;
-        };
-
-        std::atomic_bool loaded;
-    };
-
-}; // namespace device
-}; // namespace corekit
+    };  // namespace device
+};  // namespace corekit

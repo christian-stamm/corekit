@@ -1,206 +1,213 @@
 #include "corekit/opengl/window.hpp"
 
+#include <GLFW/glfw3.h>
+
+#include <format>
+
 #include "corekit/core.hpp"
 #include "corekit/device/device.hpp"
 
-#include <GLFW/glfw3.h>
-#include <format>
-
 namespace corekit {
-namespace opengl {
+    namespace opengl {
 
-    using namespace corekit::system;
+        using namespace corekit::system;
 
-    Window::Window(const Settings& settings)
-        : Device(settings.title)
-        , shape(settings.shape)
-        , visible(settings.visible)
-        , window(nullptr)
-        , updateRate(0.0f)
-    {
-    }
+        Window::Window(const Settings& settings)
+            : Device(settings.title)
+            , shape(settings.shape)
+            , visible(settings.visible)
+            , window(nullptr)
+            , updateRate(0.0f) {}
 
-    Status Window::info() const
-    {
-        corecheck(isLoaded(), "Window not loaded yet.");
+        Status Window::info() const {
+            corecheck(isLoaded(), "Window not loaded yet.");
 
-        return std::format(                                          //
-            "DEV: {} - {}",                                          //
-            reinterpret_cast<const char*>(glGetString(GL_RENDERER)), //
-            reinterpret_cast<const char*>(glGetString(GL_VERSION))   //
-        );                                                           //
-    }
-
-    void Window::update() const
-    {
-        if (!window) {
-            return;
+            return std::format(                                           //
+                "DEV: {} - {}",                                           //
+                reinterpret_cast<const char*>(glGetString(GL_RENDERER)),  //
+                reinterpret_cast<const char*>(glGetString(GL_VERSION))    //
+            );                                                            //
         }
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-        clear(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        void Window::update() const {
+            if (!window) {
+                return;
+            }
 
-        double dt = monitor.elapsed();
-        monitor.reset();
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+            clear(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
 
-        updateRate *= 0.9f;
-        updateRate += 0.1f * (1.0f / dt);
-    }
+            double dt = monitor.elapsed();
+            monitor.reset();
 
-    void Window::close() const
-    {
-        if (window)
-            glfwSetWindowShouldClose(window, GLFW_TRUE);
-    }
-
-    bool Window::isRunning() const
-    {
-        if (!window)
-            return false;
-
-        return !glfwWindowShouldClose(window);
-    }
-
-    float Window::getFPS() const
-    {
-        return updateRate;
-    }
-
-    Vec2 Window::getSize() const
-    {
-        return shape;
-    }
-
-    Mouse Window::getMouse() const
-    {
-        return mouse;
-    }
-
-    bool Window::prepare()
-    {
-        int status = 0;
-        glfwSetErrorCallback(Window::errorHandle);
-
-        status = glfwInit();
-        corecheck(status == GLFW_TRUE, "Failed to initialize GLFW");
-
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-
-        window = glfwCreateWindow(shape.x, shape.y, name.c_str(), NULL, NULL);
-        corecheck(window != nullptr, "Failed to create GLFW window");
-
-        glfwMakeContextCurrent(window);
-        glfwSwapInterval(0);
-
-        if (!visible) {
-            glfwHideWindow(window);
+            updateRate *= 0.9f;
+            updateRate += 0.1f * (1.0f / dt);
         }
 
-        glfwSetWindowUserPointer(window, this);
+        void Window::close() const {
+            if (window)
+                glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
 
-        glfwSetWindowCloseCallback(window, [](GLFWwindow* w) {
-            Window* window = static_cast<Window*>(glfwGetWindowUserPointer(w));
+        bool Window::isRunning() const {
+            if (!window)
+                return false;
 
-            if (window) {
-                for (const Notifier& notifier : window->notifiers) {
-                    if (notifier.onClose) {
-                        notifier.onClose();
+            return !glfwWindowShouldClose(window);
+        }
+
+        float Window::getFPS() const {
+            return updateRate;
+        }
+
+        Vec2 Window::getSize() const {
+            return shape;
+        }
+
+        Mouse Window::getMouse() const {
+            return mouse;
+        }
+
+        bool Window::prepare() {
+            int status = 0;
+            glfwSetErrorCallback(Window::errorHandle);
+
+            status = glfwInit();
+            corecheck(status == GLFW_TRUE, "Failed to initialize GLFW");
+
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+            glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+
+            window =
+                glfwCreateWindow(shape.x, shape.y, name.c_str(), NULL, NULL);
+            corecheck(window != nullptr, "Failed to create GLFW window");
+
+            glfwMakeContextCurrent(window);
+            glfwSwapInterval(0);
+
+            if (!visible) {
+                glfwHideWindow(window);
+            }
+
+            glfwSetWindowUserPointer(window, this);
+
+            glfwSetWindowCloseCallback(window, [](GLFWwindow* w) {
+                Window* window =
+                    static_cast<Window*>(glfwGetWindowUserPointer(w));
+
+                if (window) {
+                    for (const Notifier& notifier : window->notifiers) {
+                        if (notifier.onClose) {
+                            notifier.onClose();
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        glfwSetWindowSizeCallback(window, [](GLFWwindow* w, int width, int height) {
-            Window* window = static_cast<Window*>(glfwGetWindowUserPointer(w));
+            glfwSetWindowSizeCallback(
+                window,
+                [](GLFWwindow* w, int width, int height) {
+                    Window* window =
+                        static_cast<Window*>(glfwGetWindowUserPointer(w));
 
-            if (window) {
-                window->shape = Vec2(width, height);
+                    if (window) {
+                        window->shape = Vec2(width, height);
 
-                for (const Notifier& notifier : window->notifiers) {
-                    if (notifier.onResize) {
-                        notifier.onResize(window->shape);
+                        for (const Notifier& notifier : window->notifiers) {
+                            if (notifier.onResize) {
+                                notifier.onResize(window->shape);
+                            }
+                        }
                     }
-                }
-            }
-        });
+                });
 
-        glfwSetCursorPosCallback(window, [](GLFWwindow* w, double xpos, double ypos) {
-            Window* window = static_cast<Window*>(glfwGetWindowUserPointer(w));
+            glfwSetCursorPosCallback(
+                window,
+                [](GLFWwindow* w, double xpos, double ypos) {
+                    Window* window =
+                        static_cast<Window*>(glfwGetWindowUserPointer(w));
 
-            if (window) {
-                window->mouse.pos = Vec2(xpos, ypos);
+                    if (window) {
+                        window->mouse.pos = Vec2(xpos, ypos);
 
-                for (const Notifier& notifier : window->notifiers) {
-                    if (notifier.onMouseMove) {
-                        notifier.onMouseMove(window->mouse.pos);
+                        for (const Notifier& notifier : window->notifiers) {
+                            if (notifier.onMouseMove) {
+                                notifier.onMouseMove(window->mouse.pos);
+                            }
+                        }
                     }
-                }
-            }
-        });
+                });
 
-        glfwSetScrollCallback(window, [](GLFWwindow* w, double xoffset, double yoffset) {
-            Window* window = static_cast<Window*>(glfwGetWindowUserPointer(w));
+            glfwSetScrollCallback(
+                window,
+                [](GLFWwindow* w, double xoffset, double yoffset) {
+                    Window* window =
+                        static_cast<Window*>(glfwGetWindowUserPointer(w));
 
-            if (window) {
-                window->mouse.wheel = Vec2(xoffset, yoffset);
-            }
-        });
-
-        glfwSetMouseButtonCallback(window, [](GLFWwindow* w, int button, int action, int mods) {
-            Window* window = static_cast<Window*>(glfwGetWindowUserPointer(w));
-
-            if (window) {
-                Mouse& mouse = window->mouse;
-
-                switch (button) {
-                    case GLFW_MOUSE_BUTTON_LEFT: mouse.leftButton = action == GLFW_PRESS; break;
-                    case GLFW_MOUSE_BUTTON_RIGHT: mouse.rightButton = action == GLFW_PRESS; break;
-                    default: break;
-                }
-
-                for (const Notifier& notifier : window->notifiers) {
-                    if (notifier.onMouseClick) {
-                        notifier.onMouseClick(mouse.leftButton, mouse.rightButton);
+                    if (window) {
+                        window->mouse.wheel = Vec2(xoffset, yoffset);
                     }
-                }
-            }
-        });
+                });
 
-        status = gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress);
-        corecheck(status != 0, "Failed to initialize GLAD");
+            glfwSetMouseButtonCallback(
+                window,
+                [](GLFWwindow* w, int button, int action, int mods) {
+                    Window* window =
+                        static_cast<Window*>(glfwGetWindowUserPointer(w));
 
-        return true;
-    }
+                    if (window) {
+                        Mouse& mouse = window->mouse;
 
-    bool Window::cleanup()
-    {
-        corecheck(window, "Window already cleaned up.");
+                        switch (button) {
+                            case GLFW_MOUSE_BUTTON_LEFT:
+                                mouse.leftButton = action == GLFW_PRESS;
+                                break;
+                            case GLFW_MOUSE_BUTTON_RIGHT:
+                                mouse.rightButton = action == GLFW_PRESS;
+                                break;
+                            default: break;
+                        }
 
-        close();
-        glfwDestroyWindow(window);
-        glfwTerminate();
+                        for (const Notifier& notifier : window->notifiers) {
+                            if (notifier.onMouseClick) {
+                                notifier.onMouseClick(mouse.leftButton,
+                                                      mouse.rightButton);
+                            }
+                        }
+                    }
+                });
 
-        return window == nullptr;
-    }
+            status = gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress);
+            corecheck(status != 0, "Failed to initialize GLAD");
 
-    void Window::clear(const glm::vec4& color) const
-    {
-        glClearColor(color.r, color.g, color.b, color.a);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
+            return true;
+        }
 
-    void Window::addNotifier(const Notifier& notifier)
-    {
-        notifiers.push_back(notifier);
-    }
+        bool Window::cleanup() {
+            corecheck(window, "Window already cleaned up.");
 
-    void Window::errorHandle(int code, const char* desc)
-    {
-        std::cerr << "GLFW error callback: " << code << " - " << (desc ? desc : "(null)") << std::endl;
-    }
+            close();
+            glfwDestroyWindow(window);
+            glfwTerminate();
 
-}; // namespace opengl
-}; // namespace corekit
+            return window == nullptr;
+        }
+
+        void Window::clear(const glm::vec4& color) const {
+            glClearColor(color.r, color.g, color.b, color.a);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        }
+
+        void Window::addNotifier(const Notifier& notifier) {
+            notifiers.push_back(notifier);
+        }
+
+        void Window::errorHandle(int code, const char* desc) {
+            std::cerr << "GLFW error callback: " << code << " - "
+                      << (desc ? desc : "(null)") << std::endl;
+        }
+
+    };  // namespace opengl
+};  // namespace corekit

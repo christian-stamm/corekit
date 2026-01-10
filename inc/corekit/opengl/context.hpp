@@ -10,23 +10,25 @@
 #include <string>
 
 namespace corekit {
-namespace opengl {
+    namespace opengl {
 
-    void glCheckError(std::string meta = "", const std::source_location& location = std::source_location::current());
+        void glCheckError(std::string                 meta = "",
+                          const std::source_location& location =
+                              std::source_location::current());
 
-    GLuint glRequestPrg();
-    GLuint glRequestShd(GLenum type);
-    GLuint glRequestFbo();
-    GLuint glRequestTex();
-    GLuint glRequestVBO();
-    GLuint glRequestVAO();
+        GLuint glRequestPrg();
+        GLuint glRequestShd(GLenum type);
+        GLuint glRequestFbo();
+        GLuint glRequestTex();
+        GLuint glRequestVBO();
+        GLuint glRequestVAO();
 
-    void glReleasePrg(const GLuint* prg);
-    void glReleaseShd(const GLuint* shd);
-    void glReleaseFbo(const GLuint* fbo);
-    void glReleaseTex(const GLuint* tex);
-    void glReleaseVBO(const GLuint* vbo);
-    void glReleaseVAO(const GLuint* vao);
+        void glReleasePrg(const GLuint* prg);
+        void glReleaseShd(const GLuint* shd);
+        void glReleaseFbo(const GLuint* fbo);
+        void glReleaseTex(const GLuint* tex);
+        void glReleaseVBO(const GLuint* vbo);
+        void glReleaseVAO(const GLuint* vao);
 
-}; // namespace opengl
-}; // namespace corekit
+    };  // namespace opengl
+};  // namespace corekit

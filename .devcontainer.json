@@ -1,0 +1,32 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+{
+	"name": "Pixel Dev",
+	"build": {
+		"dockerfile": "env/Dockerfile"
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-vscode.cpptools-extension-pack",
+				"ms-vscode.cmake-tools",
+				"llvm-vs-code-extensions.vscode-clangd",
+				"GitHub.copilot",
+				"GitHub.copilot-chat",
+				"chris-hock.pioasm"
+			]
+		}
+	},
+	"remoteEnv": {
+		"XDG_RUNTIME_DIR": "/tmp/runtime-root",
+		"LIBGL_ALWAYS_SOFTWARE": "false",
+		"DISPLAY": ":0"
+	},
+	"mounts": [
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached"
+	],
+	"runArgs": [
+		"--privileged",
+		"--net=host"
+	]
+}
