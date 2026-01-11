@@ -1,11 +1,9 @@
 #include "corekit/device/device.hpp"
 
-#include <string>
-
 namespace corekit {
     namespace device {
 
-        Device::Device(const std::string& name)
+        Device::Device(const Name& name)
             : name(name)
             , logger(name)
             , loaded(false) {}

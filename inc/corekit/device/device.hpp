@@ -2,18 +2,19 @@
 
 #include <atomic>
 
-#include "corekit/logging/logger.hpp"
+#include "corekit/system/diagnostics/logger.hpp"
 
 namespace corekit {
     namespace device {
 
-        using namespace corekit::logging;
+        using namespace corekit::types;
+        using namespace corekit::system::diagnostics;
 
         class Device {
            public:
             using Ptr = std::shared_ptr<Device>;
 
-            Device(const std::string& name);
+            Device(const Name& name);
             Device(const Device& other) = delete;
 
             virtual ~Device();
@@ -23,8 +24,8 @@ namespace corekit {
             bool reload();
             bool isLoaded() const;
 
-            std::string name;
-            Logger      logger;
+            Name   name;
+            Logger logger;
 
            private:
             virtual bool prepare() {

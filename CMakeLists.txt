@@ -30,24 +30,31 @@ find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 
 include(lib/external/fastcdr.cmake)
+include(lib/external/gtest.cmake)
 include(lib/external/threadpool.cmake)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/glad)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/mcap)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/pioasm)
 
+########################################################################
+
 add_library(${PROJECT_NAME} SHARED
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/device/driver/serial.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/device/device.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/device/serial.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/logging/logger.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/logging/stream.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/logging/watch.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/opengl/context.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/opengl/program.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/opengl/shader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/opengl/texture.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/opengl/window.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/structs/buffer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/opengl/program.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/opengl/shader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/opengl/texture.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/opengl/window.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/concurrency/mutex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/concurrency/smphr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/diagnostics/assert.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/diagnostics/logger.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/diagnostics/stream.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/diagnostics/watch.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/system.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/memory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/file.cpp
 )
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC 
@@ -67,6 +74,26 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     dp::thread-pool
     ${OpenCV_LIBS}
     ${GLM_LIBRARIES}
-
 )
 
+
+########################################################################
+
+enable_testing()
+
+add_executable(${PROJECT_NAME}_check 
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/core.cpp
+)
+
+target_include_directories(${PROJECT_NAME}_check PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/test
+)
+
+target_link_libraries(${PROJECT_NAME}_check PUBLIC
+    ${PROJECT_NAME}
+    gtest
+    gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(${PROJECT_NAME}_check)

@@ -28,6 +28,7 @@ CPP_DEPS="\
     libglfw3-dev \
     mesa-utils \
     vulkan-tools \
+    libgtest-dev \
 "
 
 PYTHON_DEPS="\
