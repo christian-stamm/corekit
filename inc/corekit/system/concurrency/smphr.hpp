@@ -3,19 +3,25 @@
 
 #include "corekit/types.hpp"
 
+#if defined(PLATFORM_PICO)
+#    include "platform/pico/smphr.hpp"
+#elif defined(PLATFORM_UNIX)
+#    include "platform/unix/smphr.hpp"
+#endif
+
 namespace corekit {
     namespace system {
         namespace concurrency {
 
             using namespace corekit::types;
 
-            struct SemaphoreImpl;
-
             template <typename T>
             concept SemaphoreConcept = requires(T t, uint count, float time) {
                 { t.try_acquire_until(count, time) } -> std::same_as<bool>;
                 { t.release(count) } -> std::same_as<void>;
             };
+
+            static_assert(SemaphoreConcept<SemaphoreImpl>);
 
             class Semaphore {
                public:
