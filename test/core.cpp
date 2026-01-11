@@ -3,6 +3,9 @@
 #include <cstdint>
 #include <memory>
 
+#include "corekit/system/concurrency/flow/executor.hpp"
+#include "corekit/system/concurrency/flow/receiver.hpp"
+#include "corekit/system/concurrency/flow/scheduler.hpp"
 #include "corekit/utils/memory.hpp"
 #include "structs.hpp"
 
@@ -182,4 +185,80 @@ TEST(MemoryTests, MemoryDifferentTypes) {
         EXPECT_EQ(mem16[i], 5);
         EXPECT_EQ(mem64[i], 5);
     }
+}
+
+TEST(ExecutorTests, Build) {
+    Executor executor;
+
+    EXPECT_FALSE(executor.hasWork());
+    auto task = executor.enqueue([]() { return 42; });
+
+    Receiver<int> rcv;
+    rcv.notifier = [](const int& result) {
+        std::cout << "Task completed with result: " << result << std::endl;
+    };
+
+    rcv.interrupt = [](const std::exception& e) {
+        std::cout << "Task interrupted with error: " << e.what() << std::endl;
+    };
+
+    task->subscribe(rcv);
+
+    EXPECT_TRUE(executor.hasWork());
+    EXPECT_EQ(executor.snapShot(), 1);
+    EXPECT_TRUE(executor.process());
+    EXPECT_EQ(executor.snapShot(), 0);
+    executor.kill();
+    EXPECT_FALSE(executor.hasWork());
+}
+
+TEST(ExecutorTests, SingleTaskExecution) {
+    Executor executor;
+
+    EXPECT_FALSE(executor.hasWork());
+    auto task = executor.enqueue([]() { return 42; });
+
+    Receiver<int> rcv;
+    rcv.notifier = [](const int& result) {
+        std::cout << "Task completed with result: " << result << std::endl;
+    };
+
+    rcv.interrupt = [](const std::exception& e) {
+        std::cout << "Task interrupted with error: " << e.what() << std::endl;
+    };
+
+    task->subscribe(rcv);
+
+    EXPECT_TRUE(executor.hasWork());
+    EXPECT_EQ(executor.snapShot(), 1);
+    EXPECT_TRUE(executor.process());
+    EXPECT_EQ(executor.snapShot(), 0);
+    executor.kill();
+    EXPECT_FALSE(executor.hasWork());
+}
+
+TEST(SchedulerTests, SingleTaskExecution) {
+    Scheduler scheduler(2, 10);
+
+    auto task = scheduler.enqueue([]() { return 42; });
+
+    task->subscribe(Receiver<int>{
+        .notifier =
+            [](const int& result) {
+                std::cout << "Task completed with result: " << result
+                          << std::endl;
+            },
+        .interrupt =
+            [](const std::exception& e) {
+                std::cout << "Task interrupted with error: " << e.what()
+                          << std::endl;
+            }});
+
+    EXPECT_FALSE(task->isBusy());
+    EXPECT_FALSE(task->isDone());
+
+    scheduler.launch();
+    scheduler.spin();
+
+    EXPECT_TRUE(task->isDone());
 }

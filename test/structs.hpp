@@ -1,11 +1,11 @@
 #pragma once
-#include <vector>
 
 #include "corekit/device/driver/serial.hpp"
 #include "corekit/utils/memory.hpp"
 
 using namespace corekit::device;
 using namespace corekit::utils;
+using namespace corekit::system::concurrency;
 
 class TestDevice : public Serial<uint8_t> {
    public:

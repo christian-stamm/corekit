@@ -1,11 +1,15 @@
 #pragma once
 #include <concepts>
 
+#if defined(PLATFORM_PICO)
+#    include "platform/pico/mutex.hpp"
+#elif defined(PLATFORM_UNIX)
+#    include "platform/unix/mutex.hpp"
+#endif
+
 namespace corekit {
     namespace system {
         namespace concurrency {
-
-            struct MutexImpl;
 
             template <typename T>
             concept MutexConcept = requires(T t) {
@@ -13,6 +17,8 @@ namespace corekit {
                 { t.unlock() } -> std::same_as<void>;
                 { t.try_lock() } -> std::same_as<bool>;
             };
+
+            static_assert(MutexConcept<MutexImpl>);
 
             class Mutex {
                public:

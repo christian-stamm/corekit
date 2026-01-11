@@ -1,28 +1,8 @@
 #include "corekit/system/concurrency/mutex.hpp"
 
-#include <mutex>
-
 namespace corekit {
     namespace system {
         namespace concurrency {
-
-            struct MutexImpl {
-                std::mutex mutex;
-
-                void lock() {
-                    mutex.lock();
-                }
-
-                void unlock() {
-                    mutex.unlock();
-                }
-
-                bool try_lock() {
-                    return mutex.try_lock();
-                }
-            };
-
-            static_assert(MutexConcept<MutexImpl>);
 
             Mutex::Mutex() : impl(new MutexImpl()) {}
 
