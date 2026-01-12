@@ -11,6 +11,15 @@ namespace corekit {
         using Vec2 = Eigen::Vector2f;
         using Vec3 = Eigen::Vector3f;
 
+        // Element-wise division operators for Eigen vectors
+        inline Vec2 operator/(const Vec2& lhs, const Vec2& rhs) {
+            return lhs.cwiseQuotient(rhs);
+        }
+
+        inline Vec3 operator/(const Vec3& lhs, const Vec3& rhs) {
+            return lhs.cwiseQuotient(rhs);
+        }
+
         namespace ops {
 
             template <typename T>
@@ -21,7 +30,7 @@ namespace corekit {
         };  // namespace ops
 
     };  // namespace math
-};  // namespace corekit
+};      // namespace corekit
 
 namespace nlohmann {
 

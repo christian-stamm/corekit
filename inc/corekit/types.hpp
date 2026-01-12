@@ -10,7 +10,29 @@
 
 namespace corekit {
 
+    namespace utils {
+        namespace File {
+            using Path = std::filesystem::path;
+            using List = std::vector<Path>;
+        };  // namespace File
+    };      // namespace utils
+
+    namespace device {
+        namespace GPIO {
+            using Pin   = uint;
+            using Group = std::set<Pin>;
+        };  // namespace GPIO
+    };      // namespace device
+
+    namespace network {
+        using Topic  = uint16_t;
+        using Cookie = uint16_t;
+    };  // namespace network
+
     namespace types {
+        using namespace corekit::utils;
+        using namespace corekit::device;
+
         using uint = unsigned int;
 
         using Name   = std::string;
@@ -20,21 +42,6 @@ namespace corekit {
 
         using Task    = std::future<bool>;
         using JsonMap = nlohmann::ordered_json;
-
-        namespace File {
-            using Path = std::filesystem::path;
-            using List = std::vector<Path>;
-        };  // namespace File
-
-        namespace GPIO {
-            using Pin   = uint;
-            using Group = std::set<Pin>;
-        };  // namespace GPIO
-
-        namespace network {
-            using Topic  = uint16_t;
-            using Cookie = uint16_t;
-        };  // namespace network
 
     };  // namespace types
 

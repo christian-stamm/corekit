@@ -18,6 +18,16 @@ namespace corekit {
 
         Hash getEnv(const Hash& key);
 
+        bool isRunning(const std::future<bool>& task) {
+            return task.valid() && task.wait_for(std::chrono::seconds(0)) !=
+                                       std::future_status::ready;
+        }
+
+        bool isDone(const std::future<bool>& task) {
+            return task.valid() && task.wait_for(std::chrono::seconds(0)) ==
+                                       std::future_status::ready;
+        }
+
         struct Manager {
             struct Settings {
                 Settings(size_t workers = 4, File::Path dir = RESSOURCE_DIR)
@@ -46,4 +56,4 @@ namespace corekit {
         inline Manager sys;
 
     };  // namespace system
-};  // namespace corekit
+};      // namespace corekit

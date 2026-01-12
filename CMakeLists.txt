@@ -5,28 +5,20 @@ project(corekit
     DESCRIPTION "COREKIT - A C++ Utility Library"
 )
 
+# Permit dependencies that still ship configs with pre-3.5 cmake_minimum_required
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(PIOASM_VERSION_STRING "0.1.0")
 set(PLATFORM_UNIX TRUE)
+set(PLATFORM_PICO FALSE)
 set(BUILD_TESTS TRUE)
 
 ########################################################################
 
-if(PLATFORM_UNIX)
-    message(STATUS "Building for Platform UNIX")
-    add_compile_definitions(PLATFORM_UNIX)
-elseif(PLATFORM_PICO)
-    message(STATUS "Building for Platform PICO")
-    add_compile_definitions(PLATFORM_PICO)
-else()
-    message(FATAL_ERROR "No valid platform defined!")
-endif()
-
-########################################################################
-
-if(DEFINED ${RESSOURCE_DIR})
+if(RESSOURCE_DIR)
     message(STATUS "Using cmake defined RESSOURCE_DIR: ${RESSOURCE_DIR}")
 elseif(DEFINED $ENV{RESSOURCE_DIR})
     set(RESSOURCE_DIR $ENV{RESSOURCE_DIR})
@@ -59,13 +51,17 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
     RESSOURCE_DIR=\"${RESSOURCE_DIR}\"
 )
 
+if(PLATFORM_UNIX)
+    message(STATUS "Building for Platform UNIX")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC PLATFORM_UNIX)
+elseif(PLATFORM_PICO)
+    message(STATUS "Building for Platform PICO")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC PLATFORM_PICO)
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
     ${GLM_INCLUDE_DIRS}
-)
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
