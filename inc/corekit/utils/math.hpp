@@ -20,6 +20,15 @@ namespace corekit {
             return lhs.cwiseQuotient(rhs);
         }
 
+        // Element-wise division operators for Eigen vectors
+        inline Vec2 operator*(const Vec2& lhs, const Vec2& rhs) {
+            return lhs.cwiseProduct(rhs);
+        }
+
+        inline Vec3 operator*(const Vec3& lhs, const Vec3& rhs) {
+            return lhs.cwiseProduct(rhs);
+        }
+
         namespace ops {
 
             template <typename T>

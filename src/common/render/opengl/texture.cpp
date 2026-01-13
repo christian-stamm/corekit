@@ -70,7 +70,7 @@ namespace corekit {
                     this->tex = glRequestTex();
                 }
 
-                reconfigure();
+                this->resize(this->size, true);
                 return true;
             }
 
@@ -81,8 +81,14 @@ namespace corekit {
                 return true;
             }
 
-            void Texture::reconfigure() {
+            void Texture::resize(const Vec2& size, bool force) {
                 glCheckError(name);
+
+                if (this->size == size && !force) {
+                    return;
+                }
+
+                this->size = size;
 
                 verify();
                 bind();
@@ -211,8 +217,7 @@ namespace corekit {
                 switch (mode) {
                     case RESIZE_TEXTURE: {
                         if (this->size != imsize) {
-                            this->size = imsize;
-                            reconfigure();
+                            this->resize(imsize);
                         }
 
                         break;
@@ -298,8 +303,7 @@ namespace corekit {
                         "Texture::copyTo => format mismatch");
                 }
 
-                target->size = this->size;
-                target->reconfigure();
+                target->resize(this->size);
 
                 glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
                 glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
@@ -333,5 +337,5 @@ namespace corekit {
             }
 
         };  // namespace opengl
-    };  // namespace render
-};  // namespace corekit
+    };      // namespace render
+};          // namespace corekit
