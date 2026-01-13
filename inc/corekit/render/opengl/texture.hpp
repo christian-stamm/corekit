@@ -69,7 +69,7 @@ namespace corekit {
                 static void glReleaseFBO(const GLuint* fbo);
                 static void glReleaseTex(const GLuint* tex);
 
-                void reconfigure();
+                void resize(const Vec2& size, bool force = false);
                 void verify() const;
                 void bind() const;
                 void unbind() const;
@@ -101,5 +101,5 @@ namespace corekit {
             };
 
         };  // namespace opengl
-    };  // namespace render
-};  // namespace corekit
+    };      // namespace render
+};          // namespace corekit
