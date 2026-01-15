@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <set>
+#include <stop_token>
 #include <string>
 #include <vector>
 
@@ -40,8 +41,8 @@ namespace corekit {
         using Code   = std::string;
         using Status = std::string;
 
-        using Task    = std::future<bool>;
         using JsonMap = nlohmann::ordered_json;
+        using Killreq = std::stop_source;
 
     };  // namespace types
 

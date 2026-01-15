@@ -35,6 +35,8 @@ namespace corekit {
 
                 const Name& getName() const;
 
+                static void clear();
+
                private:
                 std::string format(const Level& level) const;
 
@@ -46,5 +48,5 @@ namespace corekit {
             };
 
         };  // namespace diagnostics
-    }  // namespace system
-};  // namespace corekit
+    }       // namespace system
+};          // namespace corekit

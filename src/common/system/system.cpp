@@ -9,17 +9,21 @@ namespace corekit {
     namespace system {
 
         Manager::Manager(const Settings& settings)
-            : worker(settings.numWorker)
-            , workdir(settings.workdir)
-            , logger("System") {
-            std::system("clear");
+            : Device("System")
+            , scheduler(std::make_shared<Scheduler>(settings.numWorker))
+            , workdir(settings.workdir) {
+            Logger::clear();
         }
 
         Manager& Manager::operator<<(const Settings& config) {
-            std::destroy_at(&worker);
-            std::construct_at(&worker, config.numWorker);
+            if (scheduler) {
+                scheduler->kill();
+                scheduler.reset();
+            }
 
-            workdir = config.workdir;
+            scheduler = std::make_shared<Scheduler>(config.numWorker);
+            workdir   = config.workdir;
+
             return *this;
         }
 
@@ -29,6 +33,10 @@ namespace corekit {
 
         bool Manager::ok() const {
             return !killreq.stop_requested();
+        }
+
+        float Manager::time() const {
+            return clock.elapsed();
         }
 
         Hash getEnv(const Hash& key) {

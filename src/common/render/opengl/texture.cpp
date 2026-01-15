@@ -1,5 +1,6 @@
 #include "corekit/render/opengl/texture.hpp"
 
+#include <iostream>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
 
