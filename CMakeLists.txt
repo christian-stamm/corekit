@@ -117,6 +117,6 @@ if(BUILD_TESTS)
     )
 
     include(GoogleTest)
-    gtest_discover_tests(${PROJECT_NAME}_check)
+    gtest_discover_tests(${PROJECT_NAME}_check DISCOVERY_MODE PRE_TEST)
 
 endif()

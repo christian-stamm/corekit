@@ -12,11 +12,13 @@ namespace corekit {
             template <typename T>
             class SafeQueue {
                public:
+                friend class Executor;
+
                 SafeQueue(
                     const size_t& capacity = std::numeric_limits<size_t>::max())
                     : queue()
                     , mutex()
-                    , capacity(capacity) {};
+                    , capacity(capacity){};
 
                 SafeQueue(const SafeQueue&)             = delete;
                 SafeQueue(const SafeQueue&&)            = delete;
@@ -26,15 +28,7 @@ namespace corekit {
                 ~SafeQueue() = default;
 
                 bool try_push(const T& item) {
-                    std::lock_guard<Mutex> lock(mutex);
-                    const bool             full = capacity <= queue.size();
-
-                    if (full) {
-                        return false;
-                    }
-
-                    queue.push_back(item);
-                    return true;
+                    return this->push(item, false);
                 }
 
                 bool try_pop(T& item) {
@@ -59,11 +53,23 @@ namespace corekit {
                 }
 
                private:
+                bool push(const T& item, bool force = false) {
+                    std::lock_guard<Mutex> lock(mutex);
+                    const bool             full = capacity <= queue.size();
+
+                    if (full && !force) {
+                        return false;
+                    }
+
+                    queue.push_back(item);
+                    return true;
+                }
+
                 const size_t  capacity;
                 std::deque<T> queue;
                 mutable Mutex mutex;
             };
 
         };  // namespace concurrency
-    };  // namespace system
-};  // namespace corekit
+    };      // namespace system
+};          // namespace corekit

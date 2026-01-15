@@ -95,6 +95,10 @@ namespace corekit {
                 return name;
             }
 
+            void Logger::clear() {
+                std::system("clear");
+            }
+
         };  // namespace diagnostics
-    };  // namespace system
-};  // namespace corekit
+    };      // namespace system
+};          // namespace corekit

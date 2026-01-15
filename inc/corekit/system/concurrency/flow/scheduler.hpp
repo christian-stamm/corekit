@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <memory>
 #include <stop_token>
 #include <vector>
@@ -29,7 +30,9 @@ namespace corekit {
                 }
 
                 template <typename Fn, typename... Args>
-                auto enqueue(Fn&& fn, Args&&... args) {
+                Task<std::decay_t<Fn>, std::decay_t<Args>...>::Ptr enqueue(
+                    Fn&& fn,
+                    Args&&... args) {
                     return executor->enqueue(std::forward<Fn>(fn),
                                              std::forward<Args>(args)...);
                 }
@@ -49,7 +52,12 @@ namespace corekit {
                 void kill() {
                     killreq.request_stop();
                     executor->kill();
+                    this->spin();
                     workers.clear();
+                }
+
+                size_t size() const {
+                    return workers.size();
                 }
 
                private:
@@ -65,5 +73,5 @@ namespace corekit {
             };
 
         };  // namespace concurrency
-    };  // namespace system
-};  // namespace corekit
+    };      // namespace system
+};          // namespace corekit

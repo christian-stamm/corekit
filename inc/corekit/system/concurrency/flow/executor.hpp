@@ -18,9 +18,12 @@ namespace corekit {
                     , maxTasks(maxTasks) {}
 
                 template <typename Fn, typename... Args>
-                Task<Fn, Args...>::Ptr enqueue(Fn&& fn, Args&&... args) {
-                    auto task = std::make_shared<
-                        Task<std::decay_t<Fn>, std::decay_t<Args>...>>();
+                Task<std::decay_t<Fn>, std::decay_t<Args>...>::Ptr enqueue(
+                    Fn&& fn,
+                    Args&&... args) {
+                    using TaskType =
+                        Task<std::decay_t<Fn>, std::decay_t<Args>...>;
+                    auto task = std::make_shared<TaskType>();
 
                     if (!operations.try_push(task)) {
                         for (const auto& subscriber : task->subs) {
@@ -48,6 +51,10 @@ namespace corekit {
                             task->exec();
                             task->busy = false;
                             task->done = true;
+
+                            if (task->repeat) {
+                                operations.push(task, true);
+                            }
                         }
                     }
 
@@ -72,5 +79,5 @@ namespace corekit {
             };
 
         };  // namespace concurrency
-    };  // namespace system
-};  // namespace corekit
+    };      // namespace system
+};          // namespace corekit

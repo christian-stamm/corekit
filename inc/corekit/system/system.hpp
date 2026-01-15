@@ -1,7 +1,7 @@
 #pragma once
 
-#include <thread_pool/thread_pool.h>
-
+#include "corekit/device/device.hpp"
+#include "corekit/system/concurrency/flow/scheduler.hpp"
 #include "corekit/system/diagnostics/logger.hpp"
 #include "corekit/system/diagnostics/watch.hpp"
 #include "corekit/types.hpp"
@@ -11,24 +11,14 @@ namespace corekit {
     namespace system {
 
         using namespace corekit::types;
+        using namespace corekit::device;
         using namespace corekit::system::diagnostics;
-
-        using Killreq    = std::stop_source;
-        using ThreadPool = dp::thread_pool<>;
+        using namespace corekit::system::concurrency;
 
         Hash getEnv(const Hash& key);
 
-        bool isRunning(const std::future<bool>& task) {
-            return task.valid() && task.wait_for(std::chrono::seconds(0)) !=
-                                       std::future_status::ready;
-        }
-
-        bool isDone(const std::future<bool>& task) {
-            return task.valid() && task.wait_for(std::chrono::seconds(0)) ==
-                                       std::future_status::ready;
-        }
-
-        struct Manager {
+        class Manager : public Device {
+           public:
             struct Settings {
                 Settings(size_t workers = 4, File::Path dir = RESSOURCE_DIR)
                     : numWorker(workers)
@@ -41,15 +31,15 @@ namespace corekit {
             Manager(const Settings& settings = Settings());
             Manager& operator<<(const Settings& config);
 
-            void shutdown();
-            bool ok() const;
+            void  shutdown();
+            bool  ok() const;
+            float time() const;
 
-            ThreadPool worker;
-            File::Path workdir;
-            Logger     logger;
-            Watch      time;
+            Scheduler::Ptr scheduler;
+            File::Path     workdir;
 
            protected:
+            Watch   clock;
             Killreq killreq;
         };
 

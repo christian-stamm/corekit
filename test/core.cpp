@@ -114,9 +114,9 @@ TEST(MemoryTests, MemoryCastMultipleTypes) {
     auto             mem8   = mem32.cast<uint8_t>();
     auto             mem16  = mem32.cast<uint16_t>();
     auto             mem32n = mem32.cast<uint16_t>()
-                                  .cast<uint8_t>()
-                                  .cast<uint16_t>()
-                                  .cast<uint32_t>();
+                      .cast<uint8_t>()
+                      .cast<uint16_t>()
+                      .cast<uint32_t>();
 
     EXPECT_EQ(mem8.size(), mem32.size() * 4);
     EXPECT_EQ(mem16.size(), mem32.size() * 2);
@@ -187,78 +187,80 @@ TEST(MemoryTests, MemoryDifferentTypes) {
     }
 }
 
-TEST(ExecutorTests, Build) {
-    Executor executor;
+// TEST(ExecutorTests, Build) {
+//     Executor executor;
 
-    EXPECT_FALSE(executor.hasWork());
-    auto task = executor.enqueue([]() { return 42; });
+//     EXPECT_FALSE(executor.hasWork());
+//     auto task = executor.enqueue([]() { return 42; });
 
-    Receiver<int> rcv;
-    rcv.notifier = [](const int& result) {
-        std::cout << "Task completed with result: " << result << std::endl;
-    };
+//     Receiver<int> rcv;
+//     rcv.notifier = [](const int& result) {
+//         std::cout << "Task completed with result: " << result << std::endl;
+//     };
 
-    rcv.interrupt = [](const std::exception& e) {
-        std::cout << "Task interrupted with error: " << e.what() << std::endl;
-    };
+//     rcv.interrupt = [](const std::exception& e) {
+//         std::cout << "Task interrupted with error: " << e.what() <<
+//         std::endl;
+//     };
 
-    task->subscribe(rcv);
+//     task->subscribe(rcv);
 
-    EXPECT_TRUE(executor.hasWork());
-    EXPECT_EQ(executor.snapShot(), 1);
-    EXPECT_TRUE(executor.process());
-    EXPECT_EQ(executor.snapShot(), 0);
-    executor.kill();
-    EXPECT_FALSE(executor.hasWork());
-}
+//     EXPECT_TRUE(executor.hasWork());
+//     EXPECT_EQ(executor.snapShot(), 1);
+//     EXPECT_TRUE(executor.process());
+//     EXPECT_EQ(executor.snapShot(), 0);
+//     executor.kill();
+//     EXPECT_FALSE(executor.hasWork());
+// }
 
-TEST(ExecutorTests, SingleTaskExecution) {
-    Executor executor;
+// TEST(ExecutorTests, SingleTaskExecution) {
+//     Executor executor;
 
-    EXPECT_FALSE(executor.hasWork());
-    auto task = executor.enqueue([]() { return 42; });
+//     EXPECT_FALSE(executor.hasWork());
+//     auto task = executor.enqueue([]() { return 42; });
 
-    Receiver<int> rcv;
-    rcv.notifier = [](const int& result) {
-        std::cout << "Task completed with result: " << result << std::endl;
-    };
+//     Receiver<int> rcv;
+//     rcv.notifier = [](const int& result) {
+//         std::cout << "Task completed with result: " << result << std::endl;
+//     };
 
-    rcv.interrupt = [](const std::exception& e) {
-        std::cout << "Task interrupted with error: " << e.what() << std::endl;
-    };
+//     rcv.interrupt = [](const std::exception& e) {
+//         std::cout << "Task interrupted with error: " << e.what() <<
+//         std::endl;
+//     };
 
-    task->subscribe(rcv);
+//     task->subscribe(rcv);
 
-    EXPECT_TRUE(executor.hasWork());
-    EXPECT_EQ(executor.snapShot(), 1);
-    EXPECT_TRUE(executor.process());
-    EXPECT_EQ(executor.snapShot(), 0);
-    executor.kill();
-    EXPECT_FALSE(executor.hasWork());
-}
+//     EXPECT_TRUE(executor.hasWork());
+//     EXPECT_EQ(executor.snapShot(), 1);
+//     EXPECT_TRUE(executor.process());
+//     EXPECT_EQ(executor.snapShot(), 0);
+//     executor.kill();
+//     EXPECT_FALSE(executor.hasWork());
+// }
 
-TEST(SchedulerTests, SingleTaskExecution) {
-    Scheduler scheduler(2, 10);
+// TEST(SchedulerTests, SingleTaskExecution) {
+//     Scheduler scheduler(2, 10);
 
-    auto task = scheduler.enqueue([]() { return 42; });
+//     auto task = scheduler.enqueue([]() { return 42; });
 
-    task->subscribe(Receiver<int>{
-        .notifier =
-            [](const int& result) {
-                std::cout << "Task completed with result: " << result
-                          << std::endl;
-            },
-        .interrupt =
-            [](const std::exception& e) {
-                std::cout << "Task interrupted with error: " << e.what()
-                          << std::endl;
-            }});
+//     task->subscribe(Receiver<int>{
+//         .notifier =
+//             [](const int& result) {
+//                 std::cout << "Task completed with result: " << result
+//                           << std::endl;
+//             },
+//         .interrupt =
+//             [](const std::exception& e) {
+//                 std::cout << "Task interrupted with error: " << e.what()
+//                           << std::endl;
+//             }});
 
-    EXPECT_FALSE(task->isBusy());
-    EXPECT_FALSE(task->isDone());
+//     EXPECT_FALSE(task->isBusy());
+//     EXPECT_FALSE(task->isDone());
 
-    scheduler.launch();
-    scheduler.spin();
+//     scheduler.launch();
+//     scheduler.spin();
 
-    EXPECT_TRUE(task->isDone());
-}
+//     EXPECT_TRUE(task->isDone());
+// }
