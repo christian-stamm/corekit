@@ -25,6 +25,10 @@ namespace corekit {
                         Task<std::decay_t<Fn>, std::decay_t<Args>...>;
                     auto task = std::make_shared<TaskType>();
 
+                    // Set work and args BEFORE pushing to queue
+                    task->work = std::forward<Fn>(fn);
+                    task->args = std::make_tuple(std::forward<Args>(args)...);
+
                     if (!operations.try_push(task)) {
                         for (const auto& subscriber : task->subs) {
                             if (subscriber.interrupt != nullptr) {
@@ -35,9 +39,6 @@ namespace corekit {
 
                         return nullptr;
                     }
-
-                    task->work = std::forward<Fn>(fn);
-                    task->args = std::make_tuple(std::forward<Args>(args)...);
 
                     return task;
                 }
