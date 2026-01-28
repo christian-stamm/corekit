@@ -6,7 +6,8 @@
 #include "corekit/types.hpp"
 
 namespace corekit {
-    namespace math {
+    namespace utils {
+        using namespace corekit::types;
 
         using Vec2 = Eigen::Vector2f;
         using Vec3 = Eigen::Vector3f;
@@ -38,13 +39,13 @@ namespace corekit {
 
         };  // namespace ops
 
-    };  // namespace math
+    };  // namespace utils
 };      // namespace corekit
 
 namespace nlohmann {
 
     using namespace corekit::types;
-    using namespace corekit::math;
+    using namespace corekit::utils;
 
     inline void from_json(const JsonMap& j, Vec2& s) {
         s.x() = j.value("width", 0.f);

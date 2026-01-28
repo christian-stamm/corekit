@@ -2,41 +2,39 @@
 
 namespace corekit {
     namespace system {
-        namespace concurrency {
 
-            struct SemaphoreImpl {
-                std::counting_semaphore<> semaphore;
+        struct SemaphoreImpl {
+            std::counting_semaphore<> semaphore;
 
-                SemaphoreImpl(uint initial) : semaphore(initial) {}
+            SemaphoreImpl(uint initial) : semaphore(initial) {}
 
-                void acquire(uint count) {
-                    for (uint i = 0; i < count; ++i) {
-                        semaphore.acquire();
+            void acquire(uint count) {
+                for (uint i = 0; i < count; ++i) {
+                    semaphore.acquire();
+                }
+            }
+
+            void release(uint count) {
+                semaphore.release(count);
+            }
+
+            bool try_acquire(uint count) {
+                for (uint i = 0; i < count; ++i) {
+                    if (!semaphore.try_acquire()) {
+                        return false;
                     }
                 }
+                return true;
+            }
 
-                void release(uint count) {
-                    semaphore.release(count);
-                }
+            bool try_acquire_for(uint count, float secs) {
+                return false;
+            }
 
-                bool try_acquire(uint count) {
-                    for (uint i = 0; i < count; ++i) {
-                        if (!semaphore.try_acquire()) {
-                            return false;
-                        }
-                    }
-                    return true;
-                }
+            bool try_acquire_until(uint count, float time) {
+                return false;
+            }
+        };
 
-                bool try_acquire_for(uint count, float secs) {
-                    return false;
-                }
-
-                bool try_acquire_until(uint count, float time) {
-                    return false;
-                }
-            };
-
-        };  // namespace concurrency
     };  // namespace system
-};  // namespace corekit
+};      // namespace corekit

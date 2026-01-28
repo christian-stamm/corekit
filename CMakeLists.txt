@@ -65,23 +65,24 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/device/driver/serial.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/device/device.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/render/opengl/program.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/render/opengl/shader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/render/opengl/texture.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/render/opengl/window.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/concurrency/mutex.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/concurrency/smphr.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/concurrency/thread.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/diagnostics/assert.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/diagnostics/logger.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/diagnostics/stream.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/diagnostics/watch.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/system/system.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/utils/memory.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/utils/math.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common/utils/file.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/program.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/shader.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/texture.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/window.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/system.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/mutex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/smphr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/thread.cpp
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assert.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/device.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/filemgr.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/logger.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/math.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/memory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/stream.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/watch.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC

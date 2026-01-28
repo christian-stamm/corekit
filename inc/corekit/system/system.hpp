@@ -1,9 +1,8 @@
 #pragma once
+#include <type_traits>
 
-#include "corekit/device/device.hpp"
-#include "corekit/system/concurrency/flow/scheduler.hpp"
-#include "corekit/system/diagnostics/logger.hpp"
-#include "corekit/system/diagnostics/watch.hpp"
+#include "corekit/system/context.hpp"
+#include "corekit/system/flow/scheduler.hpp"
 #include "corekit/types.hpp"
 
 namespace corekit {
@@ -11,39 +10,35 @@ namespace corekit {
     namespace system {
 
         using namespace corekit::types;
-        using namespace corekit::device;
-        using namespace corekit::system::diagnostics;
-        using namespace corekit::system::concurrency;
+        using namespace corekit::utils;
 
-        Hash getEnv(const Hash& key);
+        struct SysCfg {
+            Scheduler::Settings shedulerCfg;
 
-        class Manager : public Device {
-           public:
-            struct Settings {
-                Settings(size_t workers = 4, File::Path dir = RESSOURCE_DIR)
-                    : numWorker(workers)
-                    , workdir(dir) {}
-
-                size_t     numWorker;
-                File::Path workdir;
-            };
-
-            Manager(const Settings& settings = Settings());
-            Manager& operator<<(const Settings& config);
-
-            void  shutdown();
-            bool  ok() const;
-            float time() const;
-
-            Scheduler::Ptr scheduler;
-            File::Path     workdir;
-
-           protected:
-            Watch   clock;
-            Killreq killreq;
+            static Hash getEnv(const Name& key);
         };
 
-        inline Manager sys;
+        template <typename Config = SysCfg>
+        class System {
+           public:
+            static_assert(std::is_base_of<SysCfg, Config>::value,
+                          "Config must derive from System::Settings");
+
+            System(Config& config)
+                : scheduler(config.shedulerCfg, killreq)
+                , context(config, scheduler, killreq) {
+                Logger::clear();
+            }
+
+            Context<Config>& ctx() {
+                return context;
+            }
+
+           private:
+            Killreq         killreq;
+            Scheduler       scheduler;
+            Context<Config> context;
+        };
 
     };  // namespace system
-};      // namespace corekit
+};  // namespace corekit

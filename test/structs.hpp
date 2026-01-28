@@ -1,17 +1,16 @@
 #pragma once
 
-#include "corekit/device/driver/serial.hpp"
+#include "corekit/utils/device.hpp"
 #include "corekit/utils/memory.hpp"
 
-using namespace corekit::device;
+using namespace corekit::system;
 using namespace corekit::utils;
-using namespace corekit::system::concurrency;
 
-class TestDevice : public Serial<uint8_t> {
+class TestDevice : public Device {
    public:
-    TestDevice() : Serial<uint8_t>("TestDevice") {}
+    TestDevice() : Device("TestDevice") {}
 
-    bool read(std::span<uint8_t>& dst) const override {
+    bool read(std::span<uint8_t>& dst) const {
         if (loopBackBuffer.size() != dst.size()) {
             dst = std::span<uint8_t>(loopBackBuffer.data(),
                                      loopBackBuffer.size());
@@ -21,7 +20,7 @@ class TestDevice : public Serial<uint8_t> {
         return true;
     }
 
-    bool write(const std::span<uint8_t>& src) const override {
+    bool write(const std::span<uint8_t>& src) const {
         if (loopBackBuffer.size() != src.size()) {
             loopBackBuffer = Memory<uint8_t>(src.size(), 0);
         }
