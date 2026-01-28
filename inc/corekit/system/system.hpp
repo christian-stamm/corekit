@@ -1,49 +1,31 @@
 #pragma once
-
-#include "corekit/device/device.hpp"
-#include "corekit/system/concurrency/flow/scheduler.hpp"
-#include "corekit/system/diagnostics/logger.hpp"
-#include "corekit/system/diagnostics/watch.hpp"
+#include "corekit/system/flow/scheduler.hpp"
 #include "corekit/types.hpp"
+#include "corekit/utils/device.hpp"
+#include "corekit/utils/watch.hpp"
 
 namespace corekit {
 
     namespace system {
 
         using namespace corekit::types;
-        using namespace corekit::device;
-        using namespace corekit::system::diagnostics;
-        using namespace corekit::system::concurrency;
+        using namespace corekit::utils;
 
         Hash getEnv(const Hash& key);
 
-        class Manager : public Device {
+        struct BaseConfig {};
+
+        template <typename Config = BaseConfig>
+        class System : public Scheduler {
            public:
-            struct Settings {
-                Settings(size_t workers = 4, File::Path dir = RESSOURCE_DIR)
-                    : numWorker(workers)
-                    , workdir(dir) {}
-
-                size_t     numWorker;
-                File::Path workdir;
-            };
-
-            Manager(const Settings& settings = Settings());
-            Manager& operator<<(const Settings& config);
-
-            void  shutdown();
-            bool  ok() const;
-            float time() const;
-
-            Scheduler::Ptr scheduler;
-            File::Path     workdir;
-
-           protected:
-            Watch   clock;
-            Killreq killreq;
+            System(Config config    = {},
+                   size_t numWorker = 4,
+                   size_t numTasks  = 128)
+                : Scheduler("System", numWorker, numTasks)
+                , Config(config) {
+                Logger::clear();
+            }
         };
-
-        inline Manager sys;
 
     };  // namespace system
 };      // namespace corekit

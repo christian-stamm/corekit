@@ -118,4 +118,4 @@ namespace corekit {
         };
 
     };  // namespace utils
-};  // namespace corekit
+};      // namespace corekit

@@ -3,9 +3,8 @@
 #include <cstdint>
 #include <memory>
 
-#include "corekit/system/concurrency/flow/executor.hpp"
-#include "corekit/system/concurrency/flow/receiver.hpp"
-#include "corekit/system/concurrency/flow/scheduler.hpp"
+#include "corekit/system/flow/executor.hpp"
+#include "corekit/system/flow/scheduler.hpp"
 #include "corekit/utils/memory.hpp"
 #include "structs.hpp"
 

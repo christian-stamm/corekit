@@ -1,0 +1,81 @@
+#pragma once
+#include <cstddef>
+#include <memory>
+#include <tuple>
+
+#include "corekit/system/flow/operation.hpp"
+
+namespace corekit {
+    namespace system {
+
+        struct Executor {
+           public:
+            using Ptr = std::shared_ptr<Executor>;
+
+            Executor(size_t maxTasks = 128)
+                : operations(maxTasks)
+                , maxTasks(maxTasks) {}
+
+            template <typename Fn, typename... Args>
+            Task<std::decay_t<Fn>, std::decay_t<Args>...>::Ptr enqueue(
+                Fn&& fn,
+                Args&&... args) {
+                using TaskType = Task<std::decay_t<Fn>, std::decay_t<Args>...>;
+                auto task      = std::make_shared<TaskType>();
+
+                // Set work and args BEFORE pushing to queue
+                task->work = std::forward<Fn>(fn);
+                task->args = std::make_tuple(std::forward<Args>(args)...);
+
+                if (!operations.try_push(task)) {
+                    for (const auto& subscriber : task->subs) {
+                        if (subscriber.interrupt != nullptr) {
+                            subscriber.interrupt(std::runtime_error(
+                                "Executor task queue is full."));
+                        }
+                    }
+
+                    return nullptr;
+                }
+
+                return task;
+            }
+
+            bool process() {
+                Operation::Ptr task = nullptr;
+
+                while (operations.try_pop(task)) {
+                    if (task) {
+                        task->busy = true;
+                        task->exec();
+                        task->busy = false;
+                        task->done = true;
+
+                        if (task->repeat) {
+                            operations.push(task, true);
+                        }
+                    }
+                }
+
+                return !hasWork();
+            }
+
+            void kill() {
+                operations.clear();
+            }
+
+            bool hasWork() const {
+                return 0 < snapShot();
+            }
+
+            size_t snapShot() const {
+                return operations.size();
+            }
+
+           private:
+            TaskList operations;
+            size_t   maxTasks;
+        };
+
+    };  // namespace system
+};      // namespace corekit
