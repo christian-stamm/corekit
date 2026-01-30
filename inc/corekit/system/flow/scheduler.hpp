@@ -1,7 +1,5 @@
 #pragma once
-#include <cstddef>
 #include <memory>
-#include <stop_token>
 #include <vector>
 
 #include "corekit/system/flow/executor.hpp"
@@ -19,10 +17,11 @@ namespace corekit {
            public:
             using Ptr = std::shared_ptr<Scheduler>;
 
-            Scheduler(Name name, size_t numWorkers = 1, size_t maxTasks = 128)
-                : Device(name)
-                , executor(std::make_shared<Executor>(maxTasks))
-                , workers(numWorkers, nullptr) {}
+            Scheduler(Killreq& killreq, size_t numWorkers, size_t numTasks)
+                : Device("Scheduler")
+                , workers(numWorkers, nullptr)
+                , executor(Executor::build(killreq, numTasks))
+                , killreq(killreq) {}
 
             template <typename Fn, typename... Args>
             Task<std::decay_t<Fn>, std::decay_t<Args>...>::Ptr enqueue(
@@ -32,22 +31,16 @@ namespace corekit {
                                          std::forward<Args>(args)...);
             }
 
-            size_t numWorker() const {
+            size_t numWorkers() const {
                 return workers.size();
             }
 
-            bool ok() const {
-                return !killreq.stop_requested();
-            }
-
             void kill() {
-                if (!killreq.stop_requested()) {
-                    killreq.request_stop();
-                    executor->kill();
+                killreq.request_stop();
+                executor->abort();
 
-                    for (const Thread::Ptr& worker : workers) {
-                        worker->join();
-                    }
+                for (const Thread::Ptr& worker : workers) {
+                    worker->join();
                 }
             }
 
@@ -75,10 +68,10 @@ namespace corekit {
                 }
             }
 
-            Killreq                  killreq;
+            Killreq&                 killreq;
             Executor::Ptr            executor;
             std::vector<Thread::Ptr> workers;
         };
 
     };  // namespace system
-};      // namespace corekit
+};  // namespace corekit

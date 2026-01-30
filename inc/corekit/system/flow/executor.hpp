@@ -1,20 +1,30 @@
 #pragma once
-#include <cstddef>
 #include <memory>
 #include <tuple>
 
 #include "corekit/system/flow/operation.hpp"
+#include "corekit/types.hpp"
 
 namespace corekit {
     namespace system {
+
+        using namespace corekit::types;
 
         struct Executor {
            public:
             using Ptr = std::shared_ptr<Executor>;
 
-            Executor(size_t maxTasks = 128)
+            struct Settings {
+                size_t maxTasks;
+            };
+
+            Executor(Killreq& killreq, size_t maxTasks = 128)
                 : operations(maxTasks)
-                , maxTasks(maxTasks) {}
+                , killreq(killreq) {}
+
+            static Ptr build(Killreq& killreq, size_t maxTasks = 128) {
+                return std::make_shared<Executor>(killreq, maxTasks);
+            }
 
             template <typename Fn, typename... Args>
             Task<std::decay_t<Fn>, std::decay_t<Args>...>::Ptr enqueue(
@@ -44,7 +54,7 @@ namespace corekit {
             bool process() {
                 Operation::Ptr task = nullptr;
 
-                while (operations.try_pop(task)) {
+                while (operations.try_pop(task) && !killreq.stop_requested()) {
                     if (task) {
                         task->busy = true;
                         task->exec();
@@ -57,25 +67,25 @@ namespace corekit {
                     }
                 }
 
-                return !hasWork();
+                return !busy();
             }
 
-            void kill() {
+            void abort() {
                 operations.clear();
             }
 
-            bool hasWork() const {
-                return 0 < snapShot();
+            bool busy() const {
+                return 0 < tasks();
             }
 
-            size_t snapShot() const {
+            size_t tasks() const {
                 return operations.size();
             }
 
            private:
             TaskList operations;
-            size_t   maxTasks;
+            Killreq& killreq;
         };
 
     };  // namespace system
-};      // namespace corekit
+};  // namespace corekit
