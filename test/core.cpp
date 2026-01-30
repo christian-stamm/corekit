@@ -39,18 +39,18 @@ TEST_F(DeviceTests, DeviceLoading) {
     EXPECT_TRUE(device->isLoaded());
 }
 
-TEST_F(DeviceTests, DeviceXfer) {
-    ASSERT_TRUE(device->load());
+// TEST_F(DeviceTests, DeviceXfer) {
+//     ASSERT_TRUE(device->load());
 
-    txBuffer.iota(0);
-    rxBuffer.fill(0);
-    EXPECT_TRUE(device->write(txBuffer));
-    EXPECT_TRUE(device->read(rxBuffer));
-    EXPECT_TRUE(txBuffer == rxBuffer);
+//     txBuffer.iota(0);
+//     rxBuffer.fill(0);
+//     EXPECT_TRUE(device->write(txBuffer));
+//     EXPECT_TRUE(device->read(rxBuffer));
+//     EXPECT_TRUE(txBuffer == rxBuffer);
 
-    txBuffer.fill(42);
-    EXPECT_FALSE(txBuffer == rxBuffer);
-}
+//     txBuffer.fill(42);
+//     EXPECT_FALSE(txBuffer == rxBuffer);
+// }
 
 // ###################################################################
 

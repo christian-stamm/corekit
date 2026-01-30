@@ -23,13 +23,13 @@ namespace corekit {
         }
 
         void Window::update() const {
-            if (!window) {
+            if (!window || !isRunning()) {
                 return;
             }
 
             glfwSwapBuffers(window);
             glfwPollEvents();
-            clear(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            this->clear();
 
             double dt = monitor.elapsed();
             monitor.reset();
@@ -85,34 +85,11 @@ namespace corekit {
 
             glfwSetWindowUserPointer(window, this);
 
-            glfwSetWindowCloseCallback(window, [](GLFWwindow* w) {
-                Window* window =
-                    static_cast<Window*>(glfwGetWindowUserPointer(w));
-
-                if (window) {
-                    for (const Notifier& notifier : window->notifiers) {
-                        if (notifier.onClose) {
-                            notifier.onClose();
-                        }
-                    }
-                }
-            });
-
             glfwSetWindowSizeCallback(
                 window,
                 [](GLFWwindow* w, int width, int height) {
-                    Window* window =
-                        static_cast<Window*>(glfwGetWindowUserPointer(w));
-
-                    if (window) {
-                        window->shape = Vec2(width, height);
-
-                        for (const Notifier& notifier : window->notifiers) {
-                            if (notifier.onResize) {
-                                notifier.onResize(window->shape);
-                            }
-                        }
-                    }
+                    void* self = glfwGetWindowUserPointer(w);
+                    static_cast<Window*>(self)->shape = Vec2(width, height);
                 });
 
             status = gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress);
@@ -134,10 +111,6 @@ namespace corekit {
         void Window::clear(const glm::vec4& color) const {
             glClearColor(color.r, color.g, color.b, color.a);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        }
-
-        void Window::addNotifier(const Notifier& notifier) {
-            notifiers.push_back(notifier);
         }
 
         void Window::errorHandle(int code, const char* desc) {

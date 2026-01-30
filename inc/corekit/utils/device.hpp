@@ -15,7 +15,8 @@ namespace corekit {
             using Ptr = std::shared_ptr<Device>;
 
             Device(const Name& name);
-            Device(const Device& other) = delete;
+            Device(const Device& other);
+            Device& operator=(const Device& other);
 
             virtual ~Device();
 

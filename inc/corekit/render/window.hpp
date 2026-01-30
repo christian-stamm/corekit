@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <nlohmann/json_fwd.hpp>
+#include <nlohmann/json.hpp>
 #include <vector>
 
 #include "corekit/types.hpp"
@@ -22,29 +22,13 @@ namespace corekit {
         using namespace corekit::utils;
 
         class Window : public Device {
-            using CloseHandle      = std::function<void()>;
-            using ResizeHandle     = std::function<void(Vec2)>;
-            using MouseMoveHandle  = std::function<void(Vec2)>;
-            using MouseClickHandle = std::function<void(bool, bool)>;
-            using KeyPressHandle   = std::function<void(int, bool)>;
-
            public:
             using Ptr  = std::shared_ptr<Window>;
             using List = std::vector<Ptr>;
 
-            struct Notifier {
-                using List = std::vector<Notifier>;
-
-                CloseHandle      onClose      = nullptr;
-                ResizeHandle     onResize     = nullptr;
-                MouseMoveHandle  onMouseMove  = nullptr;
-                MouseClickHandle onMouseClick = nullptr;
-                KeyPressHandle   onKeyPress   = nullptr;
-            };
-
             struct Settings {
-                Hash title   = "<NO TITLE>";
-                Vec2 shape   = Vec2(800, 600);
+                Hash title   = "<NO WINDOW TITLE>";
+                Vec2 shape   = {};
                 bool visible = true;
             };
 
@@ -56,6 +40,7 @@ namespace corekit {
 
             Status info() const;
             void   close() const;
+
             void clear(const glm::vec4& color = {0.0f, 0.0f, 0.0f, 1.0f}) const;
             void update() const;
 
@@ -64,7 +49,6 @@ namespace corekit {
 
             bool isRunning() const;
             bool isVisible() const;
-            void addNotifier(const Notifier& notifier);
 
            private:
             static void errorHandle(int code, const char* desc);
@@ -72,12 +56,11 @@ namespace corekit {
             virtual bool prepare() override;
             virtual bool cleanup() override;
 
-            Vec2           shape;
-            bool           visible;
-            GLFWwindow*    window;
-            Watch          monitor;
-            mutable float  updateRate;
-            Notifier::List notifiers;
+            Vec2          shape;
+            bool          visible;
+            GLFWwindow*   window;
+            Watch         monitor;
+            mutable float updateRate;
         };
 
     };  // namespace render

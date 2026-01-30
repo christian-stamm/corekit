@@ -8,8 +8,24 @@ namespace corekit {
             , logger(name)
             , loaded(false) {}
 
+        Device::Device(const Device& other)
+            : name(other.name)
+            , logger(other.logger)
+            , loaded(false) {}
+
         Device::~Device() {
             unload();
+        }
+
+        Device& Device::operator=(const Device& other) {
+            if (this != &other) {
+                this->unload();
+                name   = other.name;
+                logger = other.logger;
+                loaded.store(false);
+            }
+
+            return *this;
         }
 
         bool Device::load() {
@@ -56,6 +72,10 @@ namespace corekit {
 
         bool Device::isLoaded() const {
             return loaded.load();
+        }
+
+        double Device::uptime() const {
+            return watch.elapsed();
         }
 
     };  // namespace utils

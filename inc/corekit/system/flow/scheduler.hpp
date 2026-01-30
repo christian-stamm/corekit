@@ -32,8 +32,12 @@ namespace corekit {
                                          std::forward<Args>(args)...);
             }
 
-            size_t size() const {
+            size_t numWorker() const {
                 return workers.size();
+            }
+
+            bool ok() const {
+                return !killreq.stop_requested();
             }
 
             void kill() {
@@ -47,7 +51,7 @@ namespace corekit {
                 }
             }
 
-           private:
+           protected:
             virtual bool prepare() {
                 for (Thread::Ptr& worker : workers) {
                     worker =
@@ -64,6 +68,7 @@ namespace corekit {
                 return true;
             }
 
+           private:
             void daemon() {
                 while (!killreq.stop_requested()) {
                     executor->process();

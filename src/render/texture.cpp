@@ -1,6 +1,8 @@
 #include <iostream>
-#include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
+#include <opencv4/opencv2/core.hpp>
+#include <opencv4/opencv2/imgproc.hpp>
+#include <opencv4/opencv2/videoio.hpp>
 
 #include "corekit/core.hpp"
 
@@ -77,7 +79,7 @@ namespace corekit {
             return true;
         }
 
-        void Texture::resize(const Vec2& size, bool force) {
+        void Texture::resize(Vec2 size, bool force) {
             glCheckError(name);
 
             if (this->size == size && !force) {
@@ -149,7 +151,6 @@ namespace corekit {
 
             unbind();
 
-            fill(cv::Mat::zeros(size.y(), size.x(), CV_8UC4));
             glCheckError(name);
         }
 
@@ -198,7 +199,7 @@ namespace corekit {
             glCheckError(name);
         }
 
-        void Texture::fill(cv::Mat image, uint layer, FillMode mode) {
+        void Texture::fill(cv::Mat image, GLuint layer, FillMode mode) {
             if (image.empty())
                 throw std::runtime_error(
                     "Texture::fill => empty image provided");
@@ -283,19 +284,20 @@ namespace corekit {
         }
 
         void Texture::copyTo(const Ptr& target,
+                             GLuint     layer,
                              GLenum     mask,
                              GLuint     filter) const {
             glCheckError(name);
 
-            if (this->type != target->type) {
-                throw std::runtime_error("Texture::copyTo => type mismatch");
-            }
+            // if (this->type != target->type) {
+            //     throw std::runtime_error("Texture::copyTo => type mismatch");
+            // }
 
             if (this->intern != target->intern) {
                 throw std::runtime_error("Texture::copyTo => format mismatch");
             }
 
-            target->resize(this->size);
+            // target->resize(this->size);
 
             glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
             glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
@@ -303,13 +305,15 @@ namespace corekit {
                                    instances.front(),
                                    this->tex,
                                    0);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->fbo);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
-                                   GL_COLOR_ATTACHMENT0,
-                                   target->instances.front(),
-                                   target->tex,
-                                   0);
 
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->fbo);
+            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER,
+                                      GL_COLOR_ATTACHMENT0,
+                                      target->tex,
+                                      0,
+                                      layer);
+
+            // Copy at render resolution (no scaling here)
             glBlitFramebuffer(0,
                               0,
                               this->size.x(),

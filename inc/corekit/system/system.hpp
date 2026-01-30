@@ -1,4 +1,6 @@
 #pragma once
+#include <type_traits>
+
 #include "corekit/system/flow/scheduler.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
@@ -13,17 +15,23 @@ namespace corekit {
 
         Hash getEnv(const Hash& key);
 
-        struct BaseConfig {};
+        struct BaseConfig {
+            size_t numWorker = 4;
+            size_t numTasks  = 128;
+        };
 
         template <typename Config = BaseConfig>
-        class System : public Scheduler {
+        class System
+            : public Scheduler
+            , public Config {
            public:
-            System(Config config    = {},
-                   size_t numWorker = 4,
-                   size_t numTasks  = 128)
-                : Scheduler("System", numWorker, numTasks)
+            static_assert(std::is_base_of<BaseConfig, Config>::value,
+                          "Config must derive from BaseConfig");
+
+            System(Config config = {})
+                : Scheduler("System", config.numWorker, config.numTasks)
                 , Config(config) {
-                Logger::clear();
+                // Logger::clear();
             }
         };
 

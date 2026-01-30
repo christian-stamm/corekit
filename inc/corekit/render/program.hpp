@@ -53,7 +53,7 @@ namespace corekit {
             static void glReleaseVBO(const GLuint* vbo);
             static void glReleaseVAO(const GLuint* vao);
 
-            void process() const;
+            virtual void process() const;
 
             virtual void attachDependency(const Program::Ptr& dep);
             virtual void detachDependency(const Program::Ptr& dep);

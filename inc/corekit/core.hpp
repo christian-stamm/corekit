@@ -4,6 +4,7 @@
 #include "corekit/render/shader.hpp"
 #include "corekit/render/texture.hpp"
 #include "corekit/render/window.hpp"
+#include "corekit/system/system.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/assert.hpp"
 #include "corekit/utils/device.hpp"

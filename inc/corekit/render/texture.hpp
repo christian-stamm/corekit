@@ -67,16 +67,21 @@ namespace corekit {
             static void glReleaseFBO(const GLuint* fbo);
             static void glReleaseTex(const GLuint* tex);
 
-            void resize(const Vec2& size, bool force = false);
             void verify() const;
             void bind() const;
             void unbind() const;
-            void fill(cv::Mat  image,
-                      uint     layer = 0,
-                      FillMode mode  = RESIZE_IMAGE);
-            void copyTo(const Ptr& target,
-                        GLenum     mask   = GL_COLOR_BUFFER_BIT,
-                        GLuint     filter = GL_NEAREST) const;
+
+            virtual void resize(Vec2 size, bool force = false);
+
+            virtual void fill(cv::Mat  image,
+                              GLuint   layer = 0,
+                              FillMode mode  = RESIZE_IMAGE);
+            ;
+
+            virtual void copyTo(const Ptr& target,
+                                GLuint     layer  = 0,
+                                GLenum     mask   = GL_COLOR_BUFFER_BIT,
+                                GLuint     filter = GL_NEAREST) const;
 
             Hash   hash;
             Vec2   size;
