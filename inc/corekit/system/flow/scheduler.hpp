@@ -17,10 +17,15 @@ namespace corekit {
            public:
             using Ptr = std::shared_ptr<Scheduler>;
 
-            Scheduler(Killreq& killreq, size_t numWorkers, size_t numTasks)
+            struct Settings {
+                size_t numWorkers = 4;
+                size_t numTasks   = 64;
+            };
+
+            Scheduler(const Settings& settings, Killreq& killreq)
                 : Device("Scheduler")
-                , workers(numWorkers, nullptr)
-                , executor(Executor::build(killreq, numTasks))
+                , workers(settings.numWorkers, nullptr)
+                , executor(Executor::build(killreq, settings.numTasks))
                 , killreq(killreq) {}
 
             template <typename Fn, typename... Args>
@@ -75,3 +80,21 @@ namespace corekit {
 
     };  // namespace system
 };  // namespace corekit
+
+namespace nlohmann {
+    using namespace corekit::types;
+    using namespace corekit::system;
+
+    static void to_json(JsonMap& j, const Scheduler::Settings& cfg) {
+        j = JsonMap{
+            {"numWorkers", cfg.numWorkers},
+            {"numTasks", cfg.numTasks},
+        };
+    }
+
+    static void from_json(const JsonMap& j, Scheduler::Settings& cfg) {
+        j.at("numWorkers").get_to(cfg.numWorkers);
+        j.at("numTasks").get_to(cfg.numTasks);
+    }
+
+};  // namespace nlohmann

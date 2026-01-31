@@ -1,3 +1,4 @@
+#include <cmath>
 #include <format>
 
 #include "corekit/core.hpp"
@@ -16,7 +17,7 @@ namespace corekit {
             corecheck(isLoaded(), "Window not loaded yet.");
 
             return std::format(                                           //
-                "DEV: {} - {}",                                           //
+                "{} - {}",                                                //
                 reinterpret_cast<const char*>(glGetString(GL_RENDERER)),  //
                 reinterpret_cast<const char*>(glGetString(GL_VERSION))    //
             );                                                            //
@@ -34,8 +35,10 @@ namespace corekit {
             double dt = monitor.elapsed();
             monitor.reset();
 
-            updateRate *= 0.9f;
-            updateRate += 0.1f * (1.0f / dt);
+            if (1e-9 < dt) {
+                updateRate *= 0.95f;
+                updateRate += 0.05f * (1.0f / dt);
+            }
         }
 
         void Window::close() const {
@@ -101,11 +104,11 @@ namespace corekit {
         bool Window::cleanup() {
             corecheck(window, "Window already cleaned up.");
 
-            close();
             glfwDestroyWindow(window);
             glfwTerminate();
 
-            return window == nullptr;
+            window = nullptr;
+            return true;
         }
 
         void Window::clear(const glm::vec4& color) const {
@@ -119,4 +122,4 @@ namespace corekit {
         }
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

@@ -6,8 +6,6 @@
 namespace corekit {
     namespace system {
 
-        struct SysConfig {};
-
         template <typename Config>
         struct Context {
             Context(Config& config, Scheduler& scheduler, Killreq& killreq)
