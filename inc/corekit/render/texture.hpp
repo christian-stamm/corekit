@@ -1,9 +1,9 @@
 #pragma once
-
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
 #include <vector>
 
+#include "corekit/system/config.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
 #include "corekit/utils/math.hpp"
@@ -19,6 +19,7 @@ namespace corekit {
 
         using namespace corekit::types;
         using namespace corekit::utils;
+        using namespace corekit::system;
 
         class Texture : public Device {
            public:
@@ -35,7 +36,7 @@ namespace corekit {
                 GLuint mag = GL_LINEAR;
             };
 
-            struct Settings {
+            struct Settings : BaseConfig {
                 using List = std::vector<Settings>;
 
                 Hash   hash   = "<NONE>";          //
@@ -104,4 +105,4 @@ namespace corekit {
         };
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

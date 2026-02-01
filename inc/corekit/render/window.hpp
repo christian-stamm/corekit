@@ -28,7 +28,7 @@ namespace corekit {
             using Ptr  = std::shared_ptr<Window>;
             using List = std::vector<Ptr>;
 
-            struct Settings {
+            struct Settings : BaseConfig {
                 Hash title   = "<NO WINDOW TITLE>";
                 Vec2 shape   = {};
                 bool visible = true;

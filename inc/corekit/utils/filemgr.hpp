@@ -11,6 +11,7 @@ namespace corekit {
         namespace File {
 
             using namespace corekit::types;
+            using List = std::vector<Path>;
 
             std::ifstream   open(const Path& file);
             std::streamsize size(std::ifstream& stream);
@@ -24,4 +25,4 @@ namespace corekit {
         };  // namespace File
 
     };  // namespace utils
-};      // namespace corekit
+};  // namespace corekit

@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 
+#include "corekit/system/config.hpp"
 #include "corekit/system/flow/executor.hpp"
 #include "corekit/system/sync/thread.hpp"
 #include "corekit/types.hpp"
@@ -17,7 +18,7 @@ namespace corekit {
            public:
             using Ptr = std::shared_ptr<Scheduler>;
 
-            struct Settings {
+            struct Settings : BaseConfig {
                 size_t numWorkers = 4;
                 size_t numTasks   = 64;
             };

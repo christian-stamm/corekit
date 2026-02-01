@@ -1,38 +1,44 @@
 #pragma once
 
+#include <type_traits>
+
+#include "corekit/system/config.hpp"
 #include "corekit/system/flow/scheduler.hpp"
 #include "corekit/types.hpp"
 
 namespace corekit {
     namespace system {
 
-        template <typename Config>
+        template <typename Params = BaseConfig>
         struct Context {
-            Context(Config& config, Scheduler& scheduler, Killreq& killreq)
+            static_assert(std::is_base_of<BaseConfig, Params>::value,
+                          "Params must derive from BaseConfig.");
+
+            Context(Params& config, Scheduler& scheduler, Killreq& killreq)
                 : cfg(config)
                 , mgr(scheduler)
-                , sig(killreq) {}
+                , signal(killreq) {}
 
-            template <typename Module>
-            Context<Module> cast(Module& config) const {
-                return Context<Module>(config, mgr, sig);
+            template <typename OtherParams>
+            Context<OtherParams> as(OtherParams& params) const {
+                return Context<OtherParams>(params, mgr, signal);
             }
 
             bool ok() const {
-                return !sig.stop_requested();
+                return !signal.stop_requested();
             }
 
             void kill() const {
-                if (!sig.stop_requested()) {
-                    sig.request_stop();
+                if (!signal.stop_requested()) {
+                    signal.request_stop();
                 }
             }
 
-            Config&    cfg;
+            Params&    cfg;
             Scheduler& mgr;
 
            protected:
-            Killreq& sig;
+            Killreq& signal;
         };
 
     };  // namespace system

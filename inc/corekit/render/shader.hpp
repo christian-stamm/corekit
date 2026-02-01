@@ -1,5 +1,6 @@
 #pragma once
 
+#include "corekit/system/config.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
 
@@ -14,6 +15,7 @@ namespace corekit {
 
         using namespace corekit::types;
         using namespace corekit::utils;
+        using namespace corekit::system;
 
         class Shader : public Device {
            public:
@@ -22,7 +24,7 @@ namespace corekit {
 
             friend class Program;
 
-            struct Settings {
+            struct Settings : BaseConfig {
                 using List = std::vector<Settings>;
 
                 Hash   hash = "<NONE>";
@@ -69,4 +71,4 @@ namespace corekit {
         };
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

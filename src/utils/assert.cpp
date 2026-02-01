@@ -13,7 +13,7 @@ namespace corekit {
             if (!condition) {
                 throw std::runtime_error(
                     std::format("Assertion failed:\n\n\tFile: {}\n\tFunc: "
-                                "{}\n\tLine: {} ({})\n\tDesc: {}",
+                                "{}\n\tLine: {} ({})\n\tDesc: {}\n",
                                 location.file_name(),
                                 location.function_name(),
                                 location.line(),
@@ -35,4 +35,4 @@ namespace corekit {
         }
 
     };  // namespace utils
-};      // namespace corekit
+};  // namespace corekit

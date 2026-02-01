@@ -1,9 +1,13 @@
 #pragma once
-#include <type_traits>
 
+#include <format>
+
+#include "corekit/system/config.hpp"
 #include "corekit/system/context.hpp"
 #include "corekit/system/flow/scheduler.hpp"
 #include "corekit/types.hpp"
+#include "corekit/utils/device.hpp"
+#include "corekit/utils/logger.hpp"
 
 namespace corekit {
 
@@ -12,32 +16,47 @@ namespace corekit {
         using namespace corekit::types;
         using namespace corekit::utils;
 
-        struct SysCfg {
-            Scheduler::Settings shedulerCfg;
+        static Hash getEnv(const Name& key);
 
-            static Hash getEnv(const Name& key);
+        struct SysConf : public BaseConfig {
+            Scheduler::Settings shedulerCfg;
         };
 
-        template <typename Config = SysCfg>
-        class System {
+        template <typename Config = SysConf>
+        class System : public Device {
            public:
-            static_assert(std::is_base_of<SysCfg, Config>::value,
-                          "Config must derive from System::Settings");
+            static_assert(std::is_base_of_v<SysConf, Config>,
+                          "Config must derive from SysConf.");
 
             System(Config& config)
-                : scheduler(config.shedulerCfg, killreq)
-                , context(config, scheduler, killreq) {
-                Logger::clear();
+                : Device("System")
+                , scheduler(config.shedulerCfg, killreq)
+                , ctx(config, scheduler, killreq) {}
+
+            void shutdown() {
+                ctx.kill();
             }
 
-            Context<Config>& ctx() {
-                return context;
+            const Context<Config> ctx;
+
+           protected:
+            virtual bool prepare() override {
+                Logger::clear();
+                logger() << std::format("Launched with {} workers",
+                                        scheduler.numWorkers());
+
+                return ctx.ok();
+            }
+
+            virtual bool cleanup() override {
+                logger() << "Shutdown...";
+                shutdown();
+                return true;
             }
 
            private:
-            Killreq         killreq;
-            Scheduler       scheduler;
-            Context<Config> context;
+            Killreq   killreq;
+            Scheduler scheduler;
         };
 
     };  // namespace system

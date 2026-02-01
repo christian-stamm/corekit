@@ -2,6 +2,7 @@
 #include <memory>
 #include <tuple>
 
+#include "corekit/system/config.hpp"
 #include "corekit/system/flow/operation.hpp"
 #include "corekit/types.hpp"
 
@@ -14,7 +15,7 @@ namespace corekit {
            public:
             using Ptr = std::shared_ptr<Executor>;
 
-            struct Settings {
+            struct Settings : BaseConfig {
                 size_t maxTasks;
             };
 

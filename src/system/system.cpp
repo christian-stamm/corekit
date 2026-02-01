@@ -6,7 +6,7 @@ namespace corekit {
 
     namespace system {
 
-        Hash SysCfg::getEnv(const Name& key) {
+        Hash getEnv(const Name& key) {
             const char* value = std::getenv(key.c_str());
             corecheck(value != nullptr, "Environment variable not set: " + key);
             return value;

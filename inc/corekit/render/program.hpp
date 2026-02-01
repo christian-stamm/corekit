@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "corekit/render/shader.hpp"
+#include "corekit/system/config.hpp"
 #include "corekit/system/sync/mutex.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
@@ -20,6 +21,7 @@ namespace corekit {
 
         using namespace corekit::types;
         using namespace corekit::utils;
+        using namespace corekit::system;
 
         class Program : public Device {
            public:
@@ -27,7 +29,7 @@ namespace corekit {
             using Set  = std::set<Ptr>;
             using List = std::vector<Ptr>;
 
-            struct Settings {
+            struct Settings : BaseConfig {
                 using List       = std::vector<Settings>;
                 using ShaderList = Shader::Settings::List;
 
@@ -89,4 +91,4 @@ namespace corekit {
         };
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit
