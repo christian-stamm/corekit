@@ -2,9 +2,11 @@
 
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
+#include <tuple>
 #include <vector>
 
-#include "corekit/system/context.hpp"
+#include "corekit/system/conf/context.hpp"
+#include "corekit/system/conf/runtime.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
 #include "corekit/utils/math.hpp"
@@ -34,7 +36,10 @@ namespace corekit {
                 bool visible = true;
             };
 
-            Window(const Context<Settings>& ctx);
+            using Config  = corekit::system::Config<Settings>;
+            using Context = corekit::system::Context<Runtime, Config>;
+
+            Window(const Context& context);
             Window(const Window& other)             = delete;
             Window(const Window&& other)            = delete;
             Window& operator=(const Window& other)  = delete;
@@ -44,6 +49,7 @@ namespace corekit {
             void   close() const;
 
             void clear(const glm::vec4& color = {0.0f, 0.0f, 0.0f, 1.0f}) const;
+            void resize(const Vec2& size) const;
             void update() const;
 
             float getFPS() const;
@@ -58,14 +64,14 @@ namespace corekit {
             virtual bool prepare() override;
             virtual bool cleanup() override;
 
-            GLFWwindow*       window;
-            Watch             monitor;
-            Context<Settings> context;
-            mutable float     updateRate;
+            Context       context;
+            GLFWwindow*   window;
+            Watch         monitor;
+            mutable float updateRate;
         };
 
     };  // namespace render
-};  // namespace corekit
+};      // namespace corekit
 
 namespace nlohmann {
     using namespace corekit::types;

@@ -1,7 +1,7 @@
 #pragma once
-
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
+#include <type_traits>
 #include <vector>
 
 #include "corekit/types.hpp"
@@ -19,6 +19,7 @@ namespace corekit {
 
         using namespace corekit::types;
         using namespace corekit::utils;
+        using namespace corekit::system;
 
         class Texture : public Device {
            public:
@@ -58,16 +59,30 @@ namespace corekit {
             Texture& operator=(const Texture& other)  = delete;
             Texture& operator=(const Texture&& other) = delete;
 
-            static Ptr  build(const Settings& settings);
-            static List build(const Settings::List& settings);
+            static Ptr build(const Settings& settings);
+
+            template <typename TexSets>
+            static List build(const TexSets::List& settings) {
+                static_assert(std::is_base_of_v<Texture::Settings, TexSets>,
+                              "Texture::build => invalid settings type");
+
+                Texture::List textures;
+                textures.reserve(settings.size());
+
+                for (const auto& setting : settings) {
+                    textures.push_back(build(setting));
+                }
+
+                return textures;
+            }
 
             static GLuint glRequestFBO();
             static GLuint glRequestTex();
 
-            static void glReleaseFBO(const GLuint* fbo);
-            static void glReleaseTex(const GLuint* tex);
+            static void glReleaseFBO(GLuint* fbo);
+            static void glReleaseTex(GLuint* tex);
 
-            void verify() const;
+            bool verify() const;
             void bind() const;
             void unbind() const;
 
@@ -82,6 +97,13 @@ namespace corekit {
                                 GLuint     layer  = 0,
                                 GLenum     mask   = GL_COLOR_BUFFER_BIT,
                                 GLuint     filter = GL_NEAREST) const;
+
+            virtual void copyTo(const Texture& target,
+                                GLuint         layer  = 0,
+                                GLenum         mask   = GL_COLOR_BUFFER_BIT,
+                                GLuint         filter = GL_NEAREST) const;
+
+            uint getSlot() const;
 
             Hash   hash;
             Vec2   size;
@@ -104,4 +126,4 @@ namespace corekit {
         };
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

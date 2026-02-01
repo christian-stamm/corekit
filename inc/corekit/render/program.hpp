@@ -20,6 +20,7 @@ namespace corekit {
 
         using namespace corekit::types;
         using namespace corekit::utils;
+        using namespace corekit::system;
 
         class Program : public Device {
            public:
@@ -49,21 +50,17 @@ namespace corekit {
             static GLuint glRequestVBO();
             static GLuint glRequestVAO();
 
-            static void glReleaseID(const GLuint* prg);
-            static void glReleaseVBO(const GLuint* vbo);
-            static void glReleaseVAO(const GLuint* vao);
+            static void glReleaseID(GLuint* prg);
+            static void glReleaseVBO(GLuint* vbo);
+            static void glReleaseVAO(GLuint* vao);
 
             virtual void process() const;
-
-            virtual void attachDependency(const Program::Ptr& dep);
-            virtual void detachDependency(const Program::Ptr& dep);
 
             size_t getFrameNum() const;
             GLuint getInstance() const;
 
             Hash         hash;
             Shader::List shaders;
-            Program::Set children;
 
            protected:
             virtual bool prepare() override;
@@ -80,8 +77,7 @@ namespace corekit {
             bool link() const;
             bool unlink() const;
 
-            mutable uint  frame;
-            mutable Mutex rlock;
+            mutable uint frame;
 
             GLuint       glID     = GL_INVALID_INDEX;
             mutable bool compiled = false;
@@ -89,4 +85,4 @@ namespace corekit {
         };
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

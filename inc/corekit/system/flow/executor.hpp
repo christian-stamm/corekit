@@ -15,15 +15,15 @@ namespace corekit {
             using Ptr = std::shared_ptr<Executor>;
 
             struct Settings {
-                size_t maxTasks;
+                size_t maxTasks = 1;
             };
 
-            Executor(Killreq& killreq, size_t maxTasks = 128)
-                : operations(maxTasks)
+            Executor(const Settings& settings, Killreq& killreq)
+                : operations(settings.maxTasks)
                 , killreq(killreq) {}
 
-            static Ptr build(Killreq& killreq, size_t maxTasks = 128) {
-                return std::make_shared<Executor>(killreq, maxTasks);
+            static Ptr build(const Settings& settings, Killreq& killreq) {
+                return std::make_shared<Executor>(settings, killreq);
             }
 
             template <typename Fn, typename... Args>

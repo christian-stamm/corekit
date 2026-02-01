@@ -14,6 +14,7 @@ namespace corekit {
 
         using namespace corekit::types;
         using namespace corekit::utils;
+        using namespace corekit::system;
 
         class Shader : public Device {
            public:
@@ -41,7 +42,7 @@ namespace corekit {
             static List build(const Settings::List& settings);
 
             static GLuint glRequestShd(GLenum type);
-            static void   glReleaseShd(const GLuint* shd);
+            static void   glReleaseShd(GLuint* shd);
 
             Code getCode() const {
                 return code;
@@ -69,4 +70,4 @@ namespace corekit {
         };
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

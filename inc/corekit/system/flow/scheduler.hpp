@@ -17,36 +17,26 @@ namespace corekit {
            public:
             using Ptr = std::shared_ptr<Scheduler>;
 
-            struct Settings {
-                size_t numWorkers = 4;
-                size_t numTasks   = 64;
+            struct Settings : public Executor::Settings {
+                size_t numWorkers = 1;
             };
 
             Scheduler(const Settings& settings, Killreq& killreq)
                 : Device("Scheduler")
                 , workers(settings.numWorkers, nullptr)
-                , executor(Executor::build(killreq, settings.numTasks))
+                , executor(Executor::build(settings, killreq))
                 , killreq(killreq) {}
 
             template <typename Fn, typename... Args>
             Task<std::decay_t<Fn>, std::decay_t<Args>...>::Ptr enqueue(
                 Fn&& fn,
-                Args&&... args) {
+                Args&&... args) const {
                 return executor->enqueue(std::forward<Fn>(fn),
                                          std::forward<Args>(args)...);
             }
 
             size_t numWorkers() const {
                 return workers.size();
-            }
-
-            void kill() {
-                killreq.request_stop();
-                executor->abort();
-
-                for (const Thread::Ptr& worker : workers) {
-                    worker->join();
-                }
             }
 
            protected:
@@ -62,15 +52,31 @@ namespace corekit {
 
             virtual bool cleanup() {
                 this->kill();
-                workers.clear();
+
+                for (Thread::Ptr& worker : workers) {
+                    worker->join();
+                }
+
                 return true;
             }
 
            private:
+            void kill() {
+                killreq.request_stop();
+                executor->abort();
+            }
+
             void daemon() {
+                static uint id = 0;
+
+                uint local_id = id++;
+                logger() << "Worker " << local_id << " started.";
+
                 while (!killreq.stop_requested()) {
                     executor->process();
                 }
+
+                logger() << "Worker " << local_id << " stopped.";
             }
 
             Killreq&                 killreq;
@@ -79,7 +85,7 @@ namespace corekit {
         };
 
     };  // namespace system
-};  // namespace corekit
+};      // namespace corekit
 
 namespace nlohmann {
     using namespace corekit::types;
@@ -88,13 +94,13 @@ namespace nlohmann {
     static void to_json(JsonMap& j, const Scheduler::Settings& cfg) {
         j = JsonMap{
             {"numWorkers", cfg.numWorkers},
-            {"numTasks", cfg.numTasks},
+            {"numTasks", cfg.maxTasks},
         };
     }
 
     static void from_json(const JsonMap& j, Scheduler::Settings& cfg) {
         j.at("numWorkers").get_to(cfg.numWorkers);
-        j.at("numTasks").get_to(cfg.numTasks);
+        j.at("numTasks").get_to(cfg.maxTasks);
     }
 
 };  // namespace nlohmann

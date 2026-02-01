@@ -6,9 +6,9 @@
 namespace corekit {
     namespace render {
 
-        Window::Window(const Context<Settings>& ctx)
-            : Device(ctx.cfg.title)
-            , context(ctx)
+        Window::Window(const Context& context)
+            : Device(context.title)
+            , context(context)
             , window(nullptr)
             , updateRate(0.0f) {}
 
@@ -19,17 +19,26 @@ namespace corekit {
                 "{} - {}",                                                //
                 reinterpret_cast<const char*>(glGetString(GL_RENDERER)),  //
                 reinterpret_cast<const char*>(glGetString(GL_VERSION))    //
-            );                                                            //
+            );
+        }
+
+        void Window::resize(const Vec2& size) const {
+            if (!isRunning()) {
+                return;
+            }
+
+            glfwSetWindowSize(window,
+                              static_cast<int>(size.x()),
+                              static_cast<int>(size.y()));
         }
 
         void Window::update() const {
-            if (!window || !isRunning()) {
+            if (!isRunning()) {
                 return;
             }
 
             glfwSwapBuffers(window);
             glfwPollEvents();
-            this->clear();
 
             double dt = monitor.elapsed();
             monitor.reset();
@@ -41,10 +50,11 @@ namespace corekit {
         }
 
         void Window::close() const {
-            if (window && isRunning())
+            if (isRunning()) {
                 glfwSetWindowShouldClose(window, GLFW_TRUE);
+            }
 
-            context.kill();
+            context.rt->kill();
         }
 
         bool Window::isRunning() const {
@@ -59,13 +69,16 @@ namespace corekit {
         }
 
         Vec2 Window::getSize() const {
-            return context.cfg.shape;
+            corecheck(context.rt->screensize.valid(), "Screensize is not set.");
+            return context.rt->screensize.get();
         }
 
         bool Window::prepare() {
-            const auto& [name, shape, visible] = context.cfg;
+            corecheck(context.rt->screensize.valid(),
+                      "No valid Screensize defined.");
 
-            int status = 0;
+            int  status = 0;
+            Vec2 size   = context.rt->screensize.get();
             glfwSetErrorCallback(Window::errorHandle);
 
             status = glfwInit();
@@ -75,17 +88,14 @@ namespace corekit {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
             glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 
-            window = glfwCreateWindow(shape.x(),
-                                      shape.y(),
-                                      name.c_str(),
-                                      NULL,
-                                      NULL);
+            window =
+                glfwCreateWindow(size.x(), size.y(), name.c_str(), NULL, NULL);
             corecheck(window != nullptr, "Failed to create GLFW window");
 
             glfwMakeContextCurrent(window);
             glfwSwapInterval(0);
 
-            if (!visible) {
+            if (!context.visible) {
                 glfwHideWindow(window);
             }
 
@@ -99,9 +109,45 @@ namespace corekit {
             glfwSetWindowSizeCallback(
                 window,
                 [](GLFWwindow* w, int width, int height) {
-                    void* self    = glfwGetWindowUserPointer(w);
-                    auto& ctx     = static_cast<Window*>(self)->context;
-                    ctx.cfg.shape = Vec2(width, height);
+                    void* self = glfwGetWindowUserPointer(w);
+                    auto& rt   = static_cast<Window*>(self)->context.rt;
+                    // Defer resize to next frame to ensure OpenGL context is
+                    // current
+                    if (width > 0 && height > 0) {
+                        rt->screensize.set(Vec2(width, height));
+                    }
+                });
+
+            glfwSetCursorPosCallback(
+                window,
+                [](GLFWwindow* w, double xpos, double ypos) {
+                    void* self = glfwGetWindowUserPointer(w);
+                    auto& rt   = static_cast<Window*>(self)->context.rt;
+                    rt->mousepos.set(Vec2(xpos, ypos));
+                });
+
+            glfwSetMouseButtonCallback(
+                window,
+                [](GLFWwindow* w, int button, int action, int mods) {
+                    void* self = glfwGetWindowUserPointer(w);
+                    auto& rt   = static_cast<Window*>(self)->context.rt;
+                    Vec2  mpos = {0, 0};
+
+                    if (rt->mousepos.valid()) {
+                        mpos = rt->mousepos.get();
+                    }
+
+                    switch (button) {
+                        case GLFW_MOUSE_BUTTON_LEFT:
+                            mpos.x() = action == GLFW_PRESS;
+                            break;
+                        case GLFW_MOUSE_BUTTON_RIGHT:
+                            mpos.y() = action == GLFW_PRESS;
+                            break;
+                        default: break;
+                    }
+
+                    rt->mousebtn.set(mpos);
                 });
 
             status = gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress);
@@ -111,12 +157,17 @@ namespace corekit {
         }
 
         bool Window::cleanup() {
-            corecheck(window, "Window already cleaned up.");
+            glfwSetWindowCloseCallback(window, nullptr);
+            glfwMakeContextCurrent(window);
 
+            this->clear();
+            this->close();
+
+            glfwPollEvents();
             glfwDestroyWindow(window);
             glfwTerminate();
 
-            window = nullptr;
+            this->window = nullptr;
             return true;
         }
 

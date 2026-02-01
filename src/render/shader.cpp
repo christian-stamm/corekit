@@ -31,8 +31,9 @@ namespace corekit {
             return glCreateShader(type);
         }
 
-        void Shader::glReleaseShd(const GLuint* shd) {
+        void Shader::glReleaseShd(GLuint* shd) {
             glDeleteShader(*shd);
+            *shd = GL_INVALID_INDEX;
         }
 
         bool Shader::prepare() {
@@ -72,7 +73,7 @@ namespace corekit {
                 std::string log(len, '\0');
                 glGetShaderInfoLog(glID, len - 1, nullptr, log.data());
                 logger(Level::ERROR)
-                    << std::format("Cannot compile '{}': {}", name, log);
+                    << std::format("Cannot compile '{}': {}", hash, log);
             }
 
             glCheckError(name);
@@ -80,4 +81,4 @@ namespace corekit {
         }
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

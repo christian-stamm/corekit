@@ -37,9 +37,9 @@ find_package(glm REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 
-include(lib/external/fastcdr.cmake)
-include(lib/external/threadpool.cmake)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/glad)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/gtest)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/fastcdr)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/mcap)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/pioasm)
 
@@ -70,7 +70,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/texture.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/window.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/mutex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/smphr.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/thread.cpp
@@ -90,7 +89,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     mcap
     fastcdr
     Eigen3::Eigen
-    dp::thread-pool
     ${OpenCV_LIBS}
     ${GLM_LIBRARIES}
 )
@@ -99,7 +97,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 ########################################################################
 
 if(BUILD_TESTS)
-    include(lib/external/gtest.cmake)
 
     enable_testing()
 

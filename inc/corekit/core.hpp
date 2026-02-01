@@ -4,7 +4,9 @@
 #include "corekit/render/shader.hpp"
 #include "corekit/render/texture.hpp"
 #include "corekit/render/window.hpp"
-#include "corekit/system/system.hpp"
+#include "corekit/system/conf/config.hpp"
+#include "corekit/system/conf/context.hpp"
+#include "corekit/system/conf/observer.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/assert.hpp"
 #include "corekit/utils/device.hpp"
@@ -25,6 +27,13 @@ namespace corekit {
 
     namespace system {
         using namespace corekit::utils;
+
+        static Hash getEnv(const Name& key) {
+            const char* value = std::getenv(key.c_str());
+            corecheck(value != nullptr, "Environment variable not set: " + key);
+            return value;
+        }
+
     };  // namespace system
 
 };  // namespace corekit

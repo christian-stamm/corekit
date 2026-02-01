@@ -19,6 +19,7 @@ namespace corekit {
             bool  expired() const;
             float remaining() const;
             float elapsed() const;
+            float tick() const;
 
             std::string  represent() const;
             static float runtime();
