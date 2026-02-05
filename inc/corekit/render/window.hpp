@@ -27,9 +27,10 @@ namespace corekit {
             using List = std::vector<Ptr>;
 
             struct Settings {
-                Hash title   = "<NO WINDOW TITLE>";
-                Vec2 shape   = {};
-                bool visible = true;
+                Hash  title     = "<NO WINDOW TITLE>";
+                Vec2  shape     = {};
+                bool  visible   = true;
+                float framerate = 60.0f;
             };
 
             Window(const Settings& settings);
@@ -60,6 +61,7 @@ namespace corekit {
             bool          visible;
             GLFWwindow*   window;
             Watch         monitor;
+            float         framerate;
             mutable float updateRate;
         };
 
@@ -75,6 +77,10 @@ namespace nlohmann {
         j.at("title").get_to(s.title);
         j.at("shape").get_to(s.shape);
         j.at("visible").get_to(s.visible);
+
+        if (j.contains("framerate")) {
+            j.at("framerate").get_to(s.framerate);
+        }
     }
 
     inline void to_json(JsonMap& j, const Window::Settings& s) {
@@ -82,6 +88,7 @@ namespace nlohmann {
             {"title", s.title},
             {"shape", s.shape},
             {"visible", s.visible},
+            {"framerate", s.framerate},
         };
     }
 

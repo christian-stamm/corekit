@@ -1,6 +1,7 @@
 #include <format>
 
 #include "corekit/core.hpp"
+#include "corekit/utils/watch.hpp"
 
 namespace corekit {
     namespace render {
@@ -9,6 +10,7 @@ namespace corekit {
             : Device(settings.title)
             , shape(settings.shape)
             , visible(settings.visible)
+            , framerate(settings.framerate)
             , window(nullptr)
             , updateRate(0.0f) {}
 
@@ -23,6 +25,8 @@ namespace corekit {
         }
 
         void Window::update() const {
+            float nowDt = 0, desDt = 1.0f / framerate;
+
             if (!window || !isRunning()) {
                 return;
             }
@@ -31,11 +35,14 @@ namespace corekit {
             glfwPollEvents();
             this->clear();
 
-            double dt = monitor.elapsed();
-            monitor.reset();
+            nowDt = monitor.elapsed();
+            Watch(desDt - nowDt).block();
+            nowDt = monitor.elapsed();
 
             updateRate *= 0.9f;
-            updateRate += 0.1f * (1.0f / dt);
+            updateRate += 0.1f * (1.0f / nowDt);
+
+            monitor.reset();
         }
 
         void Window::close() const {

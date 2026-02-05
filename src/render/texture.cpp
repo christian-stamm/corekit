@@ -297,21 +297,42 @@ namespace corekit {
                 throw std::runtime_error("Texture::copyTo => format mismatch");
             }
 
+            const bool sourceLayered = (this->type == GL_TEXTURE_2D_ARRAY ||
+                                        this->type == GL_TEXTURE_3D);
+            const bool targetLayered = (target->type == GL_TEXTURE_2D_ARRAY ||
+                                        target->type == GL_TEXTURE_3D);
+
             // target->resize(this->size);
 
             glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
-                                   GL_COLOR_ATTACHMENT0,
-                                   instances.front(),
-                                   this->tex,
-                                   0);
+            if (sourceLayered) {
+                glFramebufferTextureLayer(GL_READ_FRAMEBUFFER,
+                                          GL_COLOR_ATTACHMENT0,
+                                          this->tex,
+                                          0,
+                                          layer);
+            } else {
+                glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
+                                       GL_COLOR_ATTACHMENT0,
+                                       instances.front(),
+                                       this->tex,
+                                       0);
+            }
 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->fbo);
-            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER,
-                                      GL_COLOR_ATTACHMENT0,
-                                      target->tex,
-                                      0,
-                                      layer);
+            if (targetLayered) {
+                glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER,
+                                          GL_COLOR_ATTACHMENT0,
+                                          target->tex,
+                                          0,
+                                          layer);
+            } else {
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+                                       GL_COLOR_ATTACHMENT0,
+                                       target->instances.front(),
+                                       target->tex,
+                                       0);
+            }
 
             // Copy at render resolution (no scaling here)
             glBlitFramebuffer(0,
