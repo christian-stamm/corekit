@@ -29,7 +29,7 @@ namespace corekit {
             Name   name;
             Logger logger;
 
-           private:
+           protected:
             virtual bool prepare() {
                 return true;
             };
@@ -37,9 +37,10 @@ namespace corekit {
                 return true;
             };
 
+           private:
             std::atomic_bool loaded;
             Watch            watch;
         };
 
     };  // namespace utils
-};      // namespace corekit
+};  // namespace corekit

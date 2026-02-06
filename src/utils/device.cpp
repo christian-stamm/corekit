@@ -1,3 +1,6 @@
+#include <exception>
+#include <stdexcept>
+
 #include "corekit/core.hpp"
 
 namespace corekit {
@@ -31,16 +34,16 @@ namespace corekit {
         bool Device::load() {
             bool expected = false;
             bool desired  = true;
-            // Transition from not-loaded -> loaded once. Only the thread that
-            // successfully flips the flag runs prepare().
+            // Transition from not-loaded -> loaded once.
+            // Only the thread that successfully flips the flag runs prepare().
             if (loaded.compare_exchange_strong(expected, desired)) {
                 try {
                     watch.reset(true);
                     return prepare();
-                } catch (...) {
-                    // If prepare throws, reset loaded flag and rethrow.
+                } catch (const std::exception& e) {
                     loaded.store(!desired);
-                    throw;
+                    logger(Level::ERROR) << "Device load failed: " << e.what();
+                    throw e;
                 }
             }
 
@@ -50,16 +53,17 @@ namespace corekit {
         bool Device::unload() {
             bool expected = true;
             bool desired  = false;
-            // Transition from loaded -> not-loaded once. The thread that wins
-            // runs cleanup().
+            // Transition from loaded -> not-loaded once.
+            // The thread that wins runs cleanup().
             if (loaded.compare_exchange_strong(expected, desired)) {
                 try {
                     watch.stop();
                     return cleanup();
-                } catch (...) {
-                    // If cleanup throws, keep loaded flag and rethrow.
+                } catch (const std::exception& e) {
                     loaded.store(!desired);
-                    throw;
+                    logger(Level::ERROR)
+                        << "Device unload failed: " << e.what();
+                    throw e;
                 }
             }
 
@@ -79,4 +83,4 @@ namespace corekit {
         }
 
     };  // namespace utils
-};      // namespace corekit
+};  // namespace corekit

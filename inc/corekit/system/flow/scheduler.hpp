@@ -2,7 +2,6 @@
 #include <memory>
 #include <vector>
 
-#include "corekit/system/config.hpp"
 #include "corekit/system/flow/executor.hpp"
 #include "corekit/system/sync/thread.hpp"
 #include "corekit/types.hpp"
@@ -18,15 +17,14 @@ namespace corekit {
            public:
             using Ptr = std::shared_ptr<Scheduler>;
 
-            struct Settings : BaseConfig {
-                size_t numWorkers = 4;
-                size_t numTasks   = 64;
+            struct Settings : public Executor::Settings {
+                size_t numWorkers = 1;
             };
 
             Scheduler(const Settings& settings, Killreq& killreq)
                 : Device("Scheduler")
                 , workers(settings.numWorkers, nullptr)
-                , executor(Executor::build(killreq, settings.numTasks))
+                , executor(Executor::build(settings, killreq))
                 , killreq(killreq) {}
 
             template <typename Fn, typename... Args>
@@ -89,13 +87,13 @@ namespace nlohmann {
     static void to_json(JsonMap& j, const Scheduler::Settings& cfg) {
         j = JsonMap{
             {"numWorkers", cfg.numWorkers},
-            {"numTasks", cfg.numTasks},
+            {"numTasks", cfg.maxTasks},
         };
     }
 
     static void from_json(const JsonMap& j, Scheduler::Settings& cfg) {
         j.at("numWorkers").get_to(cfg.numWorkers);
-        j.at("numTasks").get_to(cfg.numTasks);
+        j.at("numTasks").get_to(cfg.maxTasks);
     }
 
 };  // namespace nlohmann

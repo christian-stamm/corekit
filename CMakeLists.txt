@@ -70,7 +70,6 @@ target_sources(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/texture.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/render/window.cpp
 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/system.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/mutex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/smphr.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/thread.cpp

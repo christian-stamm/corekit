@@ -1,6 +1,7 @@
 #include <format>
 
 #include "corekit/core.hpp"
+#include "corekit/utils/assert.hpp"
 
 namespace corekit {
     namespace render {
@@ -10,7 +11,10 @@ namespace corekit {
             , hash(settings.hash)
             , glID(settings.glID)
             , frame(0)
-            , shaders(Shader::build(settings.shaders)) {}
+            , shaders(Shader::build(settings.shaders)) {
+            corecheck(!shaders.empty(),
+                      "Program must have at least one shader");
+        }
 
         Program::Ptr Program::build(const Settings& settings) {
             return std::make_shared<Program>(settings);
@@ -43,16 +47,19 @@ namespace corekit {
             return vao;
         }
 
-        void Program::glReleaseID(const GLuint* prg) {
+        void Program::glReleaseID(GLuint* prg) {
             glDeleteProgram(*prg);
+            *prg = GL_INVALID_INDEX;
         }
 
-        void Program::glReleaseVBO(const GLuint* vbo) {
+        void Program::glReleaseVBO(GLuint* vbo) {
             glDeleteBuffers(1, vbo);
+            *vbo = 0;
         }
 
-        void Program::glReleaseVAO(const GLuint* vao) {
+        void Program::glReleaseVAO(GLuint* vao) {
             glDeleteVertexArrays(1, vao);
+            *vao = 0;
         }
 
         bool Program::prepare() {
@@ -230,4 +237,4 @@ namespace corekit {
         }
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

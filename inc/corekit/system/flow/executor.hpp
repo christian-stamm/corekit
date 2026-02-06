@@ -2,7 +2,6 @@
 #include <memory>
 #include <tuple>
 
-#include "corekit/system/config.hpp"
 #include "corekit/system/flow/operation.hpp"
 #include "corekit/types.hpp"
 
@@ -15,16 +14,16 @@ namespace corekit {
            public:
             using Ptr = std::shared_ptr<Executor>;
 
-            struct Settings : BaseConfig {
-                size_t maxTasks;
+            struct Settings {
+                size_t maxTasks = 1;
             };
 
-            Executor(Killreq& killreq, size_t maxTasks = 128)
-                : operations(maxTasks)
+            Executor(const Settings& settings, Killreq& killreq)
+                : operations(settings.maxTasks)
                 , killreq(killreq) {}
 
-            static Ptr build(Killreq& killreq, size_t maxTasks = 128) {
-                return std::make_shared<Executor>(killreq, maxTasks);
+            static Ptr build(const Settings& settings, Killreq& killreq) {
+                return std::make_shared<Executor>(settings, killreq);
             }
 
             template <typename Fn, typename... Args>

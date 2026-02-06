@@ -1,9 +1,9 @@
 #pragma once
 #include <opencv2/core/mat.hpp>
 #include <opencv2/opencv.hpp>
+#include <type_traits>
 #include <vector>
 
-#include "corekit/system/config.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
 #include "corekit/utils/math.hpp"
@@ -36,11 +36,12 @@ namespace corekit {
                 GLuint mag = GL_LINEAR;
             };
 
-            struct Settings : BaseConfig {
+            struct Settings {
                 using List = std::vector<Settings>;
 
                 Hash   hash   = "<NONE>";          //
                 Vec2   size   = Vec2();            //
+                Path   file   = Path();            //
                 GLuint fbo    = GL_INVALID_INDEX;  //
                 GLuint tex    = GL_INVALID_INDEX;  //
                 GLuint type   = GL_TEXTURE_2D;     //
@@ -59,14 +60,28 @@ namespace corekit {
             Texture& operator=(const Texture& other)  = delete;
             Texture& operator=(const Texture&& other) = delete;
 
-            static Ptr  build(const Settings& settings);
-            static List build(const Settings::List& settings);
+            static Ptr build(const Settings& settings);
+
+            template <typename TexSets>
+            static List build(const TexSets::List& settings) {
+                static_assert(std::is_base_of_v<Texture::Settings, TexSets>,
+                              "Texture::build => invalid settings type");
+
+                Texture::List textures;
+                textures.reserve(settings.size());
+
+                for (const auto& setting : settings) {
+                    textures.push_back(build(setting));
+                }
+
+                return textures;
+            }
 
             static GLuint glRequestFBO();
             static GLuint glRequestTex();
 
-            static void glReleaseFBO(const GLuint* fbo);
-            static void glReleaseTex(const GLuint* tex);
+            static void glReleaseFBO(GLuint* fbo);
+            static void glReleaseTex(GLuint* tex);
 
             void verify() const;
             void bind() const;
@@ -86,6 +101,7 @@ namespace corekit {
 
             Hash   hash;
             Vec2   size;
+            Path   file;
             GLuint fbo;
             GLuint tex;
             GLuint type;

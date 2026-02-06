@@ -12,6 +12,7 @@ namespace corekit {
         Texture::Texture(const Settings& settings)
             : Device("Texture")
             , hash(settings.hash)
+            , file(settings.file)
             , size(settings.size)
             , fbo(settings.fbo)
             , tex(settings.tex)
@@ -28,17 +29,6 @@ namespace corekit {
             return std::make_shared<Texture>(settings);
         }
 
-        Texture::List Texture::build(const Settings::List& settings) {
-            Texture::List textures;
-            textures.reserve(settings.size());
-
-            for (const auto& setting : settings) {
-                textures.push_back(build(setting));
-            }
-
-            return textures;
-        }
-
         GLuint Texture::glRequestFBO() {
             GLuint fbo;
             glGenFramebuffers(1, &fbo);
@@ -51,12 +41,14 @@ namespace corekit {
             return tex;
         }
 
-        void Texture::glReleaseFBO(const GLuint* fbo) {
+        void Texture::glReleaseFBO(GLuint* fbo) {
             glDeleteFramebuffers(1, fbo);
+            *fbo = GL_INVALID_INDEX;
         }
 
-        void Texture::glReleaseTex(const GLuint* tex) {
+        void Texture::glReleaseTex(GLuint* tex) {
             glDeleteTextures(1, tex);
+            *tex = GL_INVALID_INDEX;
         }
 
         bool Texture::prepare() {
@@ -297,21 +289,42 @@ namespace corekit {
                 throw std::runtime_error("Texture::copyTo => format mismatch");
             }
 
+            const bool sourceLayered = (this->type == GL_TEXTURE_2D_ARRAY ||
+                                        this->type == GL_TEXTURE_3D);
+            const bool targetLayered = (target->type == GL_TEXTURE_2D_ARRAY ||
+                                        target->type == GL_TEXTURE_3D);
+
             // target->resize(this->size);
 
             glBindFramebuffer(GL_READ_FRAMEBUFFER, this->fbo);
-            glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
-                                   GL_COLOR_ATTACHMENT0,
-                                   instances.front(),
-                                   this->tex,
-                                   0);
+            if (sourceLayered) {
+                glFramebufferTextureLayer(GL_READ_FRAMEBUFFER,
+                                          GL_COLOR_ATTACHMENT0,
+                                          this->tex,
+                                          0,
+                                          layer);
+            } else {
+                glFramebufferTexture2D(GL_READ_FRAMEBUFFER,
+                                       GL_COLOR_ATTACHMENT0,
+                                       instances.front(),
+                                       this->tex,
+                                       0);
+            }
 
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->fbo);
-            glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER,
-                                      GL_COLOR_ATTACHMENT0,
-                                      target->tex,
-                                      0,
-                                      layer);
+            if (targetLayered) {
+                glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER,
+                                          GL_COLOR_ATTACHMENT0,
+                                          target->tex,
+                                          0,
+                                          layer);
+            } else {
+                glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
+                                       GL_COLOR_ATTACHMENT0,
+                                       target->instances.front(),
+                                       target->tex,
+                                       0);
+            }
 
             // Copy at render resolution (no scaling here)
             glBlitFramebuffer(0,
@@ -333,4 +346,4 @@ namespace corekit {
         }
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

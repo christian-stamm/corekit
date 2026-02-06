@@ -4,7 +4,8 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 
-#include "corekit/system/context.hpp"
+#include "corekit/system/conf/context.hpp"
+#include "corekit/system/conf/runtime.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
 #include "corekit/utils/math.hpp"
@@ -28,13 +29,13 @@ namespace corekit {
             using Ptr  = std::shared_ptr<Window>;
             using List = std::vector<Ptr>;
 
-            struct Settings : BaseConfig {
+            struct Settings {
                 Hash title   = "<NO WINDOW TITLE>";
                 Vec2 shape   = {};
                 bool visible = true;
             };
 
-            Window(const Context<Settings>& ctx);
+            Window(Context<Runtime, Settings> context);
             Window(const Window& other)             = delete;
             Window(const Window&& other)            = delete;
             Window& operator=(const Window& other)  = delete;
@@ -44,6 +45,7 @@ namespace corekit {
             void   close() const;
 
             void clear(const glm::vec4& color = {0.0f, 0.0f, 0.0f, 1.0f}) const;
+            void resize(const Vec2& size) const;
             void update() const;
 
             float getFPS() const;
@@ -58,10 +60,10 @@ namespace corekit {
             virtual bool prepare() override;
             virtual bool cleanup() override;
 
-            GLFWwindow*       window;
-            Watch             monitor;
-            Context<Settings> context;
-            mutable float     updateRate;
+            GLFWwindow*                window;
+            Watch                      monitor;
+            mutable float              updateRate;
+            Context<Runtime, Settings> context;
         };
 
     };  // namespace render

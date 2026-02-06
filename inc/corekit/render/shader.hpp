@@ -1,6 +1,5 @@
 #pragma once
 
-#include "corekit/system/config.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
 
@@ -24,7 +23,7 @@ namespace corekit {
 
             friend class Program;
 
-            struct Settings : BaseConfig {
+            struct Settings {
                 using List = std::vector<Settings>;
 
                 Hash   hash = "<NONE>";
@@ -43,7 +42,7 @@ namespace corekit {
             static List build(const Settings::List& settings);
 
             static GLuint glRequestShd(GLenum type);
-            static void   glReleaseShd(const GLuint* shd);
+            static void   glReleaseShd(GLuint* shd);
 
             Code getCode() const {
                 return code;

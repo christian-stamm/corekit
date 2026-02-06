@@ -1,24 +1,19 @@
 #pragma once
-
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <set>
 #include <stop_token>
 #include <string>
-#include <vector>
 
 namespace corekit {
-
     namespace types {
 
-        using uint = unsigned int;
-
-        using Name   = std::string;
-        using Hash   = std::string;
-        using Code   = std::string;
-        using Status = std::string;
-        using Path   = std::filesystem::path;
-
+        using uint    = unsigned int;
+        using Name    = std::string;
+        using Hash    = std::string;
+        using Code    = std::string;
+        using Status  = std::string;
+        using Path    = std::filesystem::path;
         using JsonMap = nlohmann::ordered_json;
         using Killreq = std::stop_source;
 

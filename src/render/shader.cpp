@@ -31,8 +31,9 @@ namespace corekit {
             return glCreateShader(type);
         }
 
-        void Shader::glReleaseShd(const GLuint* shd) {
+        void Shader::glReleaseShd(GLuint* shd) {
             glDeleteShader(*shd);
+            *shd = GL_INVALID_INDEX;
         }
 
         bool Shader::prepare() {
@@ -80,4 +81,4 @@ namespace corekit {
         }
 
     };  // namespace render
-};      // namespace corekit
+};  // namespace corekit

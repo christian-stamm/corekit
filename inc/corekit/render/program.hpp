@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "corekit/render/shader.hpp"
-#include "corekit/system/config.hpp"
 #include "corekit/system/sync/mutex.hpp"
 #include "corekit/types.hpp"
 #include "corekit/utils/device.hpp"
@@ -29,7 +28,7 @@ namespace corekit {
             using Set  = std::set<Ptr>;
             using List = std::vector<Ptr>;
 
-            struct Settings : BaseConfig {
+            struct Settings {
                 using List       = std::vector<Settings>;
                 using ShaderList = Shader::Settings::List;
 
@@ -51,9 +50,9 @@ namespace corekit {
             static GLuint glRequestVBO();
             static GLuint glRequestVAO();
 
-            static void glReleaseID(const GLuint* prg);
-            static void glReleaseVBO(const GLuint* vbo);
-            static void glReleaseVAO(const GLuint* vao);
+            static void glReleaseID(GLuint* prg);
+            static void glReleaseVBO(GLuint* vbo);
+            static void glReleaseVAO(GLuint* vao);
 
             virtual void process() const;
 
