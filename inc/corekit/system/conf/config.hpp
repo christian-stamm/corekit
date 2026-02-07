@@ -1,53 +1,62 @@
 #pragma once
-#include <tuple>
 #include <type_traits>
-#include <utility>
 
 namespace corekit {
     namespace system {
 
         template <typename... Params>
-        struct Config {
-            using Settings = Config<Params...>;
+        struct Config : public Params... {
+            using Tag = void;  // Tag to identify Config types
 
            public:
-            Config() : params() {}
-            Config(Params... params) noexcept  //
-                : params(std::forward<Params>(params)...) {}
+            Config() = default;
 
-            Config(const Settings& other) : params(other.params) {}
+            Config(Params... params) noexcept
+                requires(0 < (sizeof...(Params)))
+                : Params(params)... {}
 
-            template <typename T>
-            T& get() {
-                static_assert(contains_all<T>(), "Type not in Config");
-                return std::get<T>(this->params);
+            template <typename... Args>
+            Config(const Config<Args...>& other) noexcept
+                requires((std::is_base_of_v<Params, Config<Args...>> && ...))
+                : Params(static_cast<const Params&>(other))... {}
+
+            template <typename... Args>
+            static const Config<Args...> build(Args... args) {
+                return Config<Args...>(args...);
             }
 
-            template <typename T>
-            const T& get() const {
-                static_assert(contains_all<T>(), "Type not in Config");
-                return std::get<T>(this->params);
+            template <typename... Args>
+            const Config<Args...> select() const {
+                return Config<Args...>(*this);
             }
 
-            template <typename... T>
-            Config<T...> fetch() const {
-                static_assert(contains_all<T...>(), "Type not in Config");
-                return Config<T...>(std::get<T>(this->params)...);
+            template <typename... Args>
+            const Config<Params..., Args...> extend(Args... args) {
+                return Config<Params..., Args...>(static_cast<Params>(*this)...,
+                                                  static_cast<Args>(args)...);
             }
 
-           protected:
-            template <typename... T>
-            static constexpr bool contains_all() {
-                return (contains_any<T>() && ...);
-            }
-
-            template <typename T>
-            static constexpr bool contains_any() {
-                return (std::is_same_v<T, Params> || ...);
-            }
-
-            std::tuple<Params...> params;
+            template <typename... Args>
+            const Config<Params..., Args...> merge(
+                const Config<Args...>& other) const {
+                return Config<Params..., Args...>(static_cast<Params>(*this)...,
+                                                  static_cast<Args>(other)...);
+            };
         };
+
+        namespace xtd {
+
+            template <typename T, typename = void>
+            struct is_config : std::false_type {};
+
+            template <typename T>
+            struct is_config<T, std::void_t<typename T::Tag>>
+                : std::true_type {};
+
+            template <typename T>
+            inline constexpr bool is_config_v = is_config<T>::value;
+
+        };  // namespace xtd
 
     };  // namespace system
 };  // namespace corekit

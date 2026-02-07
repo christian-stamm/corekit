@@ -35,7 +35,10 @@ namespace corekit {
                 bool visible = true;
             };
 
-            Window(Context<Runtime, Settings> context);
+            using Config  = corekit::system::Config<Settings>;
+            using Context = corekit::system::Context<Runtime, Config>;
+
+            Window(const Context& context);
             Window(const Window& other)             = delete;
             Window(const Window&& other)            = delete;
             Window& operator=(const Window& other)  = delete;
@@ -60,10 +63,10 @@ namespace corekit {
             virtual bool prepare() override;
             virtual bool cleanup() override;
 
-            GLFWwindow*                window;
-            Watch                      monitor;
-            mutable float              updateRate;
-            Context<Runtime, Settings> context;
+            Context       context;
+            GLFWwindow*   window;
+            Watch         monitor;
+            mutable float updateRate;
         };
 
     };  // namespace render

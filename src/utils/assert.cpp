@@ -41,9 +41,13 @@ namespace corekit {
                 cmd << "addr2line -e \"" << module_path << "\" -f -C -p -i "
                     << std::hex << reinterpret_cast<std::uintptr_t>(addr);
 
-                std::unique_ptr<FILE, decltype(&pclose)> pipe(
+                auto deleter = [](FILE* f) {
+                    pclose(f);
+                };
+
+                std::unique_ptr<FILE, decltype(deleter)> pipe(
                     popen(cmd.str().c_str(), "r"),
-                    &pclose);
+                    deleter);
                 if (!pipe) {
                     return "";
                 }
