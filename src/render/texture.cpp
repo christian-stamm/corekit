@@ -5,6 +5,7 @@
 #include <opencv4/opencv2/videoio.hpp>
 
 #include "corekit/core.hpp"
+#include "corekit/utils/assert.hpp"
 
 namespace corekit {
     namespace render {
@@ -61,7 +62,7 @@ namespace corekit {
             }
 
             this->resize(this->size, true);
-            return true;
+            return this->verify();
         }
 
         bool Texture::cleanup() {
@@ -71,8 +72,78 @@ namespace corekit {
             return true;
         }
 
+        bool Texture::verify() const {
+            if (fbo == GL_INVALID_INDEX) {
+                logger.warn() << "Texture::verify => invalid FBO ID";
+                return false;
+            }
+
+            if (tex == GL_INVALID_INDEX) {
+                logger.warn() << "Texture::verify => invalid texture ID";
+                return false;
+            }
+
+            if (size.isZero()) {
+                logger.warn() << "Texture::verify => zero texture size";
+                return false;
+            }
+
+            switch (type) {
+                case GL_TEXTURE_2D:
+                case GL_TEXTURE_3D:
+                case GL_TEXTURE_2D_ARRAY:
+                case GL_TEXTURE_CUBE_MAP: break;
+                default: {
+                    logger.warn()
+                        << "Texture::verify => unsupported texture type";
+                    return false;
+                }
+            }
+
+            switch (intern) {
+                case GL_UNSIGNED_BYTE:
+                case GL_HALF_FLOAT:
+                case GL_FLOAT: break;
+                default: {
+                    logger.warn()
+                        << "Texture::verify => unsupported texture format";
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        void Texture::bind() const {
+            glCheckError(name);
+            glActiveTexture(unit);
+            glBindTexture(type, tex);
+
+            glTexParameteri(type, GL_TEXTURE_WRAP_S, wrap);
+            glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
+            if (type == GL_TEXTURE_CUBE_MAP) {
+                glTexParameteri(type, GL_TEXTURE_WRAP_R, wrap);
+            }
+            glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filter.min);
+            glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filter.mag);
+            glCheckError(name);
+        }
+
+        void Texture::unbind() const {
+            glCheckError(name);
+            glActiveTexture(unit);
+            glBindTexture(type, 0);
+            glActiveTexture(GL_TEXTURE0);
+            glCheckError(name);
+        }
+
         void Texture::resize(Vec2 size, bool force) {
             glCheckError(name);
+
+            if (type == GL_TEXTURE_CUBE_MAP && size.x() != size.y()) {
+                throw std::runtime_error(
+                    "Texture::resize => cube maps must have square dimensions");
+            }
 
             if (this->size == size && !force) {
                 return;
@@ -80,7 +151,12 @@ namespace corekit {
 
             this->size = size;
 
-            verify();
+            if (!verify()) {
+                throw std::runtime_error(
+                    "Texture::resize => texture verification "
+                    "failed before resizing");
+            }
+
             bind();
 
             instances.clear();
@@ -142,56 +218,13 @@ namespace corekit {
             }
 
             unbind();
-
-            glCheckError(name);
-        }
-
-        void Texture::verify() const {
-            if (size.isZero()) {
-                throw std::runtime_error(
-                    "Texture::Module => constructed with zero size");
-            }
-
-            switch (type) {
-                case GL_TEXTURE_2D:
-                case GL_TEXTURE_3D:
-                case GL_TEXTURE_2D_ARRAY:
-                case GL_TEXTURE_CUBE_MAP: break;
-                default:
-                    throw std::runtime_error(
-                        "Texture::Module => unsupported texture type");
-            }
-
-            switch (intern) {
-                case GL_UNSIGNED_BYTE:
-                case GL_HALF_FLOAT:
-                case GL_FLOAT: break;
-                default:
-                    throw std::runtime_error(
-                        "Texture::Module => unsupported texture format");
-            }
-        }
-
-        void Texture::bind() const {
-            glCheckError(name);
-            glActiveTexture(unit);
-            glBindTexture(type, tex);
-            glTexParameteri(type, GL_TEXTURE_WRAP_S, wrap);
-            glTexParameteri(type, GL_TEXTURE_WRAP_T, wrap);
-            glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filter.min);
-            glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filter.mag);
-            glCheckError(name);
-        }
-
-        void Texture::unbind() const {
-            glCheckError(name);
-            glActiveTexture(unit);
-            glBindTexture(type, 0);
-            glActiveTexture(GL_TEXTURE0);
             glCheckError(name);
         }
 
         void Texture::fill(cv::Mat image, GLuint layer, FillMode mode) {
+            corecheck(isLoaded(),
+                      "Texture needs to be loaded before filling it.");
+
             if (image.empty())
                 throw std::runtime_error(
                     "Texture::fill => empty image provided");

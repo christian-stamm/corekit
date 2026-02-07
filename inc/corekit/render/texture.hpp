@@ -83,7 +83,7 @@ namespace corekit {
             static void glReleaseFBO(GLuint* fbo);
             static void glReleaseTex(GLuint* tex);
 
-            void verify() const;
+            bool verify() const;
             void bind() const;
             void unbind() const;
 
