@@ -52,6 +52,13 @@ namespace corekit {
                 return val_.value();
             }
 
+            void reset() {
+                {
+                    std::lock_guard lock(mtx_);
+                    val_.reset();
+                }
+            }
+
             bool valid() const {
                 std::lock_guard lock(mtx_);
                 return val_.has_value();
@@ -79,4 +86,4 @@ namespace corekit {
         };
 
     };  // namespace system
-};  // namespace corekit
+};      // namespace corekit
