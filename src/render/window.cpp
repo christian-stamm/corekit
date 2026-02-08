@@ -111,7 +111,11 @@ namespace corekit {
                 [](GLFWwindow* w, int width, int height) {
                     void* self = glfwGetWindowUserPointer(w);
                     auto& rt   = static_cast<Window*>(self)->context.rt;
-                    rt->screensize.set(Vec2(width, height));
+                    // Defer resize to next frame to ensure OpenGL context is
+                    // current
+                    if (width > 0 && height > 0) {
+                        rt->screensize.set(Vec2(width, height));
+                    }
                 });
 
             glfwSetCursorPosCallback(

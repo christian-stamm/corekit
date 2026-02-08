@@ -1,7 +1,9 @@
 #pragma once
+#include <atomic>
 #include <functional>
 #include <mutex>
 #include <optional>
+#include <semaphore>
 
 #include "corekit/utils/assert.hpp"
 
@@ -40,7 +42,7 @@ namespace corekit {
                     val_ = value;
                 }
 
-                this->notify();
+                notify();
             }
 
             T get() const {
@@ -51,7 +53,7 @@ namespace corekit {
             }
 
             bool valid() const {
-                // std::lock_guard lock(mtx_);
+                std::lock_guard lock(mtx_);
                 return val_.has_value();
             }
 
@@ -70,9 +72,10 @@ namespace corekit {
                 }
             }
 
-            mutable std::mutex mtx_;
-            OptValue           val_;
-            Subscribers        subs_;
+            mutable std::atomic<bool> doNotify_;
+            mutable std::mutex        mtx_;
+            OptValue                  val_;
+            Subscribers               subs_;
         };
 
     };  // namespace system

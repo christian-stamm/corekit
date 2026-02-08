@@ -69,14 +69,6 @@ namespace corekit {
                 glID = glRequestID();
             }
 
-            if (rlock.try_lock()) {
-                for (const Program::Ptr& child : children) {
-                    valid &= child->prepare();
-                }
-
-                rlock.unlock();
-            }
-
             if (valid) {
                 valid &= compile();
             }
@@ -91,14 +83,6 @@ namespace corekit {
 
         bool Program::cleanup() {
             bool valid = true;
-
-            if (rlock.try_lock()) {
-                for (const Program::Ptr& child : children) {
-                    valid &= child->cleanup();
-                }
-
-                rlock.unlock();
-            }
 
             if (valid) {
                 valid &= unlink();
@@ -121,32 +105,12 @@ namespace corekit {
             const GLint self = glID;
             const GLint last = selected();
 
-            if (rlock.try_lock()) {
-                for (const Program::Ptr& child : children) {
-                    child->process();
-                }
-
-                rlock.unlock();
-            }
-
             select(self);
             render();
             select(last);
             frame += 1;
 
             glCheckError(name);
-        }
-
-        void Program::attachDependency(const Program::Ptr& dependency) {
-            if (dependency) {
-                children.insert(dependency);
-            }
-        }
-
-        void Program::detachDependency(const Program::Ptr& dependency) {
-            if (dependency) {
-                children.erase(dependency);
-            }
         }
 
         size_t Program::getFrameNum() const {
@@ -180,14 +144,9 @@ namespace corekit {
             }
 
             bool success = true;
-
-            if (rlock.try_lock()) {
-                for (const Shader::Ptr& shader : shaders) {
-                    success &= shader->load();
-                };
-
-                rlock.unlock();
-            }
+            for (const Shader::Ptr& shader : shaders) {
+                success &= shader->load();
+            };
 
             glCheckError(name);
             this->compiled = success;

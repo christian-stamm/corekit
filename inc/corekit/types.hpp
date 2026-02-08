@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <set>
@@ -16,6 +17,7 @@ namespace corekit {
         using Path    = std::filesystem::path;
         using JsonMap = nlohmann::ordered_json;
         using Killreq = std::stop_source;
+        using ModFlag = std::atomic<bool>;
 
         namespace utils {
 

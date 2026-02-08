@@ -41,7 +41,6 @@ namespace corekit {
 
                 Hash   hash   = "<NONE>";          //
                 Vec2   size   = Vec2();            //
-                Path   file   = Path();            //
                 GLuint fbo    = GL_INVALID_INDEX;  //
                 GLuint tex    = GL_INVALID_INDEX;  //
                 GLuint type   = GL_TEXTURE_2D;     //
@@ -99,9 +98,15 @@ namespace corekit {
                                 GLenum     mask   = GL_COLOR_BUFFER_BIT,
                                 GLuint     filter = GL_NEAREST) const;
 
+            virtual void copyTo(const Texture& target,
+                                GLuint         layer  = 0,
+                                GLenum         mask   = GL_COLOR_BUFFER_BIT,
+                                GLuint         filter = GL_NEAREST) const;
+
+            uint getSlot() const;
+
             Hash   hash;
             Vec2   size;
-            Path   file;
             GLuint fbo;
             GLuint tex;
             GLuint type;

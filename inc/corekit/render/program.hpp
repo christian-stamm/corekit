@@ -56,15 +56,11 @@ namespace corekit {
 
             virtual void process() const;
 
-            virtual void attachDependency(const Program::Ptr& dep);
-            virtual void detachDependency(const Program::Ptr& dep);
-
             size_t getFrameNum() const;
             GLuint getInstance() const;
 
             Hash         hash;
             Shader::List shaders;
-            Program::Set children;
 
            protected:
             virtual bool prepare() override;
@@ -81,8 +77,7 @@ namespace corekit {
             bool link() const;
             bool unlink() const;
 
-            mutable uint  frame;
-            mutable Mutex rlock;
+            mutable uint frame;
 
             GLuint       glID     = GL_INVALID_INDEX;
             mutable bool compiled = false;

@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
+#include <tuple>
 #include <vector>
 
 #include "corekit/system/conf/context.hpp"

@@ -1,3 +1,5 @@
+#include "corekit/render/texture.hpp"
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv4/opencv2/core.hpp>
@@ -13,7 +15,6 @@ namespace corekit {
         Texture::Texture(const Settings& settings)
             : Device("Texture")
             , hash(settings.hash)
-            , file(settings.file)
             , size(settings.size)
             , fbo(settings.fbo)
             , tex(settings.tex)
@@ -141,8 +142,10 @@ namespace corekit {
             glCheckError(name);
 
             if (type == GL_TEXTURE_CUBE_MAP && size.x() != size.y()) {
-                throw std::runtime_error(
-                    "Texture::resize => cube maps must have square dimensions");
+                logger.warn() << "Texture::resize => non-square size provided "
+                                 "for cube map, discarding resize.";
+
+                return;
             }
 
             if (this->size == size && !force) {
@@ -234,10 +237,18 @@ namespace corekit {
                     "Texture::fill => layer index out of bounds");
 
             glCheckError(name);
-            const Vec2 imsize(image.size.p[1], image.size.p[0]);
+            Vec2 imsize(image.size.p[1], image.size.p[0]);
 
             switch (mode) {
                 case RESIZE_TEXTURE: {
+                    if (this->type == GL_TEXTURE_CUBE_MAP) {
+                        if ((imsize.x() != imsize.y())) {
+                            throw std::runtime_error(
+                                "Texture::fill => non-square image size is "
+                                "not supported for cube maps");
+                        }
+                    }
+
                     if (this->size != imsize) {
                         this->resize(imsize);
                     }
@@ -246,6 +257,14 @@ namespace corekit {
                 }
 
                 case RESIZE_IMAGE: {
+                    if (this->type == GL_TEXTURE_CUBE_MAP) {
+                        if (this->size.x() != this->size.y()) {
+                            throw std::runtime_error(
+                                "Texture::fill => non-square texture size is "
+                                "not supported for cube maps");
+                        }
+                    }
+
                     if (this->size != imsize) {
                         cv::resize(image,
                                    image,
@@ -308,24 +327,24 @@ namespace corekit {
             glCheckError(name);
         }
 
-        void Texture::copyTo(const Ptr& target,
-                             GLuint     layer,
-                             GLenum     mask,
-                             GLuint     filter) const {
+        void Texture::copyTo(const Texture& target,
+                             GLuint         layer,
+                             GLenum         mask,
+                             GLuint         filter) const {
             glCheckError(name);
 
             // if (this->type != target->type) {
             //     throw std::runtime_error("Texture::copyTo => type mismatch");
             // }
 
-            if (this->intern != target->intern) {
+            if (this->intern != target.intern) {
                 throw std::runtime_error("Texture::copyTo => format mismatch");
             }
 
             const bool sourceLayered = (this->type == GL_TEXTURE_2D_ARRAY ||
                                         this->type == GL_TEXTURE_3D);
-            const bool targetLayered = (target->type == GL_TEXTURE_2D_ARRAY ||
-                                        target->type == GL_TEXTURE_3D);
+            const bool targetLayered = (target.type == GL_TEXTURE_2D_ARRAY ||
+                                        target.type == GL_TEXTURE_3D);
 
             // target->resize(this->size);
 
@@ -344,18 +363,18 @@ namespace corekit {
                                        0);
             }
 
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target->fbo);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target.fbo);
             if (targetLayered) {
                 glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER,
                                           GL_COLOR_ATTACHMENT0,
-                                          target->tex,
+                                          target.tex,
                                           0,
                                           layer);
             } else {
                 glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER,
                                        GL_COLOR_ATTACHMENT0,
-                                       target->instances.front(),
-                                       target->tex,
+                                       target.instances.front(),
+                                       target.tex,
                                        0);
             }
 
@@ -366,16 +385,29 @@ namespace corekit {
                               this->size.y(),
                               0,
                               0,
-                              target->size.x(),
-                              target->size.y(),
+                              target.size.x(),
+                              target.size.y(),
                               mask,
                               filter);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            glGenerateMipmap(target->type);
-            target->unbind();
+            glGenerateMipmap(target.type);
+            target.unbind();
 
             glCheckError(name);
+        }
+
+        void Texture::copyTo(const Ptr& target,
+                             GLuint     layer,
+                             GLenum     mask,
+                             GLuint     filter) const {
+            glCheckError(name);
+
+            copyTo(*target.get(), layer, mask, filter);
+        }
+
+        uint Texture::getSlot() const {
+            return unit - GL_TEXTURE0;
         }
 
     };  // namespace render
