@@ -61,6 +61,12 @@ namespace corekit {
             return std::max<float>(upper - lower, 0.0f);
         }
 
+        float Watch::tick() const {
+            const float dt = elapsed();
+            this->reset(true);
+            return dt;
+        }
+
         std::string Watch::represent() const {
             return std::format("Watch(Elapsed={:.6f}s, Remaining={:.6f}s)",
                                elapsed(),
