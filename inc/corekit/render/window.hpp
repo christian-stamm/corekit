@@ -71,7 +71,7 @@ namespace corekit {
         };
 
     };  // namespace render
-};  // namespace corekit
+};      // namespace corekit
 
 namespace nlohmann {
     using namespace corekit::types;

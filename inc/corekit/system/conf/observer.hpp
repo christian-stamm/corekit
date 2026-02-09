@@ -45,7 +45,7 @@ namespace corekit {
                 notify();
             }
 
-            T get() const {
+            const T& get() const {
                 corecheck(valid(), "Observable::get => value is not set.");
 
                 std::lock_guard lock(mtx_);
