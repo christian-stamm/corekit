@@ -30,22 +30,13 @@ namespace corekit {
             template <typename Fn, typename... Args>
             Task<std::decay_t<Fn>, std::decay_t<Args>...>::Ptr enqueue(
                 Fn&& fn,
-                Args&&... args) {
+                Args&&... args) const {
                 return executor->enqueue(std::forward<Fn>(fn),
                                          std::forward<Args>(args)...);
             }
 
             size_t numWorkers() const {
                 return workers.size();
-            }
-
-            void kill() {
-                killreq.request_stop();
-                executor->abort();
-
-                for (const Thread::Ptr& worker : workers) {
-                    worker->join();
-                }
             }
 
            protected:
@@ -66,6 +57,15 @@ namespace corekit {
             }
 
            private:
+            void kill() {
+                killreq.request_stop();
+                executor->abort();
+
+                for (const Thread::Ptr& worker : workers) {
+                    worker->join();
+                }
+            }
+
             void daemon() {
                 while (!killreq.stop_requested()) {
                     executor->process();
@@ -78,7 +78,7 @@ namespace corekit {
         };
 
     };  // namespace system
-};  // namespace corekit
+};      // namespace corekit
 
 namespace nlohmann {
     using namespace corekit::types;

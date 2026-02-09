@@ -109,6 +109,8 @@ namespace corekit {
                         }
                     }
 
+                    this->done = true;
+
                 } catch (const std::exception& e) {
                     this->error = true;
 

@@ -15,28 +15,32 @@ namespace corekit {
             using Ptr = std::shared_ptr<Runtime>;
 
             Runtime(const Scheduler::Settings& scheduler = {})
-                : scheduler(scheduler, killreq) {}
+                : scheduler(std::make_shared<Scheduler>(scheduler, killreq)) {}
 
             static Ptr build(const Scheduler::Settings& scheduler = {}) {
                 return std::make_shared<Runtime>(scheduler);
             }
 
             bool ok() const {
-                return !killreq.stop_requested();
+                return !killreq.stop_requested() && scheduler->isLoaded();
+            }
+
+            void launch() {
+                scheduler->load();
             }
 
             void kill() const {
-                killreq.request_stop();
+                scheduler->unload();
             }
 
-            const Scheduler  scheduler;
-            Observable<Vec2> mousepos;
-            Observable<Vec2> mousebtn;
-            Observable<Vec2> screensize;
+            const Scheduler::Ptr scheduler;
+            Observable<Vec2>     mousepos;
+            Observable<Vec2>     mousebtn;
+            Observable<Vec2>     screensize;
 
            protected:
             Killreq killreq;
         };
 
     };  // namespace system
-};  // namespace corekit
+};      // namespace corekit
