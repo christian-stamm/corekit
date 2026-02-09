@@ -52,7 +52,6 @@ namespace corekit {
 
             virtual bool cleanup() {
                 this->kill();
-                workers.clear();
                 return true;
             }
 
@@ -60,16 +59,19 @@ namespace corekit {
             void kill() {
                 killreq.request_stop();
                 executor->abort();
-
-                for (const Thread::Ptr& worker : workers) {
-                    worker->join();
-                }
             }
 
             void daemon() {
+                static uint id = 0;
+
+                uint local_id = id++;
+                logger() << "Worker " << local_id << " started.";
+
                 while (!killreq.stop_requested()) {
                     executor->process();
                 }
+
+                logger() << "Worker " << local_id << " stopped.";
             }
 
             Killreq&                 killreq;
