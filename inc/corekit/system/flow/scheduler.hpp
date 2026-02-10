@@ -52,6 +52,11 @@ namespace corekit {
 
             virtual bool cleanup() {
                 this->kill();
+
+                for (Thread::Ptr& worker : workers) {
+                    worker->join();
+                }
+
                 return true;
             }
 
