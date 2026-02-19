@@ -1,120 +1,29 @@
 cmake_minimum_required(VERSION 3.19)
+
 project(corekit 
     VERSION 0.0.1
-    LANGUAGES CXX
+    LANGUAGES CXX CUDA
     DESCRIPTION "COREKIT - A C++ Utility Library"
 )
 
-# Permit dependencies that still ship configs with pre-3.5 cmake_minimum_required
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
-
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CUDA_STANDARD 20)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(PIOASM_VERSION_STRING "0.1.0")
-set(PLATFORM_UNIX TRUE)
-set(PLATFORM_PICO FALSE)
-set(BUILD_TESTS TRUE)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
+set(COREKIT_PLATFORM "UNIX" CACHE STRING "Target platform (UNIX or PICO)")
+set(BUILD_COREKIT_CORE TRUE)
+set(BUILD_COREKIT_CUDA TRUE)
+set(BUILD_COREKIT_OPENGL TRUE)
 
 ########################################################################
 
-if(RESSOURCE_DIR)
-    message(STATUS "Using cmake defined RESSOURCE_DIR: ${RESSOURCE_DIR}")
-elseif(DEFINED $ENV{RESSOURCE_DIR})
-    set(RESSOURCE_DIR $ENV{RESSOURCE_DIR})
-    message(STATUS "Using environment defined RESSOURCE_DIR: $ENV{RESSOURCE_DIR}")
-else()
-    set(RESSOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/res")
-    message(STATUS "Using default corekit defined RESSOURCE_DIR: ${RESSOURCE_DIR}")
+if(DEFINED RESSOURCE_DIR)
+add_compile_definitions(RESSOURCE_DIR="${RESSOURCE_DIR}")
+message(STATUS "Defined RESSOURCE_DIR: ${RESSOURCE_DIR}")
 endif()
 
-add_definitions(-DRESSOURCE_DIR="${RESSOURCE_DIR}") # Define RESSOURCE_DIR for ressource path
-
 ########################################################################
 
-include(FindPkgConfig)
-find_package(glm REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(OpenCV REQUIRED)
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/glad)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/gtest)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/fastcdr)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/mcap)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/pioasm)
-
-########################################################################
-
-add_library(${PROJECT_NAME} SHARED)
-
-target_compile_definitions(${PROJECT_NAME} PUBLIC 
-    RESSOURCE_DIR=\"${RESSOURCE_DIR}\"
-)
-
-if(PLATFORM_UNIX)
-    message(STATUS "Building for Platform UNIX")
-    target_compile_definitions(${PROJECT_NAME} PUBLIC PLATFORM_UNIX)
-elseif(PLATFORM_PICO)
-    message(STATUS "Building for Platform PICO")
-    target_compile_definitions(${PROJECT_NAME} PUBLIC PLATFORM_PICO)
-endif()
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/inc
-    ${GLM_INCLUDE_DIRS}
-)
-
-target_sources(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/program.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/shader.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/texture.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/render/window.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/mutex.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/smphr.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/system/sync/thread.cpp
-
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/assert.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/device.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/filemgr.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/logger.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/math.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/memory.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/stream.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/watch.cpp
-)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC
-    glad
-    mcap
-    fastcdr
-    Eigen3::Eigen
-    ${OpenCV_LIBS}
-    ${GLM_LIBRARIES}
-)
-
-
-########################################################################
-
-if(BUILD_TESTS)
-
-    enable_testing()
-
-    add_executable(${PROJECT_NAME}_check 
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/core.cpp
-    )
-
-    target_include_directories(${PROJECT_NAME}_check PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/test
-    )
-
-    target_link_libraries(${PROJECT_NAME}_check PRIVATE
-        ${PROJECT_NAME}
-        gtest
-        gtest_main
-    )
-
-    include(GoogleTest)
-    gtest_discover_tests(${PROJECT_NAME}_check DISCOVERY_MODE PRE_TEST)
-
-endif()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)

@@ -1,12 +1,12 @@
 [submodule "lib/fastcdr"]
-	path = lib/fastcdr
+	path = src/external/fastcdr
 	url = https://github.com/eProsima/Fast-CDR.git
 [submodule "lib/gtest"]
-	path = lib/gtest
+	path = src/external/gtest
 	url = https://github.com/google/googletest.git
 [submodule "lib/lz4"]
-	path = lib/mcap/lib/lz4
+	path = src/external/mcap/lib/lz4
 	url = https://github.com/lz4/lz4.git
 [submodule "lib/zstd"]
-	path = lib/mcap/lib/zstd
+	path = src/external/mcap/lib/zstd
 	url = https://github.com/facebook/zstd.git
