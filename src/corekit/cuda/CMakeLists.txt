@@ -47,11 +47,4 @@ if(BUILD_COREKIT_CUDA)
         corekit-opengl
     )
 
-
-    add_executable(cuda_test_app
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/main.cpp
-    )
-
-    target_link_libraries(cuda_test_app PRIVATE corekit-cuda)
-
 endif()

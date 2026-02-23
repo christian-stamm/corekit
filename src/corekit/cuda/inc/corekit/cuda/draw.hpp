@@ -6,6 +6,7 @@
 
 #include "corekit/cuda/core.hpp"
 #include "corekit/cuda/image.hpp"
+
 namespace corekit {
     namespace cuda {
 
@@ -23,14 +24,16 @@ namespace corekit {
         };
 
         struct Font {
-            uint       font_size;
-            uint2      atlas_size;
-            uint       glyphCount;
-            uint       ascent;
-            uint       descent;
-            uint       lineGap;
-            uint*      d_atlas;   // device alpha atlas
-            GlyphInfo* d_glyphs;  // device glyph metrics
+            uint             font_size;
+            uint2            atlas_size;
+            uint             glyphCount;
+            uint             ascent;
+            uint             descent;
+            uint             lineGap;
+            NvMem<uint>      d_atlas;   // device alpha atlas
+            NvMem<GlyphInfo> d_glyphs;  // device glyph metrics
+            uint*            d_atlas_ptr;
+            GlyphInfo*       d_glyphs_ptr;
 
             static Font* loadFont(const char* fontPath,
                                   uint        size = DEF_TEXT_SIZE);

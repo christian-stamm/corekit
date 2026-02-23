@@ -1,10 +1,12 @@
 #pragma once
 #include <cuda_runtime.h>
+#include <opencv2/core/hal/interface.h>
 
 #include <cmath>
 #include <memory>
 
 #include "corekit/cuda/core.hpp"
+#include "corekit/utils/assert.hpp"
 
 #ifndef __CUDACC__
 #    include <opencv4/opencv2/core/mat.hpp>
@@ -16,311 +18,137 @@
 
 #include <iostream>
 #include <stdexcept>
+
+namespace cv {
+    class Mat;
+}
 namespace corekit {
     namespace cuda {
 
-        enum Format {
-            RGB,
-            BGR,
-            RGBA,
-        };
+        using Size = uint2;
 
-        enum Layout {
-            HWC,
-            CHW,
-        };
+        inline bool operator==(const uint2& lhs, const uint2& rhs) {
+            return lhs.x == rhs.x && lhs.y == rhs.y;
+        }
+
+        class Image3F;
+        class Image3U;
+        class Image4U;
 
         template <typename T = uchar3>
-        struct Image {
+        struct Image : public NvMem<T> {
             using Ptr = std::shared_ptr<Image<T>>;
 
-            friend class Image3U;
-            friend class Image4U;
-            friend class Image1F;
+            friend Image3F;
+            friend Image3U;
+            friend Image4U;
 
-            Image(T*     data   = nullptr,
-                  uint2  size   = make_uint2(0, 0),
-                  Format format = RGB,
-                  Layout layout = HWC)
-                : Image(data,
-                        size,
-                        format,
-                        layout,
-                        (data == nullptr) ? new int(0) : nullptr) {}
+            Image(uint2 size = make_uint2(0, 0))
+                : Image(NvMem<T>(size.x * size.y), size) {}
 
-            Image(const Image& other)
-                : Image(other.data,
-                        other.size,
-                        other.format,
-                        other.layout,
-                        other.owners) {}
-
-            Image(Image&& other) noexcept
-                : data(other.data)
-                , size(std::move(other.size))
-                , pixels(std::move(other.pixels))
-                , format(std::move(other.format))
-                , layout(std::move(other.layout))
-                , owners(other.owners) {
-                other.data   = nullptr;
-                other.owners = nullptr;
+            Image(NvMem<T> mem, uint2 size) : NvMem<T>(mem), size(size) {
+                corecheck(size.x * size.y * sizeof(T) <= mem.get_bytes(),
+                          "Provided memory is too small for the specified "
+                          "image size");
             }
 
-            Image<T>& operator=(const Image& other) {
-                if (this != &other) {
-                    release();
+            Image(const Image<T>& img) = default;
+            Image(Image<T>&& img)      = default;
 
-                    data   = other.data;
-                    size   = other.size;
-                    pixels = other.pixels;
-                    format = other.format;
-                    layout = other.layout;
-                    owners = other.owners;
-
-                    request();
-                }
-
-                return *this;
-            }
-
-            Image<T>& operator=(Image&& other) {
-                if (this != &other) {
-                    this->release();
-
-                    data   = other.data;
-                    size   = std::move(other.size);
-                    pixels = std::move(other.pixels);
-                    format = std::move(other.format);
-                    layout = std::move(other.layout);
-                    owners = other.owners;
-
-                    other.data   = nullptr;
-                    other.owners = nullptr;
-                }
-
-                return *this;
-            }
-
-            ~Image() {
-                release();
-            }
+            Image<T>& operator=(const Image<T>& img) = default;
+            Image<T>& operator=(Image<T>&& img)      = default;
 
             Image<T> clone() const {
-                Image<T>     copy(nullptr, size, format, layout, owners);
-                const size_t bytes = element_count() * sizeof(T);
+                Image<T> out(size);
+                this->clone_into(out);
+                return std::move(out);
+            }
 
-                cudaMalloc(&copy.data, bytes);
-                cudaMemcpy(copy.data,
-                           this->data,
-                           bytes,
-                           cudaMemcpyDeviceToDevice);
+            Image<T>& clone_into(Image<T>& out) const {
+                corecheck(size == out.size, "Output image size does not match");
 
-                return copy;
+                check_cuda(cudaMemcpy(out.ptr(),
+                                      this->ptr(),
+                                      this->get_bytes(),
+                                      cudaMemcpyDeviceToDevice));
+                return out;
             }
 
             uint2 getSize() const {
                 return size;
             }
 
-            Format getFormat() const {
-                return format;
-            }
-
-            Layout getLayout() const {
-                return layout;
-            }
-
-            size_t getPixels() const {
-                return pixels;
-            }
-
-            T* data;
-
            protected:
-            Image(T*     data,
-                  uint2  size,
-                  Format format,
-                  Layout layout,
-                  int*   owners)
-                : data(data)
-                , size(size)
-                , pixels(size.x * size.y)
-                , format(format)
-                , layout(layout)
-                , owners(owners) {
-                if (!owners && !cuda::is_device_pointer(data)) {
-                    throw std::invalid_argument(
-                        "Image constructor: data pointer must be a cuda "
-                        "pointer");
-                }
-
-                request();
-            }
-
-            void request() {
-                if (owners) {
-                    if ((*owners == 0) && (0 < pixels)) {
-                        cudaMalloc(&data, element_count() * sizeof(T));
-                    }
-
-                    (*owners) += 1;
-                }
-            }
-
-            void release() {
-                if (owners) {
-                    (*owners) -= 1;
-
-                    if ((*owners == 0) && data) {
-                        cudaFree(data);
-                        data = nullptr;
-                    }
-                }
-            }
-
-            size_t element_count() const {
-                const size_t base = size.x * size.y;
-
-                if constexpr (std::is_same_v<T, float>) {
-                    const size_t channels = (format == RGBA) ? 4 : 3;
-                    return base * channels;
-                }
-
-                return base;
-            }
-
-            uint2  size;
-            size_t pixels;
-            Format format;
-            Layout layout;
-            int*   owners;
+            uint2 size;
         };
 
         class Image3U : public Image<uchar3> {
            public:
-            using Image1F = Image<float>;
-            using Image4U = Image<uchar4>;
             using Image<uchar3>::Image;
 
-            Image3U(const Image<uchar3>& img)
-                : Image(img.data,
-                        img.size,
-                        img.format,
-                        img.layout,
-                        img.owners) {}
+            Image3U(const Image<uchar3>& img) : Image<uchar3>(img) {}
 
-            Image3U(const Image3U& img)
-                : Image(img.data,
-                        img.size,
-                        img.format,
-                        img.layout,
-                        img.owners) {}
+            Image3U(const Image3U& img)            = default;
+            Image3U(Image3U&& img)                 = default;
+            Image3U& operator=(const Image3U& img) = default;
+            Image3U& operator=(Image3U&& img)      = default;
 
-#ifndef __CUDACC__
-            static Image3U fromCvMat(const cv::Mat& img, Format fmt = BGR) {
-                if (img.empty()) {
-                    throw std::invalid_argument(
-                        "Image::fromCvMat: input image is empty");
-                }
+            cv::Mat         toCvMat() const;
+            static Image3U  fromCvMat(const cv::Mat& img);
+            static Image3U& fromCvMat(Image3U& out, const cv::Mat& img);
 
-                if (img.type() != CV_8UC3) {
-                    throw std::invalid_argument(
-                        "Image::fromCvMat: only CV_8UC3 type is supported");
-                }
+            uint8_t*        toNv16(uint8_t* target, bool swapUV = false) const;
+            static Image3U  fromNv16(const Size&    size,
+                                     const uint8_t* yuvData,
+                                     bool           swapUV = false);
+            static Image3U& fromNv16(Image3U&       out,
+                                     const uint8_t* yuvData,
+                                     bool           swapUV = false);
 
-                Image3U out(nullptr, make_uint2(img.cols, img.rows), fmt, HWC);
-                cudaMemcpy(out.data,
-                           img.data,
-                           img.cols * img.rows * sizeof(uchar3),
-                           cudaMemcpyHostToDevice);
+            Image3U  resize(uint2 size) const;
+            Image3U& resize_into(Image3U& out, uint2 size) const;
 
-                return out;
-            }
+            Image3U  pad(uint2 size, uchar3 value) const;
+            Image3U& pad_into(Image3U& out, uchar3 value) const;
 
-            cv::Mat toCvMat() const {
-                if (data == nullptr || pixels == 0) {
-                    std::cerr << "Image::toCvMat: empty image" << std::endl;
-                    return cv::Mat();
-                }
+            Image3U  colflip() const;
+            Image3U& colflip_into(Image3U& out) const;
 
-                cv::Mat img(size.y, size.x, CV_8UC3);
-                cudaMemcpy(img.data,
-                           this->data,
-                           pixels * sizeof(uchar3),
-                           cudaMemcpyDeviceToHost);
+            Image3F  chnflip() const;
+            Image3F& chnflip_into(Image3F& out) const;
 
-                return img;
-            }
-#endif
-            static Image3U fromNv16(const uint8_t* yuvData,
-                                    uint2          size,
-                                    bool           swapUV = false);
-
-            static void fromNv16_into(const uint8_t* yuvData,
-                                      uint2          size,
-                                      Image3U&       out,
-                                      bool           swapUV   = false,
-                                      uint8_t*       dScratch = nullptr);
-
-            uint8_t* toNv16(uint8_t* target = nullptr,
-                            bool     swapUV = false) const;
-
-            void toNv16_into(uint8_t* target,
-                             bool     swapUV   = false,
-                             uint8_t* dScratch = nullptr) const;
-
-            Image3U resize(uint2 size) const;
-            void    resize_into(Image3U& out, uint2 size) const;
-            Image3U pad(uint2  size,
-                        uchar3 value = make_uchar3(114, 114, 114)) const;
-            void    pad_into(Image3U& out,
-                             uint2    size,
-                             uchar3   value = make_uchar3(114, 114, 114)) const;
-            Image3U colflip() const;
-            void    colflip_inplace();
-            void    colflip_into(Image3U& out) const;
-            Image1F chnflip() const;
-            void    chnflip_into(Image1F& out) const;
-            Image4U toRGBA() const;
-            void    toRGBA_into(Image4U& out) const;
+            Image4U  toRGBA() const;
+            Image4U& toRGBA_into(Image4U& out) const;
         };
 
         class Image4U : public Image<uchar4> {
            public:
-            using Image3U = Image<uchar3>;
             using Image<uchar4>::Image;
 
-            Image4U(const Image<uchar4>& img)
-                : Image(img.data,
-                        img.size,
-                        img.format,
-                        img.layout,
-                        img.owners) {}
+            Image4U(const Image<uchar4>& img) : Image<uchar4>(img) {}
 
-            Image4U toRGB() const;
+            Image4U(const Image4U& img)            = default;
+            Image4U(Image4U&& img)                 = default;
+            Image4U& operator=(const Image4U& img) = default;
+            Image4U& operator=(Image4U&& img)      = default;
+
+            Image3U  toRGB() const;
+            Image3U& toRGB_into(Image3U& out) const;
         };
 
-        class Image1F : public Image<float> {
+        class Image3F : public Image<float3> {
            public:
-            using Image3U = Image<uchar3>;
-            using Image<float>::Image;
+            using Image<float3>::Image;
 
-            Image1F(const Image<float>& img)
-                : Image(img.data,
-                        img.size,
-                        img.format,
-                        img.layout,
-                        img.owners) {}
+            Image3F(const Image<float3>& img) : Image<float3>(img) {}
 
-            Image1F(const Image1F& img)
-                : Image(img.data,
-                        img.size,
-                        img.format,
-                        img.layout,
-                        img.owners) {}
+            Image3F(const Image3F& img)            = default;
+            Image3F(Image3F&& img)                 = default;
+            Image3F& operator=(const Image3F& img) = default;
+            Image3F& operator=(Image3F&& img)      = default;
 
-            Image3U chnflip() const;
-            void    chnflip_into(Image3U& out) const;
+            Image3U  chnflip() const;
+            Image3U& chnflip_into(Image3U& out) const;
         };
 
     }  // namespace cuda

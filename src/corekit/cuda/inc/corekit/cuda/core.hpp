@@ -1,12 +1,14 @@
 #pragma once
 #include <cuda_runtime.h>
 #include <vector_functions.h>
-#include "corekit/utils/assert.hpp"
-#include "corekit/types.hpp"
 
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
+
+#include "corekit/types.hpp"
+#include "corekit/utils/assert.hpp"
 
 using uint  = unsigned int;
 using uchar = unsigned char;
@@ -17,8 +19,9 @@ namespace corekit {
         using namespace corekit::types;
         using namespace corekit::utils;
 
-        inline void check_cuda(cudaError_t err = cudaGetLastError(), const Status&   message  = "<NO DESCRIPTION>",
-                       const Location& location = Location::current()) {
+        inline void check_cuda(cudaError_t     err      = cudaGetLastError(),
+                               const Status&   message  = "<NO DESCRIPTION>",
+                               const Location& location = Location::current()) {
             corecheck(err == cudaSuccess, message, location);
         }
 
@@ -61,6 +64,56 @@ namespace corekit {
             cudaEventDestroy(start);
             cudaEventDestroy(stop);
         }
+
+        template <typename T>
+        struct NvMem {
+            using Ptr = std::shared_ptr<NvMem>;
+
+            NvMem(uint64_t elems = 0) : elems(elems) {
+                T* rawptr = nullptr;
+
+                if (0 < elems) {
+                    check_cuda(cudaMalloc(&rawptr, elems * sizeof(T)),
+                               "Failed to allocate memory in NvMem");
+
+                    std::cout << "Created Memory of size " << get_bytes()
+                              << " bytes" << std::endl;
+
+                    buffer.reset(rawptr, [elems = this->elems](T* p) {
+                        if (p) {
+                            std::cout << "Destroyed Memory of size "
+                                      << (elems * sizeof(T)) << " bytes"
+                                      << std::endl;
+
+                            check_cuda(cudaFree(p),
+                                       "Failed to free memory in NvMem");
+                        }
+                    });
+                }
+            }
+
+            NvMem(const NvMem& other) = default;
+            NvMem(NvMem&& other)      = default;
+
+            NvMem& operator=(const NvMem& other) = default;
+            NvMem& operator=(NvMem&& other)      = default;
+
+            inline uint get_elems() const {
+                return elems;
+            }
+
+            inline uint64_t get_bytes() const {
+                return elems * sizeof(T);
+            }
+
+            inline T* ptr() const {
+                return buffer.get();
+            }
+
+           private:
+            uint64_t           elems;
+            std::shared_ptr<T> buffer;
+        };
 
     }  // namespace cuda
 

@@ -130,48 +130,23 @@ namespace corekit {
             font->ascent     = static_cast<uint>(ascent);
             font->descent    = static_cast<uint>(descent);
             font->lineGap    = static_cast<uint>(lineGap);
-            font->d_atlas    = nullptr;
-            font->d_glyphs   = nullptr;
+     
+            font->d_atlas = NvMem<uint>( atlas.size());
 
-            const size_t atlasBytes = atlas.size() * sizeof(uint);
-            if (cudaMalloc(&font->d_atlas, atlasBytes) != cudaSuccess) {
-                Font::freeFont(font);
-                delete font;
-                FT_Done_Face(face);
-                FT_Done_FreeType(ft);
-                return nullptr;
-            }
+            check_cuda(cudaMemcpy(font->d_atlas.ptr(),
+                                  atlas.data(),
+                                  font->d_atlas.get_bytes(),
+                                  cudaMemcpyHostToDevice));
 
-            if (cudaMemcpy(font->d_atlas,
-                           atlas.data(),
-                           atlasBytes,
-                           cudaMemcpyHostToDevice) != cudaSuccess) {
-                Font::freeFont(font);
-                delete font;
-                FT_Done_Face(face);
-                FT_Done_FreeType(ft);
-                return nullptr;
-            }
+            font->d_glyphs = NvMem<GlyphInfo>(glyphs.size() );
 
-            const size_t glyphBytes = glyphs.size() * sizeof(GlyphInfo);
-            if (cudaMalloc(&font->d_glyphs, glyphBytes) != cudaSuccess) {
-                Font::freeFont(font);
-                delete font;
-                FT_Done_Face(face);
-                FT_Done_FreeType(ft);
-                return nullptr;
-            }
+            check_cuda(cudaMemcpy(font->d_glyphs.ptr(),
+                                  glyphs.data(),
+                                  font->d_glyphs.get_bytes(),
+                                  cudaMemcpyHostToDevice));
 
-            if (cudaMemcpyAsync(font->d_glyphs,
-                                glyphs.data(),
-                                glyphBytes,
-                                cudaMemcpyHostToDevice) != cudaSuccess) {
-                Font::freeFont(font);
-                delete font;
-                FT_Done_Face(face);
-                FT_Done_FreeType(ft);
-                return nullptr;
-            }
+            font->d_atlas_ptr  = font->d_atlas.ptr();
+            font->d_glyphs_ptr = font->d_glyphs.ptr();
 
             FT_Done_Face(face);
             FT_Done_FreeType(ft);
@@ -182,15 +157,6 @@ namespace corekit {
         void Font::freeFont(Font* font) {
             if (!font) {
                 return;
-            }
-
-            if (font->d_atlas) {
-                cudaFree(font->d_atlas);
-                font->d_atlas = nullptr;
-            }
-            if (font->d_glyphs) {
-                cudaFree(font->d_glyphs);
-                font->d_glyphs = nullptr;
             }
 
             delete font;
@@ -469,7 +435,7 @@ namespace corekit {
             const Text&    txt = texts[idx];
             GlyphInstance* o   = instances + idx * maxTextLen;
 
-            if (font.d_atlas == nullptr || font.d_glyphs == nullptr) {
+            if (font.d_atlas_ptr == nullptr || font.d_glyphs_ptr == nullptr) {
                 for (int i = 0; i < maxTextLen; ++i) {
                     o[i].glyphIndex = -1;
                 }
@@ -489,14 +455,15 @@ namespace corekit {
 
                 const unsigned char uc = static_cast<unsigned char>(c);
                 if (uc < kFirstChar || uc > kLastChar) {
-                    const GlyphInfo space = font.d_glyphs[' ' - kFirstChar];
+                    const GlyphInfo space =
+                        font.d_glyphs_ptr[' ' - kFirstChar];
                     penX += space.advance;
                     o[i].glyphIndex = -1;
                     continue;
                 }
 
                 const int        gidx = uc - kFirstChar;
-                const GlyphInfo& g    = font.d_glyphs[gidx];
+                const GlyphInfo& g    = font.d_glyphs_ptr[gidx];
 
                 o[i].glyphIndex = gidx;
                 o[i].dstX       = penX + g.bearingX;
@@ -527,7 +494,7 @@ namespace corekit {
                 return;
             }
 
-            const GlyphInfo g = font.d_glyphs[inst.glyphIndex];
+            const GlyphInfo g = font.d_glyphs_ptr[inst.glyphIndex];
             if (g.w <= 0 || g.h <= 0) {
                 return;
             }
@@ -544,7 +511,7 @@ namespace corekit {
                     const int atlasIdx =
                         (g.y + y) * static_cast<int>(font.atlas_size.x) +
                         (g.x + x);
-                    const uint a8 = font.d_atlas[atlasIdx];
+                    const uint a8 = font.d_atlas_ptr[atlasIdx];
                     if (a8 == 0) {
                         continue;
                     }
@@ -563,8 +530,8 @@ namespace corekit {
                       cudaStream_t      stream) {
             check_cuda();
 
-            if (img.data == nullptr || objs.empty() || font == nullptr ||
-                font->d_atlas == nullptr || font->d_glyphs == nullptr) {
+            if (img.ptr() == nullptr || objs.empty() || font == nullptr ||
+                font->d_atlas_ptr == nullptr || font->d_glyphs_ptr == nullptr) {
                 return;
             }
 
@@ -582,6 +549,7 @@ namespace corekit {
 
             const size_t totalInstances = count * kMaxTextLen;
 
+            check_cuda();
             GlyphInstance* d_instances = nullptr;
             check_cuda(cudaMalloc(&d_instances,
                                   totalInstances * sizeof(GlyphInstance)));
@@ -596,19 +564,21 @@ namespace corekit {
                 fontValue,
                 d_instances,
                 kMaxTextLen);
+            check_cuda();
 
             dim3 block(16, 16);
             dim3 grid(totalInstances, 1, 1);
 
             draw_glyph_instances_kernel<<<grid, block, 0, stream>>>(
-                img.data,
+                img.ptr(),
                 img.getSize(),
                 fontValue,
                 d_instances,
                 totalInstances);
 
-            cudaFreeAsync(d_instances, stream);
-            cudaFreeAsync(d_texts, stream);
+            check_cuda();
+            check_cuda(cudaFreeAsync(d_instances, stream));
+            check_cuda(cudaFreeAsync(d_texts, stream));
             check_cuda();
         }
 
@@ -617,7 +587,7 @@ namespace corekit {
                       cudaStream_t      stream) {
             check_cuda();
 
-            if (img.data == nullptr || objs.empty()) {
+            if (img.ptr() == nullptr || objs.empty()) {
                 return;
             }
 
@@ -638,12 +608,12 @@ namespace corekit {
             const int block = 256;
             const int grid  = (count + block - 1) / block;
 
-            draw_lines_kernel<<<grid, block, 0, stream>>>(img.data,
+            draw_lines_kernel<<<grid, block, 0, stream>>>(img.ptr(),
                                                           img.getSize(),
                                                           d_lines,
                                                           count);
-
-            cudaFreeAsync(d_lines, stream);
+            check_cuda();
+            check_cuda(cudaFreeAsync(d_lines, stream));
             check_cuda();
         }
 
@@ -651,7 +621,7 @@ namespace corekit {
                       const Rect::List& objs,
                       cudaStream_t      stream) {
             check_cuda();
-            if (img.data == nullptr || objs.empty()) {
+            if (img.ptr() == nullptr || objs.empty()) {
                 return;
             }
 
@@ -673,12 +643,12 @@ namespace corekit {
             dim3 grid((img.getSize().x + block.x - 1) / block.x,
                       (img.getSize().y + block.y - 1) / block.y);
 
-            draw_rects_kernel<<<grid, block, 0, stream>>>(img.data,
+            draw_rects_kernel<<<grid, block, 0, stream>>>(img.ptr(),
                                                           img.getSize(),
                                                           d_rects,
                                                           count);
-
-            cudaFreeAsync(d_rects, stream);
+            check_cuda();
+            check_cuda(cudaFreeAsync(d_rects, stream));
             check_cuda();
         }
 
@@ -687,7 +657,7 @@ namespace corekit {
                         cudaStream_t        stream) {
             check_cuda();
 
-            if (img.data == nullptr || objs.empty()) {
+            if (img.ptr() == nullptr || objs.empty()) {
                 return;
             }
 
@@ -708,12 +678,12 @@ namespace corekit {
             const int block = 256;
             const int grid  = (count + block - 1) / block;
 
-            draw_circles_kernel<<<grid, block, 0, stream>>>(img.data,
+            draw_circles_kernel<<<grid, block, 0, stream>>>(img.ptr(),
                                                             img.getSize(),
                                                             d_circles,
                                                             count);
-
-            cudaFreeAsync(d_circles, stream);
+            check_cuda();
+            check_cuda(cudaFreeAsync(d_circles, stream));
             check_cuda();
         }
 
@@ -724,9 +694,9 @@ namespace corekit {
                       cudaStream_t stream) {
             check_cuda();
 
-            if (img.data == nullptr || d_text == nullptr || count == 0 ||
-                font == nullptr || font->d_atlas == nullptr ||
-                font->d_glyphs == nullptr) {
+            if (img.ptr() == nullptr || d_text == nullptr || count == 0 ||
+                font == nullptr || font->d_atlas_ptr == nullptr ||
+                font->d_glyphs_ptr == nullptr) {
                 return;
             }
 
@@ -750,17 +720,19 @@ namespace corekit {
                 d_instances,
                 kMaxTextLen);
 
+            check_cuda();
             dim3 block(16, 16);
             dim3 grid(totalInstances, 1, 1);
 
             draw_glyph_instances_kernel<<<grid, block, 0, stream>>>(
-                img.data,
+                img.ptr(),
                 img.getSize(),
                 fontValue,
                 d_instances,
                 static_cast<int>(totalInstances));
 
-            cudaFreeAsync(d_instances, stream);
+            check_cuda();
+            check_cuda(cudaFreeAsync(d_instances, stream));
             check_cuda();
         }
 
@@ -770,14 +742,14 @@ namespace corekit {
                       cudaStream_t stream) {
             check_cuda();
 
-            if (img.data == nullptr || d_lines == nullptr || count == 0) {
+            if (img.ptr() == nullptr || d_lines == nullptr || count == 0) {
                 return;
             }
 
             const int block = 256;
             const int grid  = (static_cast<int>(count) + block - 1) / block;
 
-            draw_lines_kernel<<<grid, block, 0, stream>>>(img.data,
+            draw_lines_kernel<<<grid, block, 0, stream>>>(img.ptr(),
                                                           img.getSize(),
                                                           d_lines,
                                                           count);
@@ -791,7 +763,7 @@ namespace corekit {
                       cudaStream_t stream) {
             check_cuda();
 
-            if (img.data == nullptr || d_rects == nullptr || count == 0) {
+            if (img.ptr() == nullptr || d_rects == nullptr || count == 0) {
                 return;
             }
 
@@ -799,7 +771,7 @@ namespace corekit {
             dim3 grid((img.getSize().x + block.x - 1) / block.x,
                       (img.getSize().y + block.y - 1) / block.y);
 
-            draw_rects_kernel<<<grid, block, 0, stream>>>(img.data,
+            draw_rects_kernel<<<grid, block, 0, stream>>>(img.ptr(),
                                                           img.getSize(),
                                                           d_rects,
                                                           count);
@@ -813,14 +785,14 @@ namespace corekit {
                         cudaStream_t stream) {
             check_cuda();
 
-            if (img.data == nullptr || d_circles == nullptr || count == 0) {
+            if (img.ptr() == nullptr || d_circles == nullptr || count == 0) {
                 return;
             }
 
             const int block = 256;
             const int grid  = (static_cast<int>(count) + block - 1) / block;
 
-            draw_circles_kernel<<<grid, block, 0, stream>>>(img.data,
+            draw_circles_kernel<<<grid, block, 0, stream>>>(img.ptr(),
                                                             img.getSize(),
                                                             d_circles,
                                                             count);

@@ -2,6 +2,9 @@
 
 #include <cmath>
 #include <cstdint>
+#include <iostream>
+#include <opencv4/opencv2/core/mat.hpp>
+#include <opencv4/opencv2/imgproc.hpp>
 #include <stdexcept>
 #include <string>
 
@@ -30,18 +33,6 @@ namespace corekit {
         dim3 make_grid_2d(uint2 size, dim3 block) {
             return dim3((size.x + block.x - 1) / block.x,
                         (size.y + block.y - 1) / block.y);
-        }
-
-        template <typename T>
-        static void ensure_image(Image<T>& out,
-                                 uint2     size,
-                                 Format    format,
-                                 Layout    layout) {
-            if (!out.data || out.getSize().x != size.x ||
-                out.getSize().y != size.y || out.getFormat() != format ||
-                out.getLayout() != layout) {
-                out = Image<T>(nullptr, size, format, layout);
-            }
         }
 
         __global__ void rgb_to_nv16_kernel(const uchar3* in,
@@ -167,8 +158,8 @@ namespace corekit {
             out[idx]          = make_uchar3(rgba.x, rgba.y, rgba.z);
         }
 
-        __global__ void u3_to_f1_kernel(const uchar3* in,
-                                        float*        out,
+        __global__ void u3_to_f3_kernel(const uchar3* in,
+                                        float3*       out,
                                         uint2         shape) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -177,18 +168,17 @@ namespace corekit {
                 return;
             }
 
-            const int    idx   = y * shape.x + x;
-            const uchar3 v     = in[idx];
-            const int    plane = shape.x * shape.y;
+            const int    idx = y * shape.x + x;
+            const uchar3 v   = in[idx];
 
-            out[0 * plane + idx] = (float)(v.x) / 255.0f;
-            out[1 * plane + idx] = (float)(v.y) / 255.0f;
-            out[2 * plane + idx] = (float)(v.z) / 255.0f;
+            out[idx] = make_float3((float)(v.x) / 255.0f,
+                                   (float)(v.y) / 255.0f,
+                                   (float)(v.z) / 255.0f);
         }
 
-        __global__ void f1_to_u3_kernel(const float* in,
-                                        uchar3*      out,
-                                        uint2        shape) {
+        __global__ void f3_to_u3_kernel(const float3* in,
+                                        uchar3*       out,
+                                        uint2         shape) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -196,17 +186,13 @@ namespace corekit {
                 return;
             }
 
-            const int idx   = y * shape.x + x;
-            const int plane = shape.x * shape.y;
-
-            const float r = in[0 * plane + idx];
-            const float g = in[1 * plane + idx];
-            const float b = in[2 * plane + idx];
+            const int    idx = y * shape.x + x;
+            const float3 v   = in[idx];
 
             out[idx] =
-                make_uchar3(clamp_u8(static_cast<int>(lrintf(r * 255.0f))),
-                            clamp_u8(static_cast<int>(lrintf(g * 255.0f))),
-                            clamp_u8(static_cast<int>(lrintf(b * 255.0f))));
+                make_uchar3(clamp_u8(static_cast<int>(lrintf(v.x * 255.0f))),
+                            clamp_u8(static_cast<int>(lrintf(v.y * 255.0f))),
+                            clamp_u8(static_cast<int>(lrintf(v.z * 255.0f))));
         }
 
         __global__ void resize_u3_kernel(const uchar3* in,
@@ -290,346 +276,341 @@ namespace corekit {
             }
         }
 
-        Image3U Image3U::fromNv16(const uint8_t* h_yuvData,
-                                  uint2          size,
-                                  bool           swapUV) {
-            Image3U out(nullptr, size, RGB, HWC);
-            fromNv16_into(h_yuvData, size, out, swapUV, nullptr);
+        /*
+            #############################################################
+        */
+
+        template <typename T>
+        static void try_reuse(Image<T>& out, uint2 size) {
+            if (!out.ptr() || out.getSize() != size) {
+                out = Image<T>(size);
+            }
+        }
+
+        Image3U Image3U::fromCvMat(const cv::Mat& img) {
+            Image3U out;
+            fromCvMat(out, img);
             return out;
         }
 
-        void Image3U::fromNv16_into(const uint8_t* h_yuvData,
-                                    uint2          size,
-                                    Image3U&       out,
-                                    bool           swapUV,
-                                    uint8_t*       dScratch) {
-            check_cuda();
-
-            if (h_yuvData == nullptr) {
+        Image3U& Image3U::fromCvMat(Image3U& out, const cv::Mat& img) {
+            if (img.empty()) {
                 throw std::invalid_argument(
-                    "Image3U::fromNv16_into: input data is null");
+                    "Image::fromCvMat: input image is empty");
             }
 
-            ensure_image(out, size, RGB, HWC);
+            if (img.type() != CV_8UC3) {
+                throw std::invalid_argument(
+                    "Image::fromCvMat: only CV_8UC3 type is supported");
+            }
+
+            const Size size = make_uint2(img.cols, img.rows);
+
+            try_reuse(out, size);
+
+            check_cuda(cudaMemcpy(out.ptr(),
+                                  img.data,
+                                  out.get_bytes(),
+                                  cudaMemcpyHostToDevice));
+
+            return out;
+        }
+
+        cv::Mat Image3U::toCvMat() const {
+            if (this->ptr() == nullptr || this->get_elems() == 0) {
+                throw std::invalid_argument("Image::toCvMat: empty image");
+            }
+
+            cv::Mat img(size.y, size.x, CV_8UC3);
+            check_cuda(cudaMemcpy(img.data,
+                                  this->ptr(),
+                                  this->get_bytes(),
+                                  cudaMemcpyDeviceToHost));
+
+            return img;
+        }
+
+        Image3U Image3U::fromNv16(const Size&    size,
+                                  const uint8_t* yuvData,
+                                  bool           swapUV) {
+            Image3U out(size);
+            fromNv16(out, yuvData, swapUV);
+            return out;
+        }
+
+        Image3U& Image3U::fromNv16(Image3U&       out,
+                                   const uint8_t* yuvData,
+                                   bool           swapUV) {
+            check_cuda();
+
+            if (yuvData == nullptr) {
+                throw std::invalid_argument(
+                    "Image3U::fromNv16: input data is null");
+            }
+
+            if (out.size.x == 0 || out.size.y == 0) {
+                throw std::invalid_argument(
+                    "Image3U::fromNv16: output image size is zero");
+            }
+
+            const dim3 block = make_block_2d();
+            const dim3 grid  = make_grid_2d(out.size, block);
+
+            nv16_to_rgb_kernel<<<grid, block, 0>>>(
+                yuvData,
+                yuvData + out.size.x * out.size.y,
+                out.ptr(),
+                out.size,
+                swapUV);
+
+            check_cuda();
+            return out;
+        }
+
+        uint8_t* Image3U::toNv16(uint8_t* d_yuvData, bool swapUV) const {
+            check_cuda();
+
+            if (!this->ptr()) {
+                throw std::invalid_argument(
+                    "Image3U::toNv16: input image data is null");
+            }
+
+            if (d_yuvData == nullptr) {
+                throw std::invalid_argument(
+                    "Image3U::toNv16: target buffer is null");
+            }
 
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
-            uint8_t* d_yPlane  = nullptr;
-            uint8_t* d_uvPlane = nullptr;
-
-            if (dScratch) {
-                d_yPlane  = dScratch;
-                d_uvPlane = dScratch + size.x * size.y;
-            } else {
-                check_cuda(cudaMalloc(&d_yPlane, size.x * size.y));
-                check_cuda(cudaMalloc(&d_uvPlane, size.x * size.y));
-            }
-
-            check_cuda(cudaMemcpy(d_yPlane,
-                                  h_yuvData,
-                                  size.x * size.y,
-                                  cudaMemcpyHostToDevice));
-
-            check_cuda(cudaMemcpy(d_uvPlane,
-                                  h_yuvData + size.x * size.y,
-                                  size.x * size.y,
-                                  cudaMemcpyHostToDevice));
-
-            nv16_to_rgb_kernel<<<grid, block, 0>>>(d_yPlane,
-                                                   d_uvPlane,
-                                                   out.data,
-                                                   size,
-                                                   swapUV);
-
-            if (!dScratch) {
-                cudaFree(d_yPlane);
-                cudaFree(d_uvPlane);
-            }
-
-            check_cuda();
-        }
-
-        uint8_t* Image3U::toNv16(uint8_t* target, bool swapUV) const {
-            if (target == nullptr) {
-                target = new uint8_t[size.x * size.y * 2];
-            }
-
-            toNv16_into(target, swapUV, nullptr);
-            return target;
-        }
-
-        void Image3U::toNv16_into(uint8_t* target,
-                                  bool     swapUV,
-                                  uint8_t* dScratch) const {
-            check_cuda();
-
-            if (!data) {
-                throw std::invalid_argument(
-                    "Image3U::toNv16_into: input image data is null");
-            }
-
-            if (target == nullptr) {
-                throw std::invalid_argument(
-                    "Image3U::toNv16_into: target pointer is null");
-            }
-
-            uint8_t* d_yuvData = nullptr;
-
-            if (dScratch) {
-                d_yuvData = dScratch;
-            } else {
-                check_cuda(cudaMalloc(&d_yuvData, size.x * size.y * 2));
-            }
-
-            const dim3 block = make_block_2d();
-            const dim3 grid  = make_grid_2d(size, block);
-
-            rgb_to_nv16_kernel<<<grid, block, 0>>>(data,
+            rgb_to_nv16_kernel<<<grid, block, 0>>>(this->ptr(),
                                                    d_yuvData,
                                                    d_yuvData + size.x * size.y,
                                                    size,
                                                    swapUV);
 
-            check_cuda(cudaMemcpy(target,
-                                  d_yuvData,
-                                  size.x * size.y * 2,
-                                  cudaMemcpyDeviceToHost));
-
-            if (!dScratch) {
-                cudaFree(d_yuvData);
-            }
-
             check_cuda();
+
+            return d_yuvData;
         }
 
         Image3U Image3U::resize(uint2 size) const {
-            Image3U out(nullptr, size, getFormat(), getLayout());
+            Image3U out(size);
             resize_into(out, size);
-            return out;
+            return std::move(out);
         }
 
-        void Image3U::resize_into(Image3U& out, uint2 size) const {
-            if (!data) {
+        Image3U& Image3U::resize_into(Image3U& out, uint2 size) const {
+            if (!this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::resize_into: input image data is null");
             }
 
-            if (getLayout() != HWC) {
-                throw std::invalid_argument(
-                    "Image3U::resize_into: only HWC layout is supported");
-            }
-
-            if (out.data == data) {
+            if (out.ptr() == this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::resize_into: in-place resize is not supported");
             }
 
-            ensure_image(out, size, getFormat(), getLayout());
+            try_reuse(out, size);
 
-            const uint2  shape = getSize();
+            const uint2  inshape  = this->size;
+            const uint2  outshape = size;
             const float2 scale =
-                make_float2((float)(shape.x) / (float)(size.x),
-                            (float)(shape.y) / (float)(size.y));
+                make_float2((float)(inshape.x) / (float)(outshape.x),
+                            (float)(inshape.y) / (float)(outshape.y));
 
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
-            resize_u3_kernel<<<grid, block>>>(data,
-                                              out.data,
-                                              shape,
-                                              size,
+            resize_u3_kernel<<<grid, block>>>(this->ptr(),
+                                              out.ptr(),
+                                              inshape,
+                                              outshape,
                                               scale);
-        }
+            check_cuda();
 
-        Image3U Image3U::pad(uint2 size, uchar3 value) const {
-            Image3U out(nullptr, size, getFormat(), getLayout());
-            pad_into(out, size, value);
             return out;
         }
 
-        void Image3U::pad_into(Image3U& out, uint2 size, uchar3 value) const {
+        Image3U Image3U::pad(uint2 size, uchar3 value) const {
+            Image3U out(size);
+            pad_into(out, value);
+            return std::move(out);
+        }
+
+        Image3U& Image3U::pad_into(Image3U& out, uchar3 value) const {
             check_cuda();
 
-            if (!data) {
+            if (!this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::pad_into: input image data is null");
             }
 
-            if (getLayout() != HWC) {
-                throw std::invalid_argument(
-                    "Image3U::pad_into: only HWC layout is supported");
-            }
-
-            if (out.data == data) {
+            if (out.ptr() == this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::pad_into: in-place pad is not supported");
             }
 
-            ensure_image(out, size, getFormat(), getLayout());
+            const uint2 inshape  = this->size;
+            const uint2 outshape = out.size;
 
-            const uint2 inshape = getSize();
-            const uint2 padding =
-                make_uint2((size.x - inshape.x) / 2, (size.y - inshape.y) / 2);
+            if (outshape.x < inshape.x || outshape.y < inshape.y) {
+                throw std::invalid_argument(
+                    "Image3U::pad_into: output size is smaller than input");
+            }
+
+            try_reuse(out, outshape);
+
+            const uint2 padding = make_uint2((outshape.x - inshape.x) / 2,
+                                             (outshape.y - inshape.y) / 2);
 
             const dim3 block = make_block_2d();
-            const dim3 grid  = make_grid_2d(size, block);
+            const dim3 grid  = make_grid_2d(outshape, block);
 
-            pad_u3_kernel<<<grid, block>>>(data,
-                                           out.data,
+            pad_u3_kernel<<<grid, block>>>(this->ptr(),
+                                           out.ptr(),
                                            inshape,
-                                           size,
+                                           outshape,
                                            padding,
                                            value);
 
             check_cuda();
-        }
-
-        Image3U Image3U::colflip() const {
-            Image3U out(nullptr, getSize(), getFormat(), getLayout());
-            colflip_into(out);
             return out;
         }
 
-        void Image3U::colflip_into(Image3U& out) const {
+        Image3U Image3U::colflip() const {
+            Image3U out(size);
+            colflip_into(out);
+            return std::move(out);
+        }
+
+        Image3U& Image3U::colflip_into(Image3U& out) const {
             check_cuda();
 
-            if (!data) {
+            if (!this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::colflip_into: input image data is null");
             }
 
-            if (getLayout() != HWC) {
+            if (out.ptr() == this->ptr()) {
                 throw std::invalid_argument(
-                    "Image3U::colflip_into: only HWC layout is supported");
+                    "Image3U::colflip_into: in-place colflip is not supported");
             }
 
-            if (getFormat() != RGB && getFormat() != BGR) {
-                throw std::invalid_argument(
-                    "Image3U::colflip_into: only RGB/BGR formats are "
-                    "supported");
-            }
-
-            const Format outFormat = (getFormat() == RGB) ? BGR : RGB;
-            ensure_image(out, getSize(), outFormat, getLayout());
+            try_reuse(out, size);
 
             const dim3 block = make_block_2d();
-            const dim3 grid  = make_grid_2d(getSize(), block);
+            const dim3 grid  = make_grid_2d(size, block);
 
-            rgb_to_bgr_kernel<<<grid, block>>>(data, out.data, getSize());
+            rgb_to_bgr_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
-        }
 
-        Image3U::Image4U Image3U::toRGBA() const {
-            Image4U out(nullptr, getSize(), RGBA, HWC);
-            toRGBA_into(out);
             return out;
         }
 
-        void Image3U::toRGBA_into(Image4U& out) const {
+        Image4U Image3U::toRGBA() const {
+            Image4U out(size);
+            toRGBA_into(out);
+            return std::move(out);
+        }
+
+        Image4U& Image3U::toRGBA_into(Image4U& out) const {
             check_cuda();
 
-            if (!data) {
+            if (!this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::toRGBA_into: input image data is null");
             }
 
-            if (getLayout() != HWC) {
-                throw std::invalid_argument(
-                    "Image3U::toRGBA_into: only HWC layout is supported");
-            }
-
-            if (getFormat() != RGB && getFormat() != BGR) {
-                throw std::invalid_argument(
-                    "Image3U::toRGBA_into: only RGB/BGR formats are supported");
-            }
-
-            ensure_image(out, getSize(), RGBA, HWC);
+            try_reuse(out, size);
 
             const dim3 block = make_block_2d();
-            const dim3 grid  = make_grid_2d(getSize(), block);
+            const dim3 grid  = make_grid_2d(size, block);
 
-            rgb_to_rgba_kernel<<<grid, block>>>(data, out.data, getSize());
+            rgb_to_rgba_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
-        }
 
-        Image3U::Image1F Image3U::chnflip() const {
-            Image<float> out(nullptr, getSize(), getFormat(), CHW);
-            chnflip_into(out);
             return out;
         }
 
-        void Image3U::chnflip_into(Image1F& out) const {
+        Image3F Image3U::chnflip() const {
+            Image3F out(size);
+            chnflip_into(out);
+            return std::move(out);
+        }
+
+        Image3F& Image3U::chnflip_into(Image3F& out) const {
             check_cuda();
 
-            if (!data) {
+            if (!this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::chnflip_into: input image data is null");
             }
 
-            if (getLayout() != HWC) {
-                throw std::invalid_argument(
-                    "Image3U::chnflip_into: only HWC layout is supported");
-            }
-
-            if (getFormat() != RGB && getFormat() != BGR) {
-                throw std::invalid_argument(
-                    "Image3U::chnflip_into: only RGB/BGR formats are "
-                    "supported");
-            }
-
-            if (getSize().x == 0 || getSize().y == 0) {
-                throw std::invalid_argument(
-                    "Image3U::chnflip_into: input image has zero width or "
-                    "height");
-            }
-
-            ensure_image(out, getSize(), getFormat(), CHW);
+            try_reuse(out, size);
 
             const dim3 block = make_block_2d();
-            const dim3 grid  = make_grid_2d(getSize(), block);
+            const dim3 grid  = make_grid_2d(size, block);
 
-            u3_to_f1_kernel<<<grid, block>>>(data, out.data, getSize());
+            u3_to_f3_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
-        }
 
-        Image1F::Image3U Image1F::chnflip() const {
-            Image<uchar3> out(nullptr, getSize(), getFormat(), HWC);
-            chnflip_into(out);
             return out;
         }
 
-        void Image1F::chnflip_into(Image3U& out) const {
+        Image3U Image3F::chnflip() const {
+            Image3U out(size);
+            chnflip_into(out);
+            return std::move(out);
+        }
+
+        Image3U& Image3F::chnflip_into(Image3U& out) const {
             check_cuda();
 
-            if (!data) {
+            if (!this->ptr()) {
                 throw std::invalid_argument(
-                    "Image1F::chnflip_into: input image data is null");
+                    "Image3F::chnflip_into: input image data is null");
             }
 
-            if (getLayout() != CHW) {
-                throw std::invalid_argument(
-                    "Image1F::chnflip_into: only CHW layout is supported");
-            }
-
-            if (getFormat() != RGB && getFormat() != BGR) {
-                throw std::invalid_argument(
-                    "Image1F::chnflip_into: only RGB/BGR formats are "
-                    "supported");
-            }
-
-            ensure_image(out, getSize(), getFormat(), HWC);
+            try_reuse(out, size);
 
             const dim3 block = make_block_2d();
-            const dim3 grid  = make_grid_2d(getSize(), block);
+            const dim3 grid  = make_grid_2d(size, block);
 
-            f1_to_u3_kernel<<<grid, block>>>(data, out.data, getSize());
+            f3_to_u3_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
+
+            return out;
+        }
+
+        Image3U Image4U::toRGB() const {
+            Image3U out(size);
+            toRGB_into(out);
+            return std::move(out);
+        }
+
+        Image3U& Image4U::toRGB_into(Image3U& out) const {
+            check_cuda();
+
+            if (!this->ptr()) {
+                throw std::invalid_argument(
+                    "Image4U::toRGB_into: input image data is null");
+            }
+
+            try_reuse(out, size);
+
+            const dim3 block = make_block_2d();
+            const dim3 grid  = make_grid_2d(size, block);
+
+            rgba_to_rgb_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
+            check_cuda();
+
+            return out;
         }
 
         template struct Image<uchar3>;
         template struct Image<uchar4>;
-        template struct Image<float>;
+        template struct Image<float3>;
 
     }  // namespace cuda
 }  // namespace corekit

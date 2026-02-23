@@ -105,7 +105,8 @@ namespace corekit {
                 default: break;
             }
 
-            Image3U cudaimg = Image3U::fromCvMat(image);
+            Image3U cudaimg(make_uint2(image.cols, image.rows));
+            cudaimg.fromCvMat(image);
             CudaTex::fill(cudaimg.toRGBA(), layer);
         }
 
@@ -150,7 +151,7 @@ namespace corekit {
                 cudaMemcpy2DToArray(cuArray,  // dst array (GL texture storage)
                                     0,
                                     0,           // offsets
-                                    image.data,  // src pointer (ext memory)
+                                    image.ptr(), // src pointer (ext memory)
                                     rowBytes,    // src pitch in bytes
                                     rowBytes,    // width in bytes
                                     height,      // rows
