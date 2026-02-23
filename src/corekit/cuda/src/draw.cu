@@ -211,7 +211,7 @@ namespace corekit {
                        y < static_cast<int>(size.y);
             }
 
-            __device__ __forceinline__ void set_pixel(uchar3* img,
+            __device__ __forceinline__ void set_pixel(uchar*  img,
                                                       uint2   size,
                                                       int     x,
                                                       int     y,
@@ -220,10 +220,13 @@ namespace corekit {
                     return;
                 }
 
-                img[y * static_cast<int>(size.x) + x] = color;
+                const int idx = (y * static_cast<int>(size.x) + x) * 3;
+                img[idx + 0] = color.x;
+                img[idx + 1] = color.y;
+                img[idx + 2] = color.z;
             }
 
-            __device__ __forceinline__ void blend_pixel(uchar3* img,
+            __device__ __forceinline__ void blend_pixel(uchar*  img,
                                                         uint2   size,
                                                         int     x,
                                                         int     y,
@@ -232,14 +235,18 @@ namespace corekit {
                     return;
                 }
 
-                const int   idx   = y * static_cast<int>(size.x) + x;
+                const int rgb_idx = (y * static_cast<int>(size.x) + x) * 3;
+                const uchar3 current = make_uchar3(img[rgb_idx + 0], img[rgb_idx + 1], img[rgb_idx + 2]);
                 const float alpha = static_cast<float>(color.w) / 255.0f;
-                img[idx]          = blend_rgb(img[idx], color, alpha);
+                const uchar3 blended = blend_rgb(current, color, alpha);
+                img[rgb_idx + 0] = blended.x;
+                img[rgb_idx + 1] = blended.y;
+                img[rgb_idx + 2] = blended.z;
             }
 
         }  // namespace
 
-        __global__ void draw_lines_kernel(uchar3*     img,
+        __global__ void draw_lines_kernel(uchar*      img,
                                           uint2       img_size,
                                           const Line* lines,
                                           int         count) {
@@ -299,7 +306,7 @@ namespace corekit {
             }
         }
 
-        __global__ void draw_rects_kernel(uchar3*     img,
+        __global__ void draw_rects_kernel(uchar*      img,
                                           uint2       img_size,
                                           const Rect* rects,
                                           int         count) {
@@ -315,7 +322,8 @@ namespace corekit {
             const float py = static_cast<float>(y) + 0.5f;
 
             const int idx = y * static_cast<int>(img_size.x) + x;
-            uchar3    out = img[idx];
+            const int rgb_idx = idx * 3;
+            uchar3    out = {img[rgb_idx + 0], img[rgb_idx + 1], img[rgb_idx + 2]};
 
             for (int i = 0; i < count; ++i) {
                 const Rect rect = rects[i];
@@ -354,10 +362,12 @@ namespace corekit {
                 }
             }
 
-            img[idx] = out;
+            img[rgb_idx + 0] = out.x;
+            img[rgb_idx + 1] = out.y;
+            img[rgb_idx + 2] = out.z;
         }
 
-        __global__ void draw_circles_kernel(uchar3*       img,
+        __global__ void draw_circles_kernel(uchar*        img,
                                             uint2         img_size,
                                             const Circle* circles,
                                             int           count) {
@@ -479,7 +489,7 @@ namespace corekit {
         }
 
         __global__ void draw_glyph_instances_kernel(
-            uchar3*              img,
+            uchar*               img,
             uint2                shape,
             Font                 font,
             const GlyphInstance* instances,
@@ -519,7 +529,12 @@ namespace corekit {
                     const float a = (static_cast<float>(a8) / 255.0f) *
                                     (static_cast<float>(inst.color.w) / 255.0f);
                     const int idx = iy * shape.x + ix;
-                    img[idx]      = blend_rgb(img[idx], inst.color, a);
+                    const int rgb_idx = idx * 3;
+                    uchar3 out = {img[rgb_idx + 0], img[rgb_idx + 1], img[rgb_idx + 2]};
+                    out = blend_rgb(out, inst.color, a);
+                    img[rgb_idx + 0] = out.x;
+                    img[rgb_idx + 1] = out.y;
+                    img[rgb_idx + 2] = out.z;
                 }
             }
         }

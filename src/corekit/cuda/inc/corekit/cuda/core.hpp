@@ -19,10 +19,9 @@ namespace corekit {
         using namespace corekit::types;
         using namespace corekit::utils;
 
-        inline void check_cuda(cudaError_t     err      = cudaGetLastError(),
-                               const Status&   message  = "<NO DESCRIPTION>",
+        inline void check_cuda(const cudaError_t& err   = cudaGetLastError(),
                                const Location& location = Location::current()) {
-            corecheck(err == cudaSuccess, message, location);
+            corecheck(err == cudaSuccess, cudaGetErrorString(err), location);
         }
 
         inline bool is_device_pointer(const void* ptr) {
@@ -73,8 +72,7 @@ namespace corekit {
                 T* rawptr = nullptr;
 
                 if (0 < elems) {
-                    check_cuda(cudaMalloc(&rawptr, elems * sizeof(T)),
-                               "Failed to allocate memory in NvMem");
+                    check_cuda(cudaMalloc(&rawptr, elems * sizeof(T)));
 
                     std::cout << "Created Memory of size " << get_bytes()
                               << " bytes" << std::endl;
@@ -85,8 +83,7 @@ namespace corekit {
                                       << (elems * sizeof(T)) << " bytes"
                                       << std::endl;
 
-                            check_cuda(cudaFree(p),
-                                       "Failed to free memory in NvMem");
+                            check_cuda(cudaFree(p));
                         }
                     });
                 }

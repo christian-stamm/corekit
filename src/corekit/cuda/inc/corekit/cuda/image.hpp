@@ -35,7 +35,7 @@ namespace corekit {
         class Image3U;
         class Image4U;
 
-        template <typename T = uchar3>
+        template <typename T = uchar, uint channels = 3>
         struct Image : public NvMem<T> {
             using Ptr = std::shared_ptr<Image<T>>;
 
@@ -44,49 +44,35 @@ namespace corekit {
             friend Image4U;
 
             Image(uint2 size = make_uint2(0, 0))
-                : Image(NvMem<T>(size.x * size.y), size) {}
+                : Image(NvMem<T>(size.x * size.y * channels), size) {}
 
             Image(NvMem<T> mem, uint2 size) : NvMem<T>(mem), size(size) {
-                corecheck(size.x * size.y * sizeof(T) <= mem.get_bytes(),
-                          "Provided memory is too small for the specified "
-                          "image size");
+                corecheck(
+                    size.x * size.y * sizeof(T) * channels <= mem.get_bytes(),
+                    "Provided memory is too small for the specified "
+                    "image size");
             }
 
-            Image(const Image<T>& img) = default;
-            Image(Image<T>&& img)      = default;
+            Image(const Image<T, channels>& img) = default;
+            Image(Image<T, channels>&& img)      = default;
 
-            Image<T>& operator=(const Image<T>& img) = default;
-            Image<T>& operator=(Image<T>&& img)      = default;
+            Image<T, channels>& operator=(const Image<T, channels>& img) =
+                default;
+            Image<T, channels>& operator=(Image<T, channels>&& img) = default;
 
-            Image<T> clone() const {
-                Image<T> out(size);
-                this->clone_into(out);
-                return std::move(out);
-            }
-
-            Image<T>& clone_into(Image<T>& out) const {
-                corecheck(size == out.size, "Output image size does not match");
-
-                check_cuda(cudaMemcpy(out.ptr(),
-                                      this->ptr(),
-                                      this->get_bytes(),
-                                      cudaMemcpyDeviceToDevice));
-                return out;
-            }
-
-            uint2 getSize() const {
-                return size;
-            }
+            Image<T, channels> clone() const;
+            Image<T, channels>& clone_into(Image<T, channels>& out) const;
+            uint2 getSize() const;
 
            protected:
             uint2 size;
         };
 
-        class Image3U : public Image<uchar3> {
+        class Image3U : public Image<uchar, 3> {
            public:
-            using Image<uchar3>::Image;
+            using Image<uchar, 3>::Image;
 
-            Image3U(const Image<uchar3>& img) : Image<uchar3>(img) {}
+            Image3U(const Image<uchar, 3>& img) : Image<uchar, 3>(img) {}
 
             Image3U(const Image3U& img)            = default;
             Image3U(Image3U&& img)                 = default;
@@ -121,11 +107,11 @@ namespace corekit {
             Image4U& toRGBA_into(Image4U& out) const;
         };
 
-        class Image4U : public Image<uchar4> {
+        class Image4U : public Image<uchar, 4> {
            public:
-            using Image<uchar4>::Image;
+            using Image<uchar, 4>::Image;
 
-            Image4U(const Image<uchar4>& img) : Image<uchar4>(img) {}
+            Image4U(const Image<uchar, 4>& img) : Image<uchar, 4>(img) {}
 
             Image4U(const Image4U& img)            = default;
             Image4U(Image4U&& img)                 = default;
@@ -136,11 +122,11 @@ namespace corekit {
             Image3U& toRGB_into(Image3U& out) const;
         };
 
-        class Image3F : public Image<float3> {
+        class Image3F : public Image<float, 3> {
            public:
-            using Image<float3>::Image;
+            using Image<float, 3>::Image;
 
-            Image3F(const Image<float3>& img) : Image<float3>(img) {}
+            Image3F(const Image<float, 3>& img) : Image<float, 3>(img) {}
 
             Image3F(const Image3F& img)            = default;
             Image3F(Image3F&& img)                 = default;

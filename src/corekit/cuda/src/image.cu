@@ -35,11 +35,11 @@ namespace corekit {
                         (size.y + block.y - 1) / block.y);
         }
 
-        __global__ void rgb_to_nv16_kernel(const uchar3* in,
-                                           uint8_t*      yPlane,
-                                           uint8_t*      uvPlane,
-                                           uint2         shape,
-                                           bool          swapUV) {
+        __global__ void rgb_to_nv16_kernel(const uchar* in,
+                                           uint8_t*     yPlane,
+                                           uint8_t*     uvPlane,
+                                           uint2        shape,
+                                           bool         swapUV) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -47,12 +47,16 @@ namespace corekit {
                 return;
             }
 
-            const int    idx = y * shape.x + x;
-            const uchar3 rgb = in[idx];
+            const int idx     = y * shape.x + x;
+            const int rgb_idx = idx * 3;
 
-            const float rf = (float)(rgb.x);
-            const float gf = (float)(rgb.y);
-            const float bf = (float)(rgb.z);
+            const uint8_t r = in[rgb_idx + 0];
+            const uint8_t g = in[rgb_idx + 1];
+            const uint8_t b = in[rgb_idx + 2];
+
+            const float rf = (float)(r);
+            const float gf = (float)(g);
+            const float bf = (float)(b);
 
             const float yf = 0.299f * rf + 0.587f * gf + 0.114f * bf;
             const float uf =
@@ -76,7 +80,7 @@ namespace corekit {
 
         __global__ void nv16_to_rgb_kernel(const uint8_t* yPlane,
                                            const uint8_t* uvPlane,
-                                           uchar3*        out,
+                                           uchar*         out,
                                            uint2          shape,
                                            bool           swapUV) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -109,13 +113,15 @@ namespace corekit {
             const int G = static_cast<int>(lrintf(gf));
             const int B = static_cast<int>(lrintf(bf));
 
-            out[y * shape.x + x] =
-                make_uchar3(clamp_u8(R), clamp_u8(G), clamp_u8(B));
+            const int idx    = y * shape.x + x;
+            out[idx * 3 + 0] = clamp_u8(R);
+            out[idx * 3 + 1] = clamp_u8(G);
+            out[idx * 3 + 2] = clamp_u8(B);
         }
 
-        __global__ void rgb_to_bgr_kernel(const uchar3* in,
-                                          uchar3*       out,
-                                          uint2         shape) {
+        __global__ void rgb_to_bgr_kernel(const uchar* in,
+                                          uchar*       out,
+                                          uint2        shape) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -123,14 +129,17 @@ namespace corekit {
                 return;
             }
 
-            const int    idx = y * shape.x + x;
-            const uchar3 rgb = in[idx];
-            out[idx]         = make_uchar3(rgb.z, rgb.y, rgb.x);
+            const int idx     = y * shape.x + x;
+            const int rgb_idx = idx * 3;
+
+            out[rgb_idx + 0] = in[rgb_idx + 2];
+            out[rgb_idx + 1] = in[rgb_idx + 1];
+            out[rgb_idx + 2] = in[rgb_idx + 0];
         }
 
-        __global__ void rgb_to_rgba_kernel(const uchar3* in,
-                                           uchar4*       out,
-                                           uint2         shape) {
+        __global__ void rgb_to_rgba_kernel(const uchar* in,
+                                           uchar*       out,
+                                           uint2        shape) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -138,14 +147,19 @@ namespace corekit {
                 return;
             }
 
-            const int    idx = y * shape.x + x;
-            const uchar3 rgb = in[idx];
-            out[idx]         = make_uchar4(rgb.x, rgb.y, rgb.z, 255);
+            const int idx      = y * shape.x + x;
+            const int rgb_idx  = idx * 3;
+            const int rgba_idx = idx * 4;
+
+            out[rgba_idx + 0] = in[rgb_idx + 0];
+            out[rgba_idx + 1] = in[rgb_idx + 1];
+            out[rgba_idx + 2] = in[rgb_idx + 2];
+            out[rgba_idx + 3] = 255;
         }
 
-        __global__ void rgba_to_rgb_kernel(const uchar4* in,
-                                           uchar3*       out,
-                                           uint2         shape) {
+        __global__ void rgba_to_rgb_kernel(const uchar* in,
+                                           uchar*       out,
+                                           uint2        shape) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -153,14 +167,18 @@ namespace corekit {
                 return;
             }
 
-            const int    idx  = y * shape.x + x;
-            const uchar4 rgba = in[idx];
-            out[idx]          = make_uchar3(rgba.x, rgba.y, rgba.z);
+            const int idx      = y * shape.x + x;
+            const int rgba_idx = idx * 4;
+            const int rgb_idx  = idx * 3;
+
+            out[rgb_idx + 0] = in[rgba_idx + 0];
+            out[rgb_idx + 1] = in[rgba_idx + 1];
+            out[rgb_idx + 2] = in[rgba_idx + 2];
         }
 
-        __global__ void u3_to_f3_kernel(const uchar3* in,
-                                        float3*       out,
-                                        uint2         shape) {
+        __global__ void u3_to_f1_kernel(const uchar* in,
+                                        float*       out,
+                                        uint2        shape) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -168,17 +186,22 @@ namespace corekit {
                 return;
             }
 
-            const int    idx = y * shape.x + x;
-            const uchar3 v   = in[idx];
+            const int idx     = y * shape.x + x;
+            const int rgb_idx = idx * 3;
+            const int plane   = shape.x * shape.y;
 
-            out[idx] = make_float3((float)(v.x) / 255.0f,
-                                   (float)(v.y) / 255.0f,
-                                   (float)(v.z) / 255.0f);
+            const uint8_t r = in[rgb_idx + 0];
+            const uint8_t g = in[rgb_idx + 1];
+            const uint8_t b = in[rgb_idx + 2];
+
+            out[0 * plane + idx] = (float)(r) / 255.0f;
+            out[1 * plane + idx] = (float)(g) / 255.0f;
+            out[2 * plane + idx] = (float)(b) / 255.0f;
         }
 
-        __global__ void f3_to_u3_kernel(const float3* in,
-                                        uchar3*       out,
-                                        uint2         shape) {
+        __global__ void f1_to_u3_kernel(const float* in,
+                                        uchar*       out,
+                                        uint2        shape) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -186,20 +209,24 @@ namespace corekit {
                 return;
             }
 
-            const int    idx = y * shape.x + x;
-            const float3 v   = in[idx];
+            const int idx     = y * shape.x + x;
+            const int rgb_idx = idx * 3;
+            const int plane   = shape.x * shape.y;
 
-            out[idx] =
-                make_uchar3(clamp_u8(static_cast<int>(lrintf(v.x * 255.0f))),
-                            clamp_u8(static_cast<int>(lrintf(v.y * 255.0f))),
-                            clamp_u8(static_cast<int>(lrintf(v.z * 255.0f))));
+            const float r = in[0 * plane + idx];
+            const float g = in[1 * plane + idx];
+            const float b = in[2 * plane + idx];
+
+            out[rgb_idx + 0] = clamp_u8(static_cast<int>(lrintf(r * 255.0f)));
+            out[rgb_idx + 1] = clamp_u8(static_cast<int>(lrintf(g * 255.0f)));
+            out[rgb_idx + 2] = clamp_u8(static_cast<int>(lrintf(b * 255.0f)));
         }
 
-        __global__ void resize_u3_kernel(const uchar3* in,
-                                         uchar3*       out,
-                                         uint2         inshape,
-                                         uint2         outshape,
-                                         float2        scale) {
+        __global__ void resize_u3_kernel(const uchar* in,
+                                         uchar*       out,
+                                         uint2        inshape,
+                                         uint2        outshape,
+                                         float2       scale) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -220,42 +247,33 @@ namespace corekit {
             const float dx = srcX - (float)(x0);
             const float dy = srcY - (float)(y0);
 
-            const int outIdx  = (y * outshape.x + x);
-            const int inIdx00 = (y0 * inshape.x + x0);
-            const int inIdx10 = (y0 * inshape.x + x1);
-            const int inIdx01 = (y1 * inshape.x + x0);
-            const int inIdx11 = (y1 * inshape.x + x1);
+            const int outIdx  = y * outshape.x + x;
+            const int inIdx00 = y0 * inshape.x + x0;
+            const int inIdx10 = y0 * inshape.x + x1;
+            const int inIdx01 = y1 * inshape.x + x0;
+            const int inIdx11 = y1 * inshape.x + x1;
 
-            const uchar3 v00 = in[inIdx00];
-            const uchar3 v10 = in[inIdx10];
-            const uchar3 v01 = in[inIdx01];
-            const uchar3 v11 = in[inIdx11];
+            // Process each channel
+            for (int c = 0; c < 3; ++c) {
+                const float v00 = (float)in[inIdx00 * 3 + c];
+                const float v10 = (float)in[inIdx10 * 3 + c];
+                const float v01 = (float)in[inIdx01 * 3 + c];
+                const float v11 = (float)in[inIdx11 * 3 + c];
 
-            const float3 v0 = make_float3(
-                (float)(v00.x) + ((float)(v10.x) - (float)(v00.x)) * dx,
-                (float)(v00.y) + ((float)(v10.y) - (float)(v00.y)) * dx,
-                (float)(v00.z) + ((float)(v10.z) - (float)(v00.z)) * dx);
+                const float v0 = v00 + (v10 - v00) * dx;
+                const float v1 = v01 + (v11 - v01) * dx;
+                const float v  = v0 + (v1 - v0) * dy;
 
-            const float3 v1 = make_float3(
-                (float)(v01.x) + ((float)(v11.x) - (float)(v01.x)) * dx,
-                (float)(v01.y) + ((float)(v11.y) - (float)(v01.y)) * dx,
-                (float)(v01.z) + ((float)(v11.z) - (float)(v01.z)) * dx);
-
-            const float3 v = make_float3(v0.x + (v1.x - v0.x) * dy,
-                                         v0.y + (v1.y - v0.y) * dy,
-                                         v0.z + (v1.z - v0.z) * dy);
-
-            out[outIdx] = make_uchar3(clamp_u8(static_cast<int>(lrintf(v.x))),
-                                      clamp_u8(static_cast<int>(lrintf(v.y))),
-                                      clamp_u8(static_cast<int>(lrintf(v.z))));
+                out[outIdx * 3 + c] = clamp_u8(static_cast<int>(lrintf(v)));
+            }
         }
 
-        __global__ void pad_u3_kernel(const uchar3* in,
-                                      uchar3*       out,
-                                      uint2         inshape,
-                                      uint2         outshape,
-                                      uint2         padding,
-                                      uchar3        padValue) {
+        __global__ void pad_u3_kernel(const uchar* in,
+                                      uchar*       out,
+                                      uint2        inshape,
+                                      uint2        outshape,
+                                      uint2        padding,
+                                      uchar3       padValue) {
             const int x = blockIdx.x * blockDim.x + threadIdx.x;
             const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -266,13 +284,20 @@ namespace corekit {
             const int srcX = x - padding.x;
             const int srcY = y - padding.y;
 
-            const int outIdx = y * outshape.x + x;
+            const int outIdx      = y * outshape.x + x;
+            const int out_rgb_idx = outIdx * 3;
 
             if (srcX >= 0 && srcX < inshape.x && srcY >= 0 &&
                 srcY < inshape.y) {
-                out[outIdx] = in[srcY * inshape.x + srcX];
+                const int srcIdx     = srcY * inshape.x + srcX;
+                const int in_rgb_idx = srcIdx * 3;
+                out[out_rgb_idx + 0] = in[in_rgb_idx + 0];
+                out[out_rgb_idx + 1] = in[in_rgb_idx + 1];
+                out[out_rgb_idx + 2] = in[in_rgb_idx + 2];
             } else {
-                out[outIdx] = padValue;
+                out[out_rgb_idx + 0] = padValue.x;
+                out[out_rgb_idx + 1] = padValue.y;
+                out[out_rgb_idx + 2] = padValue.z;
             }
         }
 
@@ -280,11 +305,13 @@ namespace corekit {
             #############################################################
         */
 
-        template <typename T>
-        static void try_reuse(Image<T>& out, uint2 size) {
+        template <typename T, uint channels>
+        static void try_reuse(Image<T, channels>& out, uint2 size) {
+            check_cuda();
             if (!out.ptr() || out.getSize() != size) {
-                out = Image<T>(size);
+                out = Image<T, channels>(size);
             }
+            check_cuda();
         }
 
         Image3U Image3U::fromCvMat(const cv::Mat& img) {
@@ -294,6 +321,8 @@ namespace corekit {
         }
 
         Image3U& Image3U::fromCvMat(Image3U& out, const cv::Mat& img) {
+            check_cuda();
+
             if (img.empty()) {
                 throw std::invalid_argument(
                     "Image::fromCvMat: input image is empty");
@@ -313,10 +342,13 @@ namespace corekit {
                                   out.get_bytes(),
                                   cudaMemcpyHostToDevice));
 
+            check_cuda();
             return out;
         }
 
         cv::Mat Image3U::toCvMat() const {
+            check_cuda();
+
             if (this->ptr() == nullptr || this->get_elems() == 0) {
                 throw std::invalid_argument("Image::toCvMat: empty image");
             }
@@ -327,6 +359,7 @@ namespace corekit {
                                   this->get_bytes(),
                                   cudaMemcpyDeviceToHost));
 
+            check_cuda();
             return img;
         }
 
@@ -356,6 +389,7 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(out.size, block);
 
+            check_cuda();
             nv16_to_rgb_kernel<<<grid, block, 0>>>(
                 yuvData,
                 yuvData + out.size.x * out.size.y,
@@ -383,6 +417,7 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
+            check_cuda();
             rgb_to_nv16_kernel<<<grid, block, 0>>>(this->ptr(),
                                                    d_yuvData,
                                                    d_yuvData + size.x * size.y,
@@ -401,6 +436,8 @@ namespace corekit {
         }
 
         Image3U& Image3U::resize_into(Image3U& out, uint2 size) const {
+            check_cuda();
+
             if (!this->ptr()) {
                 throw std::invalid_argument(
                     "Image3U::resize_into: input image data is null");
@@ -422,13 +459,13 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
+            check_cuda();
             resize_u3_kernel<<<grid, block>>>(this->ptr(),
                                               out.ptr(),
                                               inshape,
                                               outshape,
                                               scale);
             check_cuda();
-
             return out;
         }
 
@@ -467,6 +504,7 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(outshape, block);
 
+            check_cuda();
             pad_u3_kernel<<<grid, block>>>(this->ptr(),
                                            out.ptr(),
                                            inshape,
@@ -502,6 +540,7 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
+            check_cuda();
             rgb_to_bgr_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
 
@@ -527,6 +566,7 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
+            check_cuda();
             rgb_to_rgba_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
 
@@ -552,7 +592,8 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
-            u3_to_f3_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
+            check_cuda();
+            u3_to_f1_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
 
             return out;
@@ -572,12 +613,20 @@ namespace corekit {
                     "Image3F::chnflip_into: input image data is null");
             }
 
+            // Verify Image3F has 3 channels worth of data (planar format)
+            const uint64_t expected_elems = size.x * size.y * 3;
+            if (this->get_elems() != expected_elems) {
+                throw std::invalid_argument(
+                    "Image3F::chnflip_into: Image3F does not have 3 channels");
+            }
+
             try_reuse(out, size);
 
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
-            f3_to_u3_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
+            check_cuda();
+            f1_to_u3_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
 
             return out;
@@ -602,15 +651,40 @@ namespace corekit {
             const dim3 block = make_block_2d();
             const dim3 grid  = make_grid_2d(size, block);
 
+            check_cuda();
             rgba_to_rgb_kernel<<<grid, block>>>(this->ptr(), out.ptr(), size);
             check_cuda();
 
             return out;
         }
 
-        template struct Image<uchar3>;
-        template struct Image<uchar4>;
-        template struct Image<float3>;
+        template <typename T, uint channels>
+        Image<T, channels> Image<T, channels>::clone() const {
+            Image<T, channels> out(size);
+            this->clone_into(out);
+            return std::move(out);
+        }
+
+        template <typename T, uint channels>
+        Image<T, channels>& Image<T, channels>::clone_into(
+            Image<T, channels>& out) const {
+            try_reuse(out, size);
+
+            check_cuda(cudaMemcpy(out.ptr(),
+                                  this->ptr(),
+                                  this->get_bytes(),
+                                  cudaMemcpyDeviceToDevice));
+            return out;
+        }
+
+        template <typename T, uint channels>
+        uint2 Image<T, channels>::getSize() const {
+            return size;
+        }
+
+        template struct Image<uchar, 3>;
+        template struct Image<uchar, 4>;
+        template struct Image<float, 3>;
 
     }  // namespace cuda
 }  // namespace corekit
