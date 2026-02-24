@@ -323,6 +323,11 @@ namespace corekit {
         Image3U& Image3U::fromCvMat(Image3U& out, const cv::Mat& img) {
             check_cuda();
 
+            if (img.data == nullptr) {
+                throw std::invalid_argument(
+                    "Image::fromCvMat: input image data is null");
+            }
+
             if (img.empty()) {
                 throw std::invalid_argument(
                     "Image::fromCvMat: input image is empty");
@@ -333,10 +338,21 @@ namespace corekit {
                     "Image::fromCvMat: only CV_8UC3 type is supported");
             }
 
+            if (img.isContinuous() == false) {
+                throw std::invalid_argument(
+                    "Image::fromCvMat: only continuous cv::Mat is supported");
+            }
+
+            if (out.ptr() == nullptr) {
+                throw std::invalid_argument(
+                    "Image::fromCvMat: output image is not initialized");
+            }
+
             const Size size = make_uint2(img.cols, img.rows);
 
             try_reuse(out, size);
 
+            check_cuda();
             check_cuda(cudaMemcpy(out.ptr(),
                                   img.data,
                                   out.get_bytes(),
@@ -364,19 +380,19 @@ namespace corekit {
         }
 
         Image3U Image3U::fromNv16(const Size&    size,
-                                  const uint8_t* yuvData,
+                                  const uint8_t* d_yuvData,
                                   bool           swapUV) {
             Image3U out(size);
-            fromNv16(out, yuvData, swapUV);
+            fromNv16(out, d_yuvData, swapUV);
             return out;
         }
 
         Image3U& Image3U::fromNv16(Image3U&       out,
-                                   const uint8_t* yuvData,
+                                   const uint8_t* d_yuvData,
                                    bool           swapUV) {
             check_cuda();
 
-            if (yuvData == nullptr) {
+            if (d_yuvData == nullptr) {
                 throw std::invalid_argument(
                     "Image3U::fromNv16: input data is null");
             }
@@ -391,8 +407,8 @@ namespace corekit {
 
             check_cuda();
             nv16_to_rgb_kernel<<<grid, block, 0>>>(
-                yuvData,
-                yuvData + out.size.x * out.size.y,
+                d_yuvData,
+                d_yuvData + out.size.x * out.size.y,
                 out.ptr(),
                 out.size,
                 swapUV);
@@ -412,6 +428,11 @@ namespace corekit {
             if (d_yuvData == nullptr) {
                 throw std::invalid_argument(
                     "Image3U::toNv16: target buffer is null");
+            }
+
+            if (is_device_pointer(d_yuvData) == false) {
+                throw std::invalid_argument(
+                    "Image3U::toNv16: target buffer must be a device pointer");
             }
 
             const dim3 block = make_block_2d();

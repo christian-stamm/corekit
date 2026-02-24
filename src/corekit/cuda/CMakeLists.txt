@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.25)
 
 if(BUILD_COREKIT_CUDA)
 
@@ -18,13 +18,14 @@ if(BUILD_COREKIT_CUDA)
     set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
     add_library(corekit-cuda STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/core.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/image.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/src/draw.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/src/gltex.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cpp
     )
 
-    add_dependencies(
+    add_dependencies(corekit-cuda
         corekit-core
         corekit-opengl
     )

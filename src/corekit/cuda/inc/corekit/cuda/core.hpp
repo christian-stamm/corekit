@@ -2,6 +2,7 @@
 #include <cuda_runtime.h>
 #include <vector_functions.h>
 
+#include <atomic>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -9,6 +10,7 @@
 
 #include "corekit/types.hpp"
 #include "corekit/utils/assert.hpp"
+#include "corekit/utils/logger.hpp"
 
 using uint  = unsigned int;
 using uchar = unsigned char;
@@ -19,50 +21,32 @@ namespace corekit {
         using namespace corekit::types;
         using namespace corekit::utils;
 
-        inline void check_cuda(const cudaError_t& err   = cudaGetLastError(),
-                               const Location& location = Location::current()) {
-            corecheck(err == cudaSuccess, cudaGetErrorString(err), location);
-        }
+        void check_cuda(const cudaError_t& err      = cudaGetLastError(),
+                        const Location&    location = Location::current());
 
-        inline bool is_device_pointer(const void* ptr) {
-            cudaPointerAttributes attributes;
-
-            const cudaError_t result =
-                cudaPointerGetAttributes(&attributes, ptr);
-
-            if (result != cudaSuccess) {
-                return false;
-            }
-
-            return attributes.type == cudaMemoryTypeDevice;
-        }
+        bool is_device_pointer(const void* ptr);
 
         template <typename T>
         bool is_device_pointer(const T* ptr) {
             return is_device_pointer(static_cast<const void*>(ptr));
         }
 
-        inline void log_stage(cudaStream_t                 stream,
-                              const char*                  label,
-                              const std::function<void()>& work) {
-            cudaEvent_t start = nullptr;
-            cudaEvent_t stop  = nullptr;
-            cudaEventCreate(&start);
-            cudaEventCreate(&stop);
+        struct Tracing {
+           public:
+            Tracing() = delete;
 
-            cudaEventRecord(start, stream);
-            work();
-            cudaEventRecord(stop, stream);
-            cudaEventSynchronize(stop);
+            static void log_stage(cudaStream_t                 stream,
+                                  const char*                  label,
+                                  const std::function<void()>& work);
 
-            float ms = 0.0f;
-            cudaEventElapsedTime(&ms, start, stop);
-            std::cout << "[timer] " << label << ": " << ms << " ms"
-                      << std::endl;
+            static uint64_t request_bytes(uint64_t bytes);
+            static uint64_t release_bytes(uint64_t bytes);
+            static uint64_t total_bytes();
 
-            cudaEventDestroy(start);
-            cudaEventDestroy(stop);
-        }
+           private:
+            static Logger                logger;
+            static std::atomic<uint64_t> total_cuda_mem;
+        };
 
         template <typename T>
         struct NvMem {
@@ -72,18 +56,16 @@ namespace corekit {
                 T* rawptr = nullptr;
 
                 if (0 < elems) {
-                    check_cuda(cudaMalloc(&rawptr, elems * sizeof(T)));
+                    const uint64_t bytes = elems * sizeof(T);
 
-                    std::cout << "Created Memory of size " << get_bytes()
-                              << " bytes" << std::endl;
+                    check_cuda(cudaMalloc(&rawptr, bytes));
+                    const uint64_t after_alloc = Tracing::request_bytes(bytes);
 
-                    buffer.reset(rawptr, [elems = this->elems](T* p) {
+                    buffer.reset(rawptr, [this, bytes = bytes](T* p) {
                         if (p) {
-                            std::cout << "Destroyed Memory of size "
-                                      << (elems * sizeof(T)) << " bytes"
-                                      << std::endl;
-
                             check_cuda(cudaFree(p));
+                            const uint64_t after_free =
+                                Tracing::release_bytes(bytes);
                         }
                     });
                 }

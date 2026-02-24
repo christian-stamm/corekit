@@ -60,9 +60,9 @@ namespace corekit {
                 default;
             Image<T, channels>& operator=(Image<T, channels>&& img) = default;
 
-            Image<T, channels> clone() const;
+            Image<T, channels>  clone() const;
             Image<T, channels>& clone_into(Image<T, channels>& out) const;
-            uint2 getSize() const;
+            uint2               getSize() const;
 
            protected:
             uint2 size;
@@ -83,12 +83,12 @@ namespace corekit {
             static Image3U  fromCvMat(const cv::Mat& img);
             static Image3U& fromCvMat(Image3U& out, const cv::Mat& img);
 
-            uint8_t*        toNv16(uint8_t* target, bool swapUV = false) const;
+            uint8_t* toNv16(uint8_t* d_yuvData, bool swapUV = false) const;
             static Image3U  fromNv16(const Size&    size,
-                                     const uint8_t* yuvData,
+                                     const uint8_t* d_yuvData,
                                      bool           swapUV = false);
             static Image3U& fromNv16(Image3U&       out,
-                                     const uint8_t* yuvData,
+                                     const uint8_t* d_yuvData,
                                      bool           swapUV = false);
 
             Image3U  resize(uint2 size) const;

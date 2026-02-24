@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.19)
+cmake_minimum_required(VERSION 3.25)
 
 # build lz4 library
 set(LZ4_BUILD_CLI OFF CACHE BOOL "" FORCE)
