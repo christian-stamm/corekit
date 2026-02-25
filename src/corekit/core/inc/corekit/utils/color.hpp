@@ -64,7 +64,7 @@ namespace corekit {
                     float s = 0.7f;              // fixed saturation
                     float v = 0.9f;              // fixed value
 
-                    colors.push_back(hsv2rgba(h, s, v));
+                    colors.push_back(hsv2rgba(h + 180, s, v));
                 }
 
                 return colors;

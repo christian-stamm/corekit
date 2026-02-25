@@ -343,14 +343,14 @@ namespace corekit {
                     "Image::fromCvMat: only continuous cv::Mat is supported");
             }
 
+            const Size size = make_uint2(img.cols, img.rows);
+
+            try_reuse(out, size);
+
             if (out.ptr() == nullptr) {
                 throw std::invalid_argument(
                     "Image::fromCvMat: output image is not initialized");
             }
-
-            const Size size = make_uint2(img.cols, img.rows);
-
-            try_reuse(out, size);
 
             check_cuda();
             check_cuda(cudaMemcpy(out.ptr(),
