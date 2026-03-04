@@ -31,9 +31,10 @@ namespace corekit {
             using List = std::vector<Ptr>;
 
             struct Settings {
-                Hash title   = "<NO WINDOW TITLE>";
-                Vec2 shape   = {};
-                bool visible = true;
+                Hash title      = "<NO WINDOW TITLE>";
+                Vec2 shape      = {};
+                bool visible    = true;
+                bool fullscreen = false;
             };
 
             using Config  = corekit::utils::Config<Settings>;
@@ -71,7 +72,7 @@ namespace corekit {
         };
 
     };  // namespace opengl
-};      // namespace corekit
+};  // namespace corekit
 
 namespace nlohmann {
     using namespace corekit::types;
@@ -82,6 +83,7 @@ namespace nlohmann {
         j.at("title").get_to(s.title);
         j.at("shape").get_to(s.shape);
         j.at("visible").get_to(s.visible);
+        j.at("fullscreen").get_to(s.fullscreen);
     }
 
     inline void to_json(JsonMap& j, const Window::Settings& s) {
@@ -89,6 +91,7 @@ namespace nlohmann {
             {"title", s.title},
             {"shape", s.shape},
             {"visible", s.visible},
+            {"fullscreen", s.fullscreen},
         };
     }
 

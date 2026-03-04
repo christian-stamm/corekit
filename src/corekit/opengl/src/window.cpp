@@ -93,12 +93,18 @@ namespace corekit {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
             glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 
+            if (context.fullscreen) {
+                glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+            }
+
             window =
                 glfwCreateWindow(size.x(), size.y(), name.c_str(), NULL, NULL);
             corecheck(window != nullptr, "Failed to create GLFW window");
 
             glfwMakeContextCurrent(window);
             glfwSwapInterval(0);
+
+            glfwSetWindowPos(window, 0, 0);
 
             if (!context.visible) {
                 glfwHideWindow(window);
@@ -155,6 +161,15 @@ namespace corekit {
                     rt->mousebtn.set(mpos);
                 });
 
+            glfwSetKeyCallback(
+                window,
+                [](GLFWwindow* w, int key, int scancode, int action, int mods) {
+                    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+                        void* self = glfwGetWindowUserPointer(w);
+                        static_cast<Window*>(self)->close();
+                    }
+                });
+
             status = gladLoadGLES2Loader((GLADloadproc)glfwGetProcAddress);
             corecheck(status != 0, "Failed to initialize GLAD");
 
@@ -187,4 +202,4 @@ namespace corekit {
         }
 
     };  // namespace opengl
-};      // namespace corekit
+};  // namespace corekit
