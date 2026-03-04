@@ -46,7 +46,7 @@ namespace corekit {
 
             CudaTex(const Texture::Settings& settings) : Texture(settings) {}
 
-            virtual void resize(Vec2 size, bool force = false) override;
+            virtual bool resize(Vec2 size, bool force = false) override;
             virtual void fill(cv::Mat  image,
                               uint     layer = 0,
                               FillMode mode  = RESIZE_IMAGE) override;

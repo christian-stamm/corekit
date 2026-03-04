@@ -16,24 +16,26 @@ namespace corekit {
 
         constexpr int kBlockSize2D = 16;
 
-        __device__ __forceinline__ uint8_t clamp_u8(int     v,
-                                                    uint8_t lo = 0,
-                                                    uint8_t hi = 255) {
-            return static_cast<uint8_t>(v < lo ? lo : (v > hi ? hi : v));
-        }
+        namespace {
+            __device__ __forceinline__ uint8_t clamp_u8(int     v,
+                                                        uint8_t lo = 0,
+                                                        uint8_t hi = 255) {
+                return static_cast<uint8_t>(v < lo ? lo : (v > hi ? hi : v));
+            }
 
-        __device__ __forceinline__ int clamp_int(int v, int lo, int hi) {
-            return v < lo ? lo : (v > hi ? hi : v);
-        }
+            __device__ __forceinline__ int clamp_int(int v, int lo, int hi) {
+                return v < lo ? lo : (v > hi ? hi : v);
+            }
 
-        dim3 make_block_2d() {
-            return dim3(kBlockSize2D, kBlockSize2D);
-        }
+            dim3 make_block_2d() {
+                return dim3(kBlockSize2D, kBlockSize2D);
+            }
 
-        dim3 make_grid_2d(uint2 size, dim3 block) {
-            return dim3((size.x + block.x - 1) / block.x,
-                        (size.y + block.y - 1) / block.y);
-        }
+            dim3 make_grid_2d(uint2 size, dim3 block) {
+                return dim3((size.x + block.x - 1) / block.x,
+                            (size.y + block.y - 1) / block.y);
+            }
+        }  // namespace
 
         __global__ void rgb_to_nv16_kernel(const uchar* in,
                                            uint8_t*     yPlane,
@@ -451,6 +453,10 @@ namespace corekit {
         }
 
         Image3U Image3U::resize(uint2 size) const {
+            if (size.x == this->size.x && size.y == this->size.y) {
+                return *this;
+            }
+
             Image3U out(size);
             resize_into(out, size);
             return std::move(out);

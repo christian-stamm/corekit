@@ -22,14 +22,17 @@ if(BUILD_COREKIT_CORE)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/utils/watch.cpp
     )
 
-    target_include_directories(corekit-core PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/inc
-        ${OpenCV_INCLUDE_DIRS}
+    target_include_directories(corekit-core
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
+            $<INSTALL_INTERFACE:include>
+            ${OpenCV_INCLUDE_DIRS}
     )
 
-    target_link_libraries(corekit-core PUBLIC
-        Eigen3::Eigen
-        ${OpenCV_LIBS}
+    target_link_libraries(corekit-core
+        PUBLIC
+            Eigen3::Eigen
+            ${OpenCV_LIBS}
     )
 
     if(COREKIT_PLATFORM STREQUAL "UNIX")
@@ -37,5 +40,11 @@ if(BUILD_COREKIT_CORE)
     elseif(COREKIT_PLATFORM STREQUAL "PICO")
         target_compile_definitions(corekit-core PUBLIC PLATFORM_PICO)
     endif()
+
+    if(TARGET trinity::platform)
+        target_link_libraries(corekit-core PUBLIC trinity::platform)
+    endif()
+
+    add_library(corekit::core ALIAS corekit-core)
 
 endif()

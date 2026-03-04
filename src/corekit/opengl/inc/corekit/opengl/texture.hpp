@@ -86,7 +86,7 @@ namespace corekit {
             void bind() const;
             void unbind() const;
 
-            virtual void resize(Vec2 size, bool force = false);
+            virtual bool resize(Vec2 size, bool force = false);
 
             virtual void fill(cv::Mat  image,
                               GLuint   layer = 0,

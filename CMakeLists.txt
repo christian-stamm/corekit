@@ -17,13 +17,4 @@ set(BUILD_COREKIT_CORE TRUE)
 set(BUILD_COREKIT_CUDA TRUE)
 set(BUILD_COREKIT_OPENGL TRUE)
 
-########################################################################
-
-if(DEFINED RESSOURCE_DIR)
-add_compile_definitions(RESSOURCE_DIR="${RESSOURCE_DIR}")
-message(STATUS "Defined RESSOURCE_DIR: ${RESSOURCE_DIR}")
-endif()
-
-########################################################################
-
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)

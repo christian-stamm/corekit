@@ -130,15 +130,15 @@ namespace corekit {
             font->ascent     = static_cast<uint>(ascent);
             font->descent    = static_cast<uint>(descent);
             font->lineGap    = static_cast<uint>(lineGap);
-     
-            font->d_atlas = NvMem<uint>( atlas.size());
+
+            font->d_atlas = NvMem<uint>(atlas.size());
 
             check_cuda(cudaMemcpy(font->d_atlas.ptr(),
                                   atlas.data(),
                                   font->d_atlas.get_bytes(),
                                   cudaMemcpyHostToDevice));
 
-            font->d_glyphs = NvMem<GlyphInfo>(glyphs.size() );
+            font->d_glyphs = NvMem<GlyphInfo>(glyphs.size());
 
             check_cuda(cudaMemcpy(font->d_glyphs.ptr(),
                                   glyphs.data(),
@@ -211,37 +211,39 @@ namespace corekit {
                        y < static_cast<int>(size.y);
             }
 
-            __device__ __forceinline__ void set_pixel(uchar*  img,
-                                                      uint2   size,
-                                                      int     x,
-                                                      int     y,
-                                                      uchar3  color) {
+            __device__ __forceinline__ void set_pixel(uchar* img,
+                                                      uint2  size,
+                                                      int    x,
+                                                      int    y,
+                                                      uchar3 color) {
                 if (!in_bounds(x, y, size)) {
                     return;
                 }
 
                 const int idx = (y * static_cast<int>(size.x) + x) * 3;
-                img[idx + 0] = color.x;
-                img[idx + 1] = color.y;
-                img[idx + 2] = color.z;
+                img[idx + 0]  = color.x;
+                img[idx + 1]  = color.y;
+                img[idx + 2]  = color.z;
             }
 
-            __device__ __forceinline__ void blend_pixel(uchar*  img,
-                                                        uint2   size,
-                                                        int     x,
-                                                        int     y,
-                                                        uchar4  color) {
+            __device__ __forceinline__ void blend_pixel(uchar* img,
+                                                        uint2  size,
+                                                        int    x,
+                                                        int    y,
+                                                        uchar4 color) {
                 if (!in_bounds(x, y, size)) {
                     return;
                 }
 
-                const int rgb_idx = (y * static_cast<int>(size.x) + x) * 3;
-                const uchar3 current = make_uchar3(img[rgb_idx + 0], img[rgb_idx + 1], img[rgb_idx + 2]);
-                const float alpha = static_cast<float>(color.w) / 255.0f;
+                const int    rgb_idx = (y * static_cast<int>(size.x) + x) * 3;
+                const uchar3 current = make_uchar3(img[rgb_idx + 0],
+                                                   img[rgb_idx + 1],
+                                                   img[rgb_idx + 2]);
+                const float  alpha   = static_cast<float>(color.w) / 255.0f;
                 const uchar3 blended = blend_rgb(current, color, alpha);
-                img[rgb_idx + 0] = blended.x;
-                img[rgb_idx + 1] = blended.y;
-                img[rgb_idx + 2] = blended.z;
+                img[rgb_idx + 0]     = blended.x;
+                img[rgb_idx + 1]     = blended.y;
+                img[rgb_idx + 2]     = blended.z;
             }
 
         }  // namespace
@@ -321,9 +323,9 @@ namespace corekit {
             const float px = static_cast<float>(x) + 0.5f;
             const float py = static_cast<float>(y) + 0.5f;
 
-            const int idx = y * static_cast<int>(img_size.x) + x;
+            const int idx     = y * static_cast<int>(img_size.x) + x;
             const int rgb_idx = idx * 3;
-            uchar3    out = {img[rgb_idx + 0], img[rgb_idx + 1], img[rgb_idx + 2]};
+            uchar3 out = {img[rgb_idx + 0], img[rgb_idx + 1], img[rgb_idx + 2]};
 
             for (int i = 0; i < count; ++i) {
                 const Rect rect = rects[i];
@@ -465,8 +467,7 @@ namespace corekit {
 
                 const unsigned char uc = static_cast<unsigned char>(c);
                 if (uc < kFirstChar || uc > kLastChar) {
-                    const GlyphInfo space =
-                        font.d_glyphs_ptr[' ' - kFirstChar];
+                    const GlyphInfo space = font.d_glyphs_ptr[' ' - kFirstChar];
                     penX += space.advance;
                     o[i].glyphIndex = -1;
                     continue;
@@ -528,13 +529,15 @@ namespace corekit {
 
                     const float a = (static_cast<float>(a8) / 255.0f) *
                                     (static_cast<float>(inst.color.w) / 255.0f);
-                    const int idx = iy * shape.x + ix;
+                    const int idx     = iy * shape.x + ix;
                     const int rgb_idx = idx * 3;
-                    uchar3 out = {img[rgb_idx + 0], img[rgb_idx + 1], img[rgb_idx + 2]};
-                    out = blend_rgb(out, inst.color, a);
-                    img[rgb_idx + 0] = out.x;
-                    img[rgb_idx + 1] = out.y;
-                    img[rgb_idx + 2] = out.z;
+                    uchar3    out     = {img[rgb_idx + 0],
+                                         img[rgb_idx + 1],
+                                         img[rgb_idx + 2]};
+                    out               = blend_rgb(out, inst.color, a);
+                    img[rgb_idx + 0]  = out.x;
+                    img[rgb_idx + 1]  = out.y;
+                    img[rgb_idx + 2]  = out.z;
                 }
             }
         }

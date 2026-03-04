@@ -35,16 +35,16 @@ namespace corekit {
             template <typename otherstate, typename otherconfig>
             friend struct Context;
 
-            using Runtime = std::shared_ptr<State>;
+            using RuntimePtr = std::shared_ptr<State>;
 
             Context() = delete;
 
             template <typename... Params>
-            static const Context build(Runtime rt, Params... params) {
+            static const Context build(RuntimePtr rt, Params... params) {
                 return Context(params..., rt);
             }
 
-            static const Context build(Runtime rt, const Settings &cfg) {
+            static const Context build(RuntimePtr rt, const Settings &cfg) {
                 return Context(cfg, rt);
             }
 
@@ -64,10 +64,12 @@ namespace corekit {
                 return TargetContext(Settings::merge(Config(others...)), rt);
             }
 
-            const Runtime rt;
+            const RuntimePtr rt;
 
            protected:
-            Context(const Settings &cfg, Runtime rt) : Settings(cfg), rt(rt) {}
+            Context(const Settings &cfg, RuntimePtr rt)
+                : Settings(cfg)
+                , rt(rt) {}
         };
 
     };  // namespace utils

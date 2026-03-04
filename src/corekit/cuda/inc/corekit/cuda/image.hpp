@@ -43,7 +43,10 @@ namespace corekit {
             friend Image3U;
             friend Image4U;
 
-            Image(uint2 size = make_uint2(0, 0))
+            Image(uint width = 0, uint height = 0)
+                : Image(make_uint2(width, height)) {}
+
+            Image(uint2 size)
                 : Image(NvMem<T>(size.x * size.y * channels), size) {}
 
             Image(NvMem<T> mem, uint2 size) : NvMem<T>(mem), size(size) {
@@ -83,12 +86,14 @@ namespace corekit {
             static Image3U  fromCvMat(const cv::Mat& img);
             static Image3U& fromCvMat(Image3U& out, const cv::Mat& img);
 
-            uint8_t* toNv16(uint8_t* d_yuvData, bool swapUV = false) const;
-            static Image3U  fromNv16(const Size&    size,
-                                     const uint8_t* d_yuvData,
-                                     bool           swapUV = false);
+            uint8_t* toNv16(uint8_t* yuvBuffer, bool swapUV = false) const;
+
+            static Image3U fromNv16(const Size&    size,
+                                    const uint8_t* yuvBuffer,
+                                    bool           swapUV = false);
+
             static Image3U& fromNv16(Image3U&       out,
-                                     const uint8_t* d_yuvData,
+                                     const uint8_t* yuvBuffer,
                                      bool           swapUV = false);
 
             Image3U  resize(uint2 size) const;

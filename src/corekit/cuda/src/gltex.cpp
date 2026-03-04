@@ -60,10 +60,10 @@ namespace corekit {
             return Texture::cleanup();
         }
 
-        void CudaTex::resize(Vec2 size, bool force) {
+        bool CudaTex::resize(Vec2 size, bool force) {
             // Check if we actually need to resize
             if (this->size == size && !force) {
-                return;
+                return false;
             }
 
             // If CUDA resource is registered, we need to unregister it before
@@ -76,7 +76,7 @@ namespace corekit {
             }
 
             // Call base class resize to reallocate the GL texture
-            Texture::resize(size, force);
+            const bool resized = Texture::resize(size, force);
 
             // Re-register the texture with CUDA if it was previously registered
             if (wasRegistered) {
@@ -86,6 +86,8 @@ namespace corekit {
                     type,
                     cudaGraphicsRegisterFlagsWriteDiscard));
             }
+
+            return resized;
         }
 
         void CudaTex::fill(cv::Mat image, uint layer, FillMode mode) {
@@ -120,6 +122,9 @@ namespace corekit {
 
             if ((int)(imdim.x) != (int)(size.x()) ||
                 (int)(imdim.y) != (int)(size.y())) {
+                logger() << "Image size: " << imdim.x << "x" << imdim.y
+                         << ", Texture size: " << size.x() << "x" << size.y();
+
                 throw std::runtime_error(
                     "CudaTex::fill => image dimensions do not match texture "
                     "size");
@@ -150,11 +155,11 @@ namespace corekit {
             CUDA_CHECK(
                 cudaMemcpy2DToArray(cuArray,  // dst array (GL texture storage)
                                     0,
-                                    0,           // offsets
-                                    image.ptr(), // src pointer (ext memory)
-                                    rowBytes,    // src pitch in bytes
-                                    rowBytes,    // width in bytes
-                                    height,      // rows
+                                    0,            // offsets
+                                    image.ptr(),  // src pointer (ext memory)
+                                    rowBytes,     // src pitch in bytes
+                                    rowBytes,     // width in bytes
+                                    height,       // rows
                                     cudaMemcpyDeviceToDevice));  // direction
 
             CUDA_CHECK(cudaGraphicsUnmapResources(1, &cudaTexRes, stream));

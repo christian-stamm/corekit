@@ -3,6 +3,7 @@
 #include "corekit/types.hpp"
 #include "corekit/utils/math.hpp"
 #include "corekit/utils/observer.hpp"
+#include "corekit/utils/watch.hpp"
 
 namespace corekit {
 
@@ -31,6 +32,14 @@ namespace corekit {
 
             void kill() const {
                 scheduler->unload();
+            }
+
+            float uptime() const {
+                return scheduler->uptime();
+            }
+
+            void sleep(float seconds) const {
+                Watch(seconds).block();
             }
 
             static Hash getEnv(const Name& key) {

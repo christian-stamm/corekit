@@ -141,18 +141,18 @@ namespace corekit {
             glCheckError(name);
         }
 
-        void Texture::resize(Vec2 size, bool force) {
+        bool Texture::resize(Vec2 size, bool force) {
             glCheckError(name);
 
             if (type == GL_TEXTURE_CUBE_MAP && size.x() != size.y()) {
                 logger.warn() << "Texture::resize => non-square size provided "
                                  "for cube map, discarding resize.";
 
-                return;
+                return false;
             }
 
             if (this->size == size && !force) {
-                return;
+                return false;
             }
 
             this->size = size;
@@ -225,6 +225,7 @@ namespace corekit {
 
             unbind();
             glCheckError(name);
+            return true;
         }
 
         void Texture::fill(cv::Mat image, GLuint layer, FillMode mode) {
