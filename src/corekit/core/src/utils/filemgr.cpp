@@ -89,6 +89,22 @@ namespace corekit {
                 return content;
             }
 
+            std::vector<uint8_t> loadBin(const Path& file)
+            {
+                std::ifstream stream = open(file);
+
+                const size_t fileSize = static_cast<size_t>(size(stream));
+                std::vector<uint8_t> content(fileSize);
+
+                if (!stream.read(reinterpret_cast<char*>(content.data()),
+                                 fileSize)) {
+                    throw std::runtime_error("Failed to read file: " +
+                                             file.string());
+                }
+
+                return content;
+            }
+
             cv::Mat loadImg(const Path& file, const bool vflip) {
                 cv::Mat img = cv::imread(file, cv::IMREAD_COLOR);
 

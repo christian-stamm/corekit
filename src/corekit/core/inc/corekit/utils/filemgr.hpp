@@ -18,6 +18,7 @@ namespace corekit {
             bool            exists(const Path& file);
             List            scan(const Path& dir, const std::string& ext);
 
+            std::vector<uint8_t> loadBin(const Path& file);
             JsonMap     loadJson(const Path& path);
             std::string loadTxt(const Path& file);
             cv::Mat     loadImg(const Path& file, const bool vflip = false);
