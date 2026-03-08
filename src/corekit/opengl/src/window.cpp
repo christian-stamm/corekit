@@ -93,7 +93,7 @@ namespace corekit {
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
             glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 
-            if (context.fullscreen) {
+            if (!context.decorate) {
                 glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
             }
 

@@ -8,7 +8,7 @@
 namespace corekit {
     namespace utils {
 
-        constexpr std::size_t NAME_SIZE  = 8;
+        constexpr std::size_t NAME_SIZE  = 24;
         constexpr std::string CLEAR_CMD  = "\033[2J";
         constexpr std::string RED_CMD    = "\033[0;31m";
         constexpr std::string GREEN_CMD  = "\033[0;32m";
@@ -98,4 +98,4 @@ namespace corekit {
         }
 
     };  // namespace utils
-};      // namespace corekit
+};  // namespace corekit

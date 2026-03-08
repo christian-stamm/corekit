@@ -8,22 +8,33 @@
 namespace corekit {
     namespace utils {
 
-        namespace File {
+        using namespace corekit::types;
 
-            using namespace corekit::types;
+        struct File {
             using List = std::vector<Path>;
 
-            std::ifstream   open(const Path& file);
-            std::streamsize size(std::ifstream& stream);
-            bool            exists(const Path& file);
-            List            scan(const Path& dir, const std::string& ext);
+            File() = delete;
 
-            std::vector<uint8_t> loadBin(const Path& file);
-            JsonMap     loadJson(const Path& path);
-            std::string loadTxt(const Path& file);
-            cv::Mat     loadImg(const Path& file, const bool vflip = false);
+            static bool exists(const Path& file);
+            static List scan(const Path& dir, const std::string& ext);
+
+            static std::vector<uint8_t> loadBin(const Path& file);
+            static JsonMap              loadJson(const Path& path);
+            static std::string          loadTxt(const Path& file);
+            static cv::Mat loadImg(const Path& file, const bool vflip = false);
+
+            static void saveBin(const Path&                 file,
+                                const std::vector<uint8_t>& content);
+            static void saveJson(const Path& file, const JsonMap& content);
+            static void saveTxt(const Path& file, const std::string& content);
+            static void saveImg(const Path& file, const cv::Mat& img);
+
+           protected:
+            static std::ifstream   open(const Path& file);
+            static std::streamsize size(std::ifstream& stream);
+            static bool            existsFileDir(const Path& file);
 
         };  // namespace File
 
     };  // namespace utils
-};      // namespace corekit
+};  // namespace corekit
