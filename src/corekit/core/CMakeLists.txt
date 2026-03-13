@@ -41,10 +41,6 @@ if(BUILD_COREKIT_CORE)
         target_compile_definitions(corekit-core PUBLIC PLATFORM_PICO)
     endif()
 
-    if(TARGET trinity::platform)
-        target_link_libraries(corekit-core PUBLIC trinity::platform)
-    endif()
-
     add_library(corekit::core ALIAS corekit-core)
 
 endif()

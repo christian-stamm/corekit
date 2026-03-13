@@ -32,12 +32,8 @@ if(BUILD_COREKIT_OPENGL)
             ${OpenCV_LIBS}
             ${GLM_LIBRARIES}
             ${FREETYPE_LIBRARIES}
-            corekit-core
+            corekit::core
     )
-
-    if(TARGET trinity::platform)
-        target_link_libraries(corekit-opengl PUBLIC trinity::platform)
-    endif()
 
     add_library(corekit::opengl ALIAS corekit-opengl)
 

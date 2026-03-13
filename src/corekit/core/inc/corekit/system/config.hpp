@@ -2,7 +2,7 @@
 #include <type_traits>
 
 namespace corekit {
-    namespace utils {
+    namespace system {
 
         template <typename... Params>
         struct Config : public Params... {
@@ -11,7 +11,8 @@ namespace corekit {
            public:
             Config() = default;
 
-            Config(Params... params) noexcept requires(0 < (sizeof...(Params)))
+            Config(Params... params) noexcept
+                requires(0 < (sizeof...(Params)))
                 : Params(params)... {}
 
             template <typename... Args>
@@ -20,12 +21,7 @@ namespace corekit {
                 : Params(static_cast<const Params&>(other))... {}
 
             template <typename... Args>
-            static const Config<Args...> build(Args... args) {
-                return Config<Args...>(args...);
-            }
-
-            template <typename... Args>
-            const Config<Args...> select() const {
+            const Config<Args...> filter() const {
                 return Config<Args...>(*this);
             }
 
@@ -57,5 +53,5 @@ namespace corekit {
 
         };  // namespace xtd
 
-    };  // namespace utils
-};      // namespace corekit
+    };  // namespace system
+};  // namespace corekit

@@ -2,13 +2,11 @@
 #include <memory>
 #include <type_traits>
 
+#include "corekit/system/config.hpp"
 #include "corekit/system/runtime.hpp"
-#include "corekit/utils/config.hpp"
 
 namespace corekit {
-    namespace utils {
-
-        using namespace corekit::system;
+    namespace system {
 
         namespace xtd {
 
@@ -37,40 +35,39 @@ namespace corekit {
 
             using RuntimePtr = std::shared_ptr<State>;
 
-            Context() = delete;
+            Context()                     = delete;
+            Context(const Context &other) = default;
 
             template <typename... Params>
-            static const Context build(RuntimePtr rt, Params... params) {
-                return Context(params..., rt);
+            Context(RuntimePtr rt, Params... params)
+                : Context(rt, Settings(params...)) {}
+
+            Context(RuntimePtr rt, const Settings &cfg)
+                : Settings(cfg)
+                , rt(rt) {
+                corecheck(rt != nullptr,
+                          "Context => Runtime pointer cannot be null.");
             }
 
-            static const Context build(RuntimePtr rt, const Settings &cfg) {
-                return Context(cfg, rt);
-            }
-
-            template <typename TargetContext = Context>
-            const TargetContext as() const {
+            template <typename TargetContext, typename... ExtraParams>
+            const TargetContext as(ExtraParams... params) const {
                 static_assert(xtd::is_context_v<TargetContext>,
                               "Context => as() requires a Context type.");
 
-                return TargetContext(*this, rt);
+                return TargetContext(rt, Settings::merge(Config(params...)));
             }
 
-            template <typename TargetContext = Context, typename... ExtraParams>
-            const TargetContext as(ExtraParams... others) const {
+            template <typename TargetContext, typename... ExtraParams>
+            const TargetContext as(const Config<ExtraParams...> &addon =
+                                       Config<ExtraParams...>()) const {
                 static_assert(xtd::is_context_v<TargetContext>,
                               "Context => as() requires a Context type.");
 
-                return TargetContext(Settings::merge(Config(others...)), rt);
+                return TargetContext(rt, Settings::merge(addon));
             }
 
             const RuntimePtr rt;
-
-           protected:
-            Context(const Settings &cfg, RuntimePtr rt)
-                : Settings(cfg)
-                , rt(rt) {}
         };
 
-    };  // namespace utils
-};      // namespace corekit
+    };  // namespace system
+};  // namespace corekit

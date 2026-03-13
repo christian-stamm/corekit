@@ -2,14 +2,14 @@
 
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
-#include <tuple>
 #include <vector>
 
+#include "corekit/system/context.hpp"
 #include "corekit/system/runtime.hpp"
 #include "corekit/types.hpp"
-#include "corekit/utils/context.hpp"
 #include "corekit/utils/device.hpp"
 #include "corekit/utils/math.hpp"
+#include "corekit/utils/observer.hpp"
 #include "corekit/utils/watch.hpp"
 
 // KEEP GLAD BEFORE GLFW
@@ -25,6 +25,12 @@ namespace corekit {
         using namespace corekit::utils;
         using namespace corekit::system;
 
+        struct Runtime : public corekit::system::Runtime {
+            Observable<Vec2> screensize;
+            Observable<Vec2> mousepos;
+            Observable<Vec2> mousebtn;
+        };
+
         class Window : public Device {
            public:
             using Ptr  = std::shared_ptr<Window>;
@@ -37,8 +43,9 @@ namespace corekit {
                 bool decorate = true;
             };
 
-            using Config  = corekit::utils::Config<Settings>;
-            using Context = corekit::utils::Context<Runtime, Config>;
+            using Config = corekit::system::Config<Settings>;
+            using Context =
+                corekit::system::Context<corekit::opengl::Runtime, Config>;
 
             Window(const Context& context);
             Window(const Window& other)             = delete;

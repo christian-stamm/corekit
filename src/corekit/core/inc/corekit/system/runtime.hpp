@@ -1,7 +1,6 @@
 #pragma once
 #include "corekit/system/scheduler.hpp"
 #include "corekit/types.hpp"
-#include "corekit/utils/math.hpp"
 #include "corekit/utils/observer.hpp"
 #include "corekit/utils/watch.hpp"
 
@@ -17,6 +16,10 @@ namespace corekit {
 
             Runtime(const Scheduler::Settings& scheduler = {})
                 : scheduler(std::make_shared<Scheduler>(scheduler, killreq)) {}
+
+            ~Runtime() {
+                kill();
+            }
 
             static Ptr build(const Scheduler::Settings& scheduler = {}) {
                 return std::make_shared<Runtime>(scheduler);
@@ -50,13 +53,10 @@ namespace corekit {
             }
 
             const Scheduler::Ptr scheduler;
-            Observable<Vec2>     mousepos;
-            Observable<Vec2>     mousebtn;
-            Observable<Vec2>     screensize;
 
            protected:
             Killreq killreq;
         };
 
     };  // namespace system
-};      // namespace corekit
+};  // namespace corekit

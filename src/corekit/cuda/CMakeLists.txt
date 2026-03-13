@@ -46,13 +46,9 @@ if(BUILD_COREKIT_CUDA)
             ${NVINFER_LIBRARY}
             ${NVONNXPARSER_LIBRARY}
             ${NVINFER_PLUGIN_LIBRARY}
-            corekit-core
-            corekit-opengl
+            corekit::core
+            corekit::opengl
     )
-
-    if(TARGET trinity::platform)
-        target_link_libraries(corekit-cuda PUBLIC trinity::platform)
-    endif()
 
     add_library(corekit::cuda ALIAS corekit-cuda)
 
