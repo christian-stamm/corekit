@@ -8,6 +8,7 @@
 
 #include "corekit/opengl/assert.hpp"
 #include "corekit/utils/device.hpp"
+#include "corekit/utils/logger.hpp"
 
 namespace corekit {
     namespace opengl {
@@ -337,6 +338,12 @@ namespace corekit {
                              GLuint         filter) const {
             glCheckError(name);
 
+            if (this->tex == target.tex) {
+                logger(Level::WARN) << "Texture::copyTo => source and target "
+                                       "textures are the same, skipping copy.";
+                return;
+            }
+
             // if (this->type != target->type) {
             //     throw std::runtime_error("Texture::copyTo => type mismatch");
             // }
@@ -395,6 +402,7 @@ namespace corekit {
                               filter);
 
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            target.bind();
             glGenerateMipmap(target.type);
             target.unbind();
 
@@ -415,4 +423,4 @@ namespace corekit {
         }
 
     };  // namespace opengl
-};      // namespace corekit
+};  // namespace corekit
