@@ -40,10 +40,19 @@ namespace corekit {
                 try {
                     watch.reset(true);
                     return prepare();
-                } catch (const std::exception& e) {
+                } catch (...) {
                     loaded.store(!desired);
-                    logger(Level::ERROR) << "Device load failed: " << e.what();
-                    throw e;
+                    try {
+                        throw;
+                    } catch (const std::exception& err) {
+                        logger(Level::ERROR)
+                            << "Device load failed: " << err.what();
+                        throw;  // Preserve original exception details.
+                    } catch (...) {
+                        logger(Level::ERROR)
+                            << "Device load failed: unknown exception";
+                        throw;
+                    }
                 }
             }
 
@@ -59,11 +68,19 @@ namespace corekit {
                 try {
                     watch.stop();
                     return cleanup();
-                } catch (const std::exception& e) {
+                } catch (...) {
                     loaded.store(!desired);
-                    logger(Level::ERROR)
-                        << "Device unload failed: " << e.what();
-                    throw e;
+                    try {
+                        throw;
+                    } catch (const std::exception& err) {
+                        logger(Level::ERROR)
+                            << "Device unload failed: " << err.what();
+                        throw;
+                    } catch (...) {
+                        logger(Level::ERROR)
+                            << "Device unload failed: unknown exception";
+                        throw;
+                    }
                 }
             }
 
