@@ -1,6 +1,7 @@
 **/build/
 **/.cache/
 **/.venv/
+**/tmp/
 
 *.png
 *.jpg

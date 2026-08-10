@@ -1,4 +1,0 @@
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fastcdr)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/glad)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/gtest)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/mcap)
