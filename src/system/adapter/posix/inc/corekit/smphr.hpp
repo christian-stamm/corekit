@@ -8,19 +8,11 @@ namespace corekit {
        public:
         using Ptr = std::shared_ptr<PosixSemaphore>;
 
-        PosixSemaphore(uint count = 0) : m_semaphore(count) {}
+        PosixSemaphore(uint count = 0);
 
-        void acquire() {
-            m_semaphore.acquire();
-        }
-
-        void release() {
-            m_semaphore.release();
-        }
-
-        bool try_acquire() {
-            return m_semaphore.try_acquire();
-        }
+        void acquire();
+        void release();
+        bool try_acquire();
 
        private:
         std::counting_semaphore<> m_semaphore;

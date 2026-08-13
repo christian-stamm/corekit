@@ -6,6 +6,7 @@ project(corekit
     DESCRIPTION "COREKIT - A C++ Utility Library"
 )
 
+enable_testing()
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

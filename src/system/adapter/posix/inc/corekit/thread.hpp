@@ -7,23 +7,10 @@ namespace corekit {
        public:
         using Ptr = std::shared_ptr<PosixThread>;
 
-        void run() {
-            // thread_ = std::thread(std::move(callable_));
-        }
-
-        void join() {
-            if (this->joinable())
-                thread_.join();
-        }
-
-        void detach() {
-            if (this->joinable())
-                thread_.detach();
-        }
-
-        bool joinable() const {
-            return thread_.joinable();
-        }
+        void run();
+        void join();
+        void detach();
+        bool joinable() const;
 
        private:
         std::thread thread_;

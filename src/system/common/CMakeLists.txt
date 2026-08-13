@@ -12,16 +12,19 @@ if(COREKIT_PLATFORM STREQUAL "POSIX")
 
     add_library(corekit::system::common ALIAS corekit-system-common)
 
-    add_library(corekit-system-test
+    add_executable(corekit-system-core-test
         ${CMAKE_CURRENT_SOURCE_DIR}/src/concepts.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/test/atomic.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/test/mutex.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/test/semphr.cpp
     )
 
-    target_link_libraries(corekit-system-test PUBLIC 
+    target_link_libraries(corekit-system-core-test PUBLIC 
         corekit::system
         gtest_main
     )
+
+    include(GoogleTest)
+    gtest_discover_tests(corekit-system-core-test)
 
 endif()
