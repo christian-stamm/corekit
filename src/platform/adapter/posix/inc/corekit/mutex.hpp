@@ -1,29 +1,30 @@
 #pragma once
 #include <mutex>
 
+#include "corekit/iface/mutex.hpp"
 
 namespace corekit {
 
-class PosixMutex {
+    class PosixMutex : public IMutex {
+       public:
+        using Ptr = std::shared_ptr<PosixMutex>;
 
-        public:
+        virtual void lock() override {
+            m_mutex.lock();
+        }
 
-            void lock() {
-                m_mutex.lock();
-            }
+        virtual void unlock() override {
+            m_mutex.unlock();
+        }
 
-            void unlock() {
-                m_mutex.unlock();
-            }
+        virtual bool try_lock() override {
+            return m_mutex.try_lock();
+        }
 
-            bool try_lock() {
-                return m_mutex.try_lock();
-            }
-        private:
-
-            std::mutex m_mutex;
+       private:
+        std::mutex m_mutex;
     };
 
-using Mutex = PosixMutex;
+    using Mutex = PosixMutex;
 
 }  // namespace corekit

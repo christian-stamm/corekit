@@ -5,7 +5,7 @@ ENV VIRTUAL_ENV="/opt/venv"
 ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 
 ARG SYSTEM_DEPS="software-properties-common ca-certificates locales net-tools unzip"
-ARG DEVEL_DEPS="pkg-config build-essential cmake git git-lfs curl wget"
+ARG DEVEL_DEPS="pkg-config build-essential cmake gdb git git-lfs curl wget clangd"
 ARG CPP_DEPS="libopencv-dev nlohmann-json3-dev libgtest-dev"
 ARG PYTHON_DEPS="python3 python3-pip python3-venv"
 

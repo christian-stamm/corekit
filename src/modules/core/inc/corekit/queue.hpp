@@ -22,12 +22,20 @@ namespace corekit {
             ~SafeQueue() = default;
 
             bool try_push(const T& item) {
-                return this->push(item, false);
+                std::lock_guard<Mutex> lock(mutex);
+                
+                if(full()) {
+                    return false;
+                }
+
+                queue.emplace_back(item);
+                return true;
             }
 
             bool try_pop(T& item) {
                 std::lock_guard<Mutex> lock(mutex);
-                if (queue.empty()) {
+                
+                if (empty()) {
                     return false;
                 }
 
@@ -36,39 +44,26 @@ namespace corekit {
                 return true;
             }
 
-            size_t size() const {
-                std::lock_guard<Mutex> lock(mutex);
-                return queue.size();
-            }
-
             void clear() {
                 std::lock_guard<Mutex> lock(mutex);
                 queue.clear();
             }
 
             bool empty() const {
-                std::lock_guard<Mutex> lock(mutex);
                 return queue.empty();
             }
 
             bool full() const {
-                std::lock_guard<Mutex> lock(mutex);
                 return capacity <= queue.size();
+            }
+
+            size_t size() const {
+                return queue.size();
             }
 
             const size_t capacity;
 
            private:
-            bool push(const T& item, bool force = false) {
-                if (full() && !force) {
-                    return false;
-                }
-
-                std::lock_guard<Mutex> lock(mutex);
-                queue.push_back(item);
-                return true;
-            }
-
             std::deque<T> queue;
             mutable Mutex mutex;
         };

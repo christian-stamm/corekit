@@ -1,28 +1,30 @@
 #pragma once
 #include <semaphore>
 
+#include "corekit/iface/smphr.hpp"
+
 namespace corekit {
 
- class PosixSemaphore {
+    class PosixSemaphore : public ISemaphore {
+       public:
+        using Ptr = std::shared_ptr<PosixSemaphore>;
 
-        public:
+        virtual void acquire() override {
+            m_semaphore.acquire();
+        }
 
-            void acquire() {
-                m_semaphore.acquire();
-            }
+        virtual void release() override {
+            m_semaphore.release();
+        }
 
-            void release() {
-                m_semaphore.release();
-            }
+        virtual bool try_acquire() override {
+            return m_semaphore.try_acquire();
+        }
 
-            bool try_acquire() {
-                return m_semaphore.try_acquire();
-            }
-        private:
-
-            std::counting_semaphore<> m_semaphore;
+       private:
+        std::counting_semaphore<> m_semaphore;
     };
 
-using Semaphore = PosixSemaphore;
+    using Semaphore = PosixSemaphore;
 
 }  // namespace corekit

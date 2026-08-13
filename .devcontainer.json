@@ -5,6 +5,16 @@
   "workspaceFolder": "/workspace",
   "customizations": {
     "vscode": {
+      "settings": {
+          "editor.tabSize": 4,
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+          "clangd.arguments": [
+              "--pretty",
+              "--query-driver=/usr/bin/g++",
+              "--compile-commands-dir=${workspaceFolder}/build"
+          ]
+      },
       "extensions": [
         "ms-vscode.cpptools",
         "ms-vscode.cpptools-extension-pack",

@@ -1,40 +1,33 @@
 #pragma once
 #include <thread>
 
+#include "corekit/iface/thread.hpp"
+#include "corekit/task.hpp"
+
 namespace corekit {
 
- template<typename Callable>
-    class PosixThread {
+    class PosixThread : public IThread {
+       public:
+        explicit PosixThread(const ITask& task) : task_(task) {}
 
-        public:
+        void run() {
+            thread_ = std::thread(std::move(callable_));
+        }
 
-            explicit PosixThread(Callable&& callable)
-                : callable_(std::forward<Callable>(callable))
-            {}
+        void join() {
+            if (this->joinable())
+                thread_.join();
+        }
 
+        bool joinable() const {
+            return thread_.joinable();
+        }
 
-            void run()
-            {
-                thread_ = std::thread(std::move(callable_));
-            }
-
-            void join()
-            {
-                if (this->joinable())
-                    thread_.join();
-            }
-
-            bool joinable() const {
-                return thread_.joinable();
-            }
-
-        private:
-            
-            Callable callable_;
-            std::thread thread_;
+       private:
+        ITask       task_;
+        std::thread thread_;
     };
 
-template<typename Callable>
-using Thread = PosixThread<Callable>;
+    using Thread = PosixThread;
 
 }  // namespace corekit

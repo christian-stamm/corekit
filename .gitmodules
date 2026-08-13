@@ -10,3 +10,6 @@
 [submodule "lib/zstd"]
 	path = lib/zstd
 	url = https://github.com/facebook/zstd.git
+[submodule "lib/pico-sdk"]
+	path = lib/pico-sdk
+	url = https://github.com/raspberrypi/pico-sdk.git
