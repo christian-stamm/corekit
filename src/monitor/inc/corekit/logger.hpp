@@ -22,6 +22,8 @@ namespace corekit {
     };
 
     class StreamBuf : public std::streambuf {
+        friend class Logging;
+
        public:
         StreamBuf(const LogDevice::Ptr& device);
 
@@ -34,6 +36,7 @@ namespace corekit {
         virtual std::streamsize xsgetn(char* s, std::streamsize count) override;
 
        private:
+        char           buffer[1]{0};
         LogDevice::Ptr device;
     };
 

@@ -36,48 +36,49 @@ namespace corekit {
     StreamBuf::StreamBuf(const LogDevice::Ptr& device) : device(device) {}
 
     std::streambuf::int_type StreamBuf::overflow(std::streambuf::int_type c) {
-        if (c != EOF && device != nullptr) {
+        if (c != traits_type::eof() && device != nullptr) {
             device->write(static_cast<uint8_t>(c));
             return std::streambuf::traits_type::to_int_type(c);
         }
 
-        return EOF;
+        return traits_type::eof();
     }
 
     std::streambuf::int_type StreamBuf::underflow() {
-        if (device != nullptr) {
-            uint8_t data;
-            if (device->read(data)) {
-                return std::streambuf::traits_type::to_int_type(data);
-            }
-        }
+        if (device == nullptr)
+            return traits_type::eof();
 
-        return EOF;
+        uint8_t data;
+
+        if (!device->read(data))
+            return traits_type::eof();
+
+        buffer[0] = static_cast<char>(data);
+        setg(buffer, buffer, buffer + 1);
+
+        return traits_type::to_int_type(buffer[0]);
     }
 
     std::streamsize StreamBuf::xsputn(const char* s, std::streamsize count) {
         if (device != nullptr) {
-            if (device->writeBulk(std::span<uint8_t>(
-                    reinterpret_cast<uint8_t*>(const_cast<char*>(s)),
+            if (device->writeBulk(std::span<const uint8_t>(
+                    reinterpret_cast<const uint8_t*>(s),
                     static_cast<std::size_t>(count)))) {
                 return count;
             }
         }
 
-        return EOF;
+        return 0;
     }
 
     std::streamsize StreamBuf::xsgetn(char* s, std::streamsize count) {
-        if (device != nullptr) {
-            std::span<uint8_t> buffer(reinterpret_cast<uint8_t*>(s),
-                                      static_cast<std::size_t>(count));
+        if (!device || count <= 0)
+            return 0;
 
-            if (device->readBulk(buffer)) {
-                return count;
-            }
-        }
+        auto buffer = std::span<uint8_t>(reinterpret_cast<uint8_t*>(s),
+                                         static_cast<std::size_t>(count));
 
-        return EOF;
+        return device->readBulk(buffer) ? count : 0;
     }
 
     // -------------------------------------------------------------------------
@@ -181,7 +182,7 @@ namespace corekit {
     // -------------------------------------------------------------------------
 
     void Logging::setStream(const LogDevice::Ptr& stream) {
-        Logging::stream = StreamBuf(stream);
+        Logging::stream.device = stream;
     }
 
     LogLevel Logging::getLevel() {

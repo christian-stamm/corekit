@@ -10,9 +10,9 @@ namespace corekit {
         using SerialDevice<uint8_t>::SerialDevice;
 
         virtual bool write(const uint8_t& data) override;
-        virtual bool writeBulk(const std::span<uint8_t>& data) override;
+        virtual bool writeBulk(std::span<const uint8_t> data) override;
         virtual bool read(uint8_t& data) override;
-        virtual bool readBulk(std::span<uint8_t>& data) override;
+        virtual bool readBulk(std::span<uint8_t> data) override;
     };
 
 }  // namespace corekit

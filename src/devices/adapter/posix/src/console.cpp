@@ -5,26 +5,38 @@
 namespace corekit {
 
     bool Console::write(const uint8_t& data) {
-        std::cout << data << std::flush;
-        return true;
+        std::cout.put(static_cast<char>(data));
+        return static_cast<bool>(std::cout);
     }
 
-    bool Console::writeBulk(const std::span<uint8_t>& data) {
+    bool Console::writeBulk(std::span<const uint8_t> data) {
+        if (data.empty())
+            return true;
+
         const char* buffer = reinterpret_cast<const char*>(data.data());
         std::cout.write(buffer, data.size());
-        std::cout << std::flush;
-        return true;
+        return static_cast<bool>(std::cout);
     }
 
     bool Console::read(uint8_t& data) {
-        std::cin >> data;
+        char c;
+
+        if (!std::cin.get(c))
+            return false;
+
+        data = static_cast<uint8_t>(c);
+
         return true;
     }
 
-    bool Console::readBulk(std::span<uint8_t>& data) {
-        char* buffer = reinterpret_cast<char*>(data.data());
-        std::cin.read(buffer, data.size());
-        return true;
+    bool Console::readBulk(std::span<uint8_t> data) {
+        if (data.empty())
+            return true;
+
+        std::cin.read(reinterpret_cast<char*>(data.data()),
+                      static_cast<std::streamsize>(data.size()));
+
+        return std::cin.gcount() == static_cast<std::streamsize>(data.size());
     }
 
 }  // namespace corekit

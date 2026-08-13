@@ -18,10 +18,10 @@ namespace corekit {
         using BaseDevice::BaseDevice;
 
         virtual bool write(const T& data) = 0;
-        virtual bool writeBulk(const std::span<T>& data);
+        virtual bool writeBulk(std::span<const T> data);
 
         virtual bool read(T& data) = 0;
-        virtual bool readBulk(std::span<T>& data);
+        virtual bool readBulk(std::span<T> data);
     };
 
 };  // namespace corekit
