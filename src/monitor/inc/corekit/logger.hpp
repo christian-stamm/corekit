@@ -1,8 +1,8 @@
 #pragma once
 
+#include <iostream>
 #include <memory>
 #include <mutex>
-#include <ostream>
 #include <string>
 
 #include "corekit/platform.hpp"
@@ -23,13 +23,21 @@ namespace corekit {
 
     class StreamBuf : public std::streambuf {
        public:
-        StreamBuf() = default;
+        StreamBuf(const LogDevice::Ptr& device);
 
-        std::streambuf::int_type overflow(std::streambuf::int_type c) override;
-        std::streamsize xsputn(const char* s, std::streamsize count) override;
+        virtual std::streambuf::int_type overflow(
+            std::streambuf::int_type c) override;
+        virtual std::streamsize xsputn(const char*     s,
+                                       std::streamsize count) override;
+
+        virtual std::streambuf::int_type underflow() override;
+        virtual std::streamsize xsgetn(char* s, std::streamsize count) override;
+
+       private:
+        LogDevice::Ptr device;
     };
 
-    class LogStream : public std::ostream {
+    class LogStream : public std::iostream {
        public:
         LogStream(const std::string& prefix = "");
         ~LogStream();
@@ -37,7 +45,6 @@ namespace corekit {
        private:
         std::scoped_lock<Mutex> lock;
         static Mutex            mutex;
-        static StreamBuf        buffer;
     };
 
     class Logger {
@@ -68,18 +75,17 @@ namespace corekit {
     };
 
     class Logging {
+        friend LogStream;
+
        public:
-        static void           setDevice(const LogDevice::Ptr& device);
-        static LogDevice::Ptr getDevice();
+        static void setStream(const LogDevice::Ptr& stream);
 
         static void     setLevel(const LogLevel& level);
         static LogLevel getLevel();
 
-        static Logger::Ptr get(const Name& name);
-
        private:
-        static LogDevice::Ptr device;
-        static LogLevel       level;
+        static StreamBuf stream;
+        static LogLevel  level;
     };
 
 };  // namespace corekit

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <iostream>
 #include <string>
 
 namespace corekit {
@@ -24,35 +25,54 @@ namespace corekit {
     // Static Members
     // -------------------------------------------------------------------------
 
-    LogDevice::Ptr Logging::device = nullptr;
-    LogLevel       Logging::level  = LogLevel::DEBUG;
-    Mutex          LogStream::mutex;
-    StreamBuf      LogStream::buffer;
+    StreamBuf Logging::stream(nullptr);
+    LogLevel  Logging::level = LogLevel::DEBUG;
+    Mutex     LogStream::mutex;
 
     // -------------------------------------------------------------------------
     // StreamBuf
     // -------------------------------------------------------------------------
 
-    std::streambuf::int_type StreamBuf::overflow(std::streambuf::int_type c) {
-        LogDevice::Ptr dev = Logging::getDevice();
+    StreamBuf::StreamBuf(const LogDevice::Ptr& device) : device(device) {}
 
-        if (c != EOF && dev != nullptr) {
-            dev->write(static_cast<uint8_t>(c));
+    std::streambuf::int_type StreamBuf::overflow(std::streambuf::int_type c) {
+        if (c != EOF && device != nullptr) {
+            device->write(static_cast<uint8_t>(c));
             return std::streambuf::traits_type::to_int_type(c);
         }
 
         return EOF;
     }
 
+    std::streambuf::int_type StreamBuf::underflow() {
+        if (device != nullptr) {
+            uint8_t data;
+            if (device->read(data)) {
+                return std::streambuf::traits_type::to_int_type(data);
+            }
+        }
+
+        return EOF;
+    }
+
     std::streamsize StreamBuf::xsputn(const char* s, std::streamsize count) {
-        LogDevice::Ptr dev = Logging::getDevice();
+        if (device != nullptr) {
+            if (device->writeBulk(std::span<uint8_t>(
+                    reinterpret_cast<uint8_t*>(const_cast<char*>(s)),
+                    static_cast<std::size_t>(count)))) {
+                return count;
+            }
+        }
 
-        if (dev != nullptr) {
-            const auto msg = std::string(s, count);
+        return EOF;
+    }
 
-            if (dev->writeBulk(std::span<uint8_t>(
-                    reinterpret_cast<uint8_t*>(const_cast<char*>(msg.data())),
-                    static_cast<std::size_t>(msg.size())))) {
+    std::streamsize StreamBuf::xsgetn(char* s, std::streamsize count) {
+        if (device != nullptr) {
+            std::span<uint8_t> buffer(reinterpret_cast<uint8_t*>(s),
+                                      static_cast<std::size_t>(count));
+
+            if (device->readBulk(buffer)) {
                 return count;
             }
         }
@@ -65,7 +85,7 @@ namespace corekit {
     // -------------------------------------------------------------------------
 
     LogStream::LogStream(const std::string& prefix)
-        : std::ostream(&buffer)
+        : std::iostream(&Logging::stream)
         , lock(mutex) {
         if (!prefix.empty()) {
             *this << prefix;
@@ -160,12 +180,8 @@ namespace corekit {
     // Logging
     // -------------------------------------------------------------------------
 
-    LogDevice::Ptr Logging::getDevice() {
-        return device;
-    }
-
-    void Logging::setDevice(const LogDevice::Ptr& device) {
-        Logging::device = device;
+    void Logging::setStream(const LogDevice::Ptr& stream) {
+        Logging::stream = StreamBuf(stream);
     }
 
     LogLevel Logging::getLevel() {

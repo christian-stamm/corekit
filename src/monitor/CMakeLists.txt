@@ -14,7 +14,7 @@ target_include_directories(corekit-monitor
 target_link_libraries(corekit-monitor
     PUBLIC
         corekit::system
-        corekit::devices::common
+        corekit::devices
 )
 
 add_library(corekit::monitor ALIAS corekit-monitor)
