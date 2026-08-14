@@ -19,16 +19,20 @@ target_link_libraries(corekit-monitor-common
 
 add_library(corekit::monitor ALIAS corekit-monitor-common)
 
-add_executable(corekit-monitor-test
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/watch.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/logger.cpp
-)
+if(COREKIT_BUILD_GTEST STREQUAL "ON")
 
-target_link_libraries(corekit-monitor-test
-    PUBLIC
-        corekit::monitor
-        gtest_main
-)
+    add_executable(corekit-monitor-test
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/watch.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/logger.cpp
+    )
 
-include(GoogleTest)
-gtest_discover_tests(corekit-monitor-test)
+    target_link_libraries(corekit-monitor-test
+        PUBLIC
+            corekit::monitor
+            gtest_main
+    )
+
+    include(GoogleTest)
+    gtest_discover_tests(corekit-monitor-test)
+
+endif()

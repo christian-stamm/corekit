@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <span>
 
 #include "corekit/basedevice.hpp"
 
@@ -22,6 +23,9 @@ namespace corekit {
 
         virtual bool read(T& data) = 0;
         virtual bool readBulk(std::span<T> data);
+
+        virtual bool xfer(const T& txData, T& rxData);
+        virtual bool xferBulk(std::span<const T> txData, std::span<T> rxData);
     };
 
 };  // namespace corekit

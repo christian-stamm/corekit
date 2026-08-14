@@ -1,22 +1,14 @@
 #pragma once
-#include <atomic>
-#include <filesystem>
-#include <nlohmann/json.hpp>
 #include <set>
-#include <stop_token>
 #include <string>
 
 namespace corekit {
 
-    using uint    = unsigned int;
-    using Name    = std::string;
-    using Hash    = std::string;
-    using Code    = std::string;
-    using Status  = std::string;
-    using Path    = std::filesystem::path;
-    using JsonMap = nlohmann::ordered_json;
-    using Killreq = std::stop_source;
-    using ModFlag = std::atomic<bool>;
+    using uint   = unsigned int;
+    using Name   = std::string;
+    using Hash   = std::string;
+    using Code   = std::string;
+    using Status = std::string;
 
     namespace GPIO {
         using Pin   = uint;

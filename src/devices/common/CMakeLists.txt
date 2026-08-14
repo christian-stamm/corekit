@@ -17,15 +17,19 @@ target_link_libraries(corekit-devices-common PUBLIC
 
 add_library(corekit::devices::common ALIAS corekit-devices-common)
 
-add_executable(corekit-devices-common-test
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/basedevice.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test/serialdevice.cpp
-)
+if(COREKIT_BUILD_GTEST STREQUAL "ON")
 
-target_link_libraries(corekit-devices-common-test PUBLIC 
-    corekit::devices
-    gtest_main
-)
+    add_executable(corekit-devices-common-test
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/basedevice.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/serialdevice.cpp
+    )
 
-include(GoogleTest)
-gtest_discover_tests(corekit-devices-common-test)
+    target_link_libraries(corekit-devices-common-test PUBLIC 
+        corekit::devices
+        gtest_main
+    )
+
+    include(GoogleTest)
+    gtest_discover_tests(corekit-devices-common-test)
+
+endif()

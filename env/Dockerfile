@@ -6,6 +6,7 @@ ENV PATH="${VIRTUAL_ENV}/bin:$PATH"
 
 ARG SYSTEM_DEPS="software-properties-common ca-certificates locales net-tools unzip"
 ARG DEVEL_DEPS="pkg-config build-essential cmake gdb git git-lfs curl wget clangd"
+ARG PICO_DEPS="gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib gdb-multiarch"
 ARG CPP_DEPS="libopencv-dev nlohmann-json3-dev libgtest-dev"
 ARG PYTHON_DEPS="python3 python3-pip python3-venv"
 
@@ -17,6 +18,7 @@ RUN apt-get update && \
     curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
     apt-get install -y --no-install-recommends \
         ${DEVEL_DEPS} \
+        ${PICO_DEPS} \
         ${CPP_DEPS} \
         ${PYTHON_DEPS} \
     && rm -rf /var/lib/apt/lists/*

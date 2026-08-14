@@ -20,17 +20,21 @@ if(COREKIT_PLATFORM STREQUAL "POSIX")
 
     add_library(corekit::devices ALIAS corekit-devices-posix)
 
-    add_executable(corekit-devices-posix-test
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/console.cpp
-    )
+    if(COREKIT_BUILD_GTEST STREQUAL "ON")
 
-    target_link_libraries(corekit-devices-posix-test
-        PUBLIC
-            corekit::devices
-            gtest_main
-    )
+        add_executable(corekit-devices-posix-test
+            ${CMAKE_CURRENT_SOURCE_DIR}/test/console.cpp
+        )
 
-    include(GoogleTest)
-    gtest_discover_tests(corekit-devices-posix-test)
+        target_link_libraries(corekit-devices-posix-test
+            PUBLIC
+                corekit::devices
+                gtest_main
+        )
+
+        include(GoogleTest)
+        gtest_discover_tests(corekit-devices-posix-test)
+        
+    endif()
 
 endif()
