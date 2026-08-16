@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Flash",
+            "type": "process",
+            "command": "openocd",
+            "args": [
+                "-f",
+                "interface/cmsis-dap.cfg",
+                "-f",
+                "${workspaceFolder}/lib/pico-ocd/tcl/target/rp2350.cfg",
+                "-c",
+                "adapter speed 1000; program ${command:cmake.getLaunchTargetPath} verify reset exit"
+            ],
+            "problemMatcher": [],
+        }
+    ]
+}
