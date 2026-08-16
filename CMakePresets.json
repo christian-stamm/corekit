@@ -1,0 +1,26 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "corekit",
+            "generator": "Ninja",
+            "displayName": "Corekit Toolchain",
+            "binaryDir": "${sourceDir}/build/corekit",
+            "cacheVariables": {
+                "COREKIT_CTEST_ENABLED": true,
+                "COREKIT_OS_NAME": "freertos",
+                "COREKIT_BSP_PATH": "pico",
+                "PICO_PLATFORM": "rp2350-arm-s",
+                "PICO_BOARD": "bernd"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Corekit",
+            "description": "Build Corekit Toolchain",
+            "displayName": "Build Corekit",
+            "configurePreset": "corekit"
+        }
+    ]
+}

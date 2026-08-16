@@ -1,14 +1,7 @@
 **/build/
 **/.cache/
-**/.venv/
-**/tmp/
 
-*.png
-*.jpg
-*.jpeg
-*.bmp
-*.gif
-*.tiff
+*.xz
 *.log
 *.tmp
 *.bak

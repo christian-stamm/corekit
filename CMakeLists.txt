@@ -5,28 +5,51 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
-set(COREKIT_BUILD_GTEST "OFF" CACHE STRING "Build GTest executables")
-set(COREKIT_PLATFORM "PICO" CACHE STRING "Target platform")
+set(COREKIT_WORKDIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(COREKIT_CMAKE_OS_FILE "${COREKIT_WORKDIR}/cmake/os/${COREKIT_OS_NAME}.cmake")
+set(COREKIT_CMAKE_BSP_PATH "${COREKIT_WORKDIR}/cmake/bsp/${COREKIT_BSP_PATH}")
 
-if (COREKIT_PLATFORM STREQUAL "PICO")
-    set(PICO_PLATFORM "rp2040" CACHE STRING "PICO Target platform" FORCE)
-    set(PICO_BOARD "pico" CACHE STRING "PICO Target board" FORCE)
-
-    set(PICO_CXX_ENABLE_EXCEPTIONS 1)
-    set(PICO_SDK_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/pico-sdk")
-    include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
+if(NOT DEFINED COREKIT_OS_NAME)
+    message(FATAL_ERROR "COREKIT_OS_NAME is not set")
 endif()
 
-project(corekit 
+if(EXISTS ${COREKIT_CMAKE_OS_FILE})
+    include(${COREKIT_CMAKE_OS_FILE})
+else()
+    message(FATAL_ERROR "Unsupported COREKIT_BASE_OS: ${COREKIT_BASE_OS}. File not found: ${COREKIT_CMAKE_OS_FILE}")
+endif()
+    
+if(NOT EXISTS ${COREKIT_CMAKE_BSP_PATH})
+    message(FATAL_ERROR "Unsupported COREKIT_CMAKE_BSP_PATH: ${COREKIT_BSP_PATH}.")
+endif()
+
+if(NOT DEFINED COREKIT_CTEST_ENABLED)
+    message(WARNING "COREKIT_CTEST_ENABLED is not set. Disabling tests.")
+    option(COREKIT_CTEST_ENABLED "Build Tests" OFF)
+endif()
+
+if (COREKIT_CTEST_ENABLED)
+    enable_testing()
+endif()
+
+message(STATUS "COREKIT_BASE_OS: ${COREKIT_BASE_OS}")
+message(STATUS "COREKIT_CTEST_ENABLED: ${COREKIT_CTEST_ENABLED}")
+message(STATUS "COREKIT_CMAKE_OS_FILE: ${COREKIT_CMAKE_OS_FILE}")
+message(STATUS "COREKIT_CMAKE_BSP_PATH: ${COREKIT_CMAKE_BSP_PATH}")
+
+if(COMMAND corekit_bootstrap)
+    corekit_bootstrap("${COREKIT_CMAKE_BSP_PATH}/bootstrap.cmake")
+endif()
+
+project(corekit
     VERSION 0.0.1
-    LANGUAGES C CXX ASM
     DESCRIPTION "COREKIT - A C++ Utility Library"
+    LANGUAGES C CXX ASM
 )
 
-if(COREKIT_PLATFORM STREQUAL "PICO")
-    pico_sdk_init()
+if(COMMAND corekit_configure)
+    corekit_configure("${COREKIT_CMAKE_BSP_PATH}/configure.cmake")
 endif()
 
-enable_testing()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_subdirectory(corekit)
+add_subdirectory(thirdparty)
