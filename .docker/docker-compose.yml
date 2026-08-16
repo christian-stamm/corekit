@@ -5,40 +5,40 @@ services:
       context: .
       dockerfile: ./common/base/Dockerfile
       args:
-        BASE_IMAGE: ubuntu:24.04
+        BASE_IMAGE: "ubuntu:24.04"
 
-  toolchain-pico:
-    image: toolchain-pico:latest
+  corekit-tool-pico:
+    image: corekit-tool-pico:latest
     depends_on:
       - corekit-base
     build:
       context: .
-      dockerfile: ./platform/pico/Dockerfile
+      dockerfile: platform/pico/Dockerfile
       args:
-        BASE_IMAGE: corekit-base
-        ARM_BUILD_ARCH: "x86_64"
-        ARM_TARGET_ARCH: "arm-none-eabi"
-        ARM_TOOLCHAIN_VER: "15.3.rel1"
+        BASE_IMAGE: corekit-base:latest
+        ARM_BUILD_ARCH: x86_64
+        ARM_TARGET_ARCH: arm-none-eabi
+        ARM_TOOLCHAIN_VER: 15.3.rel1
 
-  toolchain-posix:
-    image: toolchain-posix:latest
+  corekit-tool-posix:
+    image: corekit-tool-posix:latest
     depends_on:
       - corekit-base
     build:
       context: .
-      dockerfile: ./platform/posix/Dockerfile
+      dockerfile: platform/posix/Dockerfile
       args:
-        BASE_IMAGE: corekit-base
+        BASE_IMAGE: corekit-base:latest
 
   corekit-dev:
-    image: corekit-dev-${BUILD_PLATFORM}:latest
+    image: corekit-dev:latest
     build:
       context: .
       dockerfile: ./common/dev/Dockerfile
       args:
-        TOOLCHAIN_IMAGE: toolchain-${BUILD_PLATFORM}
+        TOOLCHAIN_IMAGE: corekit-tool-${BUILD_PLATFORM}
     depends_on:
-      - toolchain-${BUILD_PLATFORM}
+      - corekit-tool-${BUILD_PLATFORM}
 
     privileged: true
     network_mode: host

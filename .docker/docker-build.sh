@@ -10,5 +10,5 @@ if [[ -z "$BUILD_PLATFORM" ]]; then
 fi
 
 docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build corekit-base
-docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build toolchain-${BUILD_PLATFORM}
+docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build corekit-tool-${BUILD_PLATFORM}
 docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build corekit-dev

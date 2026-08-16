@@ -11,7 +11,7 @@
           "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
           "clangd.arguments": [
               "--pretty",
-              "--query-driver=/usr/bin/arm-none-eabi-gcc",
+              "--query-driver=/usr/bin/arm-none-eabi-g++",
               "--compile-commands-dir=${workspaceFolder}/build"
           ]
       },

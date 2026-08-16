@@ -20,6 +20,10 @@ if (COREKIT_PLATFORM STREQUAL "PICO")
     include(${PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 endif()
 
+if (COREKIT_BUILD_TEST STREQUAL "ON")
+    enable_testing()
+endif()
+
 if (COREKIT_PLATFORM STREQUAL "POSIX" AND COREKIT_BUILD_TEST STREQUAL "ON")
     set(COREKIT_BUILD_GTEST "ON" CACHE STRING "Build GTest executables")
 endif()
@@ -39,6 +43,6 @@ if(COREKIT_PLATFORM STREQUAL "PICO")
     pico_sdk_init()
 endif()
 
-enable_testing()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/corekit)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty)
