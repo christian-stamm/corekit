@@ -1,28 +1,36 @@
 # docker/base/Dockerfile
-FROM ubuntu:24.04
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
-
+    
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+        autoconf \
+        automake \
+        build-essential \
         ca-certificates \
+        cmake \
         curl \
-        wget \
+        gdb \
+        gdb-multiarch \
         git \
         git-lfs \
-        unzip \
-        xz-utils \
-        build-essential \
-        cmake \
+        libtool \
+        locales \
         ninja-build \
         pkg-config \
         python3 \
         python3-pip \
         python3-venv \
-        gdb \
+        software-properties-common \
+        texinfo \
+        unzip \
+        wget \
+        xz-utils \
     && \
     rm -rf /var/lib/apt/lists/*
 

@@ -1,6 +1,6 @@
 {
-  "name": "Pixel Dev",
-  "service": "pixel-dev",
+  "name": "Corekit",
+  "service": "corekit-dev",
   "dockerComposeFile": "./.docker/docker-compose.yml",
   "workspaceFolder": "/workspace",
   "customizations": {

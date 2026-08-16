@@ -1,10 +1,44 @@
 services:
-  pixel-dev:
-    container_name: pixel-dev
-
+  corekit-base:
+    image: corekit-base:latest
     build:
-      context: ..
-      dockerfile: ./.docker/common/base/Dockerfile
+      context: .
+      dockerfile: ./common/base/Dockerfile
+      args:
+        BASE_IMAGE: ubuntu:24.04
+
+  toolchain-pico:
+    image: toolchain-pico:latest
+    depends_on:
+      - corekit-base
+    build:
+      context: .
+      dockerfile: ./platform/pico/Dockerfile
+      args:
+        BASE_IMAGE: corekit-base
+        ARM_BUILD_ARCH: "x86_64"
+        ARM_TARGET_ARCH: "arm-none-eabi"
+        ARM_TOOLCHAIN_VER: "15.3.rel1"
+
+  toolchain-posix:
+    image: toolchain-posix:latest
+    depends_on:
+      - corekit-base
+    build:
+      context: .
+      dockerfile: ./platform/posix/Dockerfile
+      args:
+        BASE_IMAGE: corekit-base
+
+  corekit-dev:
+    image: corekit-dev-${BUILD_PLATFORM}:latest
+    build:
+      context: .
+      dockerfile: ./common/dev/Dockerfile
+      args:
+        TOOLCHAIN_IMAGE: toolchain-${BUILD_PLATFORM}
+    depends_on:
+      - toolchain-${BUILD_PLATFORM}
 
     privileged: true
     network_mode: host
