@@ -1,6 +1,7 @@
 **/build/
 **/.cache/
 
+*.xz
 *.log
 *.tmp
 *.bak

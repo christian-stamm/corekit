@@ -6,6 +6,12 @@ services:
       dockerfile: ./common/base/Dockerfile
       args:
         BASE_IMAGE: "ubuntu:24.04"
+        no_proxy: ${no_proxy}
+        NO_PROXY: ${NO_PROXY}
+        http_proxy: ${http_proxy}
+        HTTP_PROXY: ${HTTP_PROXY}
+        https_proxy: ${https_proxy}
+        HTTPS_PROXY: ${HTTPS_PROXY}
 
   corekit-tool-pico:
     image: corekit-tool-pico:latest
@@ -19,6 +25,12 @@ services:
         ARM_BUILD_ARCH: x86_64
         ARM_TARGET_ARCH: arm-none-eabi
         ARM_TOOLCHAIN_VER: 15.3.rel1
+        no_proxy: ${no_proxy}
+        NO_PROXY: ${NO_PROXY}
+        http_proxy: ${http_proxy}
+        HTTP_PROXY: ${HTTP_PROXY}
+        https_proxy: ${https_proxy}
+        HTTPS_PROXY: ${HTTPS_PROXY}
 
   corekit-tool-posix:
     image: corekit-tool-posix:latest
@@ -29,22 +41,42 @@ services:
       dockerfile: platform/posix/Dockerfile
       args:
         BASE_IMAGE: corekit-base:latest
+        no_proxy: ${no_proxy}
+        NO_PROXY: ${NO_PROXY}
+        http_proxy: ${http_proxy}
+        HTTP_PROXY: ${HTTP_PROXY}
+        https_proxy: ${https_proxy}
+        HTTPS_PROXY: ${HTTPS_PROXY}
 
   corekit-dev:
     image: corekit-dev:latest
+    depends_on:
+      - corekit-tool-${BUILD_PLATFORM}
     build:
       context: .
       dockerfile: ./common/dev/Dockerfile
       args:
         TOOLCHAIN_IMAGE: corekit-tool-${BUILD_PLATFORM}
-    depends_on:
-      - corekit-tool-${BUILD_PLATFORM}
+        no_proxy: ${no_proxy}
+        NO_PROXY: ${NO_PROXY}
+        http_proxy: ${http_proxy}
+        HTTP_PROXY: ${HTTP_PROXY}
+        https_proxy: ${https_proxy}
+        HTTPS_PROXY: ${HTTPS_PROXY}
 
     privileged: true
-    network_mode: host
-    gpus: all
-    tty: true
     stdin_open: true
+    network_mode: host
+    tty: true
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
 
     environment:
       DISPLAY: ${DISPLAY}
@@ -54,10 +86,10 @@ services:
     volumes:
       # Workspace
       - ..:/workspace:cached
-      # Wayland socket
-      - ${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}:/tmp/runtime-root/${WAYLAND_DISPLAY}
       # X11 socket
       - /tmp/.X11-unix:/tmp/.X11-unix
+      # # Wayland socket
+      # - ${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}:/tmp/runtime-root/${WAYLAND_DISPLAY}
 
     tmpfs:
       - /tmp/runtime-root
