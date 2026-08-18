@@ -1,6 +1,9 @@
 ARG TOOLCHAIN_IMAGE
 FROM ${TOOLCHAIN_IMAGE}
 
+ARG DEBIAN_FRONTEND=noninteractive
+ENV GIT_SSL_NO_VERIFY=1
+
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ${SYSTEM_DEPS} && \
