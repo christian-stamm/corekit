@@ -1,0 +1,59 @@
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "baremetal",
+            "generator": "Ninja",
+            "displayName": "Bare Metal Toolchain",
+            "binaryDir": "${sourceDir}/build/baremetal",
+            "cacheVariables": {
+                "COREKIT_BUILD_TEST": true,
+                "COREKIT_BASE_OS": "baremetal",
+                "COREKIT_CMAKE_SUBDIR": "pico",
+                "PICO_PLATFORM": "rp2350-arm-s",
+                "PICO_BOARD": "bernd"
+            }
+        },
+        {
+            "name": "linux",
+            "generator": "Ninja",
+            "displayName": "Linux Toolchain",
+            "binaryDir": "${sourceDir}/build/linux",
+            "cacheVariables": {
+                "COREKIT_BUILD_TEST": true,
+                "COREKIT_BASE_OS": "linux"
+            }
+        },
+        {
+            "name": "freertos",
+            "generator": "Ninja",
+            "displayName": "FreeRTOS Toolchain",
+            "binaryDir": "${sourceDir}/build/freertos",
+            "cacheVariables": {
+                "COREKIT_BUILD_TEST": true,
+                "COREKIT_BASE_OS": "freertos",
+                "FREERTOS_PORTABLE_SUBDIR": "ThirdParty/GCC/RP2040"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "Baremetal",
+            "description": "Baremetal Build",
+            "displayName": "Baremetal Build",
+            "configurePreset": "baremetal"
+        },
+        {
+            "name": "Linux",
+            "description": "Linux Build",
+            "displayName": "Linux Build",
+            "configurePreset": "linux"
+        },
+        {
+            "name": "FreeRTOS",
+            "description": "FreeRTOS Build",
+            "displayName": "FreeRTOS Build",
+            "configurePreset": "freertos"
+        }
+    ]
+}

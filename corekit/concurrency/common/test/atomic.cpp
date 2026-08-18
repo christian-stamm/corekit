@@ -35,13 +35,13 @@ namespace corekit {
         int expected = 0;
         int desired  = 42;
 
-        EXPECT_TRUE(atomic.compare_exchange(expected, desired));
+        EXPECT_TRUE(atomic.compare_exchange_strong(expected, desired));
         EXPECT_EQ(atomic.load(), 42);
 
         expected = 0;
         desired  = 100;
 
-        EXPECT_FALSE(atomic.compare_exchange(expected, desired));
+        EXPECT_FALSE(atomic.compare_exchange_strong(expected, desired));
         EXPECT_EQ(atomic.load(), 42);
     }
 

@@ -3,15 +3,33 @@
   "service": "corekit-dev",
   "dockerComposeFile": "./.docker/docker-compose.yml",
   "workspaceFolder": "/workspace",
+  "containerEnv": {
+     "BUILD_PLATFORM": "${env:BUILD_PLATFORM}"
+  },
   "customizations": {
     "vscode": {
       "settings": {
           "editor.tabSize": 4,
           "editor.formatOnSave": true,
           "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+          "cmake.useCMakePresets": "always",
+          "cmake.options.advanced": {
+            "build": {
+              "statusBarVisibility": "inherit",
+              "inheritDefault": "visible"
+            },
+            "launch": {
+              "statusBarVisibility": "inherit",
+              "inheritDefault": "visible"
+            },
+            "debug": {
+              "statusBarVisibility": "inherit",
+              "inheritDefault": "visible"
+            }
+          },
           "clangd.arguments": [
               "--pretty",
-              "--query-driver=/usr/bin/arm-none-eabi-g++",
+              "--query-driver=arm-none-eabi-g++",
               "--compile-commands-dir=${workspaceFolder}/build"
           ]
       },

@@ -12,7 +12,13 @@ namespace corekit {
     static_assert(SemaphoreType<Semaphore>,
                   "Platform does not satisfy the Semaphore concept");
 
-    static_assert(ThreadType<Thread>,
+    static_assert(StopTokenType<StopToken>,
+                  "Platform does not satisfy the StopToken concept");
+
+    static_assert(StopSourceType<StopSource>,
+                  "Platform does not satisfy the StopSource concept");
+
+    static_assert(ThreadType<Thread, StopToken>,
                   "Platform does not satisfy the Thread concept");
 
 }  // namespace corekit

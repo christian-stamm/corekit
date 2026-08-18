@@ -32,13 +32,13 @@ services:
         https_proxy: ${https_proxy}
         HTTPS_PROXY: ${HTTPS_PROXY}
 
-  corekit-tool-posix:
-    image: corekit-tool-posix:latest
+  corekit-tool-linux:
+    image: corekit-tool-linux:latest
     depends_on:
       - corekit-base
     build:
       context: .
-      dockerfile: platform/posix/Dockerfile
+      dockerfile: platform/linux/Dockerfile
       args:
         BASE_IMAGE: corekit-base:latest
         no_proxy: ${no_proxy}

@@ -10,7 +10,7 @@ namespace corekit {
                                   typename T::ValueType desired) {
         { a.load() } -> std::same_as<typename T::ValueType>;
         { a.store(value) } -> std::same_as<void>;
-        { a.compare_exchange(expected, desired) } -> std::same_as<bool>;
+        { a.compare_exchange_strong(expected, desired) } -> std::same_as<bool>;
     };
 
     template <typename T>
@@ -27,9 +27,27 @@ namespace corekit {
         { s.try_acquire() } -> std::same_as<bool>;
     };
 
-    template <typename T>
-    concept ThreadType = requires(T t) {
-        { t.run() } -> std::same_as<void>;
+    template<class T>
+    concept StopTokenType =
+    requires(const T& token) {
+        { token.stop_requested() } -> std::convertible_to<bool>;
+        { token.stop_possible() } -> std::convertible_to<bool>;
+    };
+
+    template<class T>
+    concept StopSourceType =
+    requires(T& source, const T& csource) {
+        { csource.get_token() };
+        { csource.stop_requested() } -> std::convertible_to<bool>;
+        { csource.stop_possible() } -> std::convertible_to<bool>;
+        { source.request_stop() } -> std::convertible_to<bool>;
+    };
+
+    template <typename T, typename Token>
+    concept ThreadType = 
+    StopTokenType<Token> &&
+    requires(T t, Token token) {
+        { T(token) } -> std::same_as<T>;
         { t.detach() } -> std::same_as<void>;
         { t.join() } -> std::same_as<void>;
         { t.joinable() } -> std::same_as<bool>;

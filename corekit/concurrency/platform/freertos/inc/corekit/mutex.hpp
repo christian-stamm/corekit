@@ -1,24 +1,38 @@
 #pragma once
 #include <memory>
+#include <FreeRTOS.h>
+#include <semphr.h>
+#include "task.h"
 
-#include "pico/sync.h"
+#include "corekit/smphr.hpp"
 
 namespace corekit {
 
-    class PicoMutex {
+    class FreeRTOSMutex : private FreeRTOSSemaphore {
        public:
-        using Ptr = std::shared_ptr<PicoMutex>;
+        using Ptr = std::shared_ptr<FreeRTOSMutex>;
 
-        PicoMutex();
-        ~PicoMutex();
+        FreeRTOSMutex()
+            : FreeRTOSSemaphore(1, 1)
+        {
+            
+        }
 
-        void lock();
-        void unlock();
-        bool try_lock();
+        void lock()
+        {
+            acquire();
+        }
 
-       private:
-        uint32_t m_owner;
-        mutex_t  m_mutex;
+
+        void unlock()
+        {
+            release();
+        }
+
+        bool try_lock()
+        {
+            return try_acquire();
+        }
     };
 
 }  // namespace corekit

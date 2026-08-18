@@ -1,18 +1,18 @@
-#pragma once
-#include <memory>
+// #pragma once
+// #include <memory>
 
-namespace corekit {
+// namespace corekit {
 
-    class PicoThread {
-       public:
-        using Ptr = std::shared_ptr<PicoThread>;
+//     class PicoThread {
+//        public:
+//         using Ptr = std::shared_ptr<PicoThread>;
 
-        void run();
-        void join();
-        void detach();
-        bool joinable() const;
+//         void run();
+//         void join();
+//         void detach();
+//         bool joinable() const;
 
-       private:
-    };
+//        private:
+//     };
 
-}  // namespace corekit
+// }  // namespace corekit

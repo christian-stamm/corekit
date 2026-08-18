@@ -1,25 +1,21 @@
 cmake_minimum_required(VERSION 3.25)
 
-if(COREKIT_PLATFORM STREQUAL "PICO")
+if(COREKIT_BUILD_PLATFORM_FREERTOS)
 
-    add_library(corekit-system-pico 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/mutex.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/smphr.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/thread.cpp
-    )
+    add_library(corekit-concurrency-platform-freertos INTERFACE)
 
-    target_include_directories(corekit-system-pico
-        PUBLIC
+    target_include_directories(corekit-concurrency-platform-freertos 
+        INTERFACE
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/inc>
             $<INSTALL_INTERFACE:include>
     )
 
-    target_link_libraries(corekit-system-pico
-        PUBLIC
-            pico_stdlib
-            corekit::system::common
+    target_link_libraries(corekit-concurrency-platform-freertos 
+        INTERFACE
+            corekit::concurrency::common
+            FreeRTOS-Kernel-Heap4
     )
 
-    add_library(corekit::system ALIAS corekit-system-pico)
+    add_library(corekit::concurrency ALIAS corekit-concurrency-platform-freertos)
 
 endif()

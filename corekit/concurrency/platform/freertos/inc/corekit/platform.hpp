@@ -8,9 +8,9 @@
 namespace corekit {
 
     template <typename T>
-    using Atomic    = PicoAtomic<T>;
-    using Mutex     = PicoMutex;
-    using Semaphore = PicoSemaphore;
-    using Thread    = PicoThread;
+    using Atomic    = FreeRTOSAtomic<T>;
+    using Mutex     = FreeRTOSMutex;
+    using Semaphore = FreeRTOSSemaphore;
+    using Thread    = FreeRTOSThread;
 
 }  // namespace corekit
