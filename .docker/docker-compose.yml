@@ -56,7 +56,7 @@ services:
       context: .
       dockerfile: ./common/dev/Dockerfile
       args:
-        TOOLCHAIN_IMAGE: corekit-tool-${BUILD_PLATFORM}
+        TOOLCHAIN_IMAGE: corekit-tool-${BUILD_PLATFORM}:latest
         no_proxy: ${no_proxy}
         NO_PROXY: ${NO_PROXY}
         http_proxy: ${http_proxy}

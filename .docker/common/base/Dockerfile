@@ -14,12 +14,14 @@ RUN apt-get update && \
         automake \
         build-essential \
         ca-certificates \
+        clangd \
         cmake \
         curl \
         gdb \
         gdb-multiarch \
         git \
         git-lfs \
+        libgtest-dev \
         libtool \
         locales \
         ninja-build \

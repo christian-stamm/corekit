@@ -15,23 +15,27 @@
           "cmake.useCMakePresets": "always",
           "cmake.options.advanced": {
             "build": {
-              "statusBarVisibility": "inherit",
+              "statusBarVisibility": "visible",
               "inheritDefault": "visible"
             },
             "launch": {
-              "statusBarVisibility": "inherit",
+              "statusBarVisibility": "visible",
               "inheritDefault": "visible"
             },
             "debug": {
-              "statusBarVisibility": "inherit",
+              "statusBarVisibility": "visible",
               "inheritDefault": "visible"
             }
           },
           "clangd.arguments": [
               "--pretty",
               "--query-driver=arm-none-eabi-g++",
-              "--compile-commands-dir=${workspaceFolder}/build"
-          ]
+              "--compile-commands-dir=${workspaceFolder}/build/corekit-lib"
+          ],
+          "chat.tools.terminal.autoApprove": {
+              "true": true,
+              "cmake": true
+          }
       },
       "extensions": [
         "ms-vscode.cpptools",
@@ -42,7 +46,8 @@
         "GitHub.copilot-chat",
         "chris-hock.pioasm",
         "marus25.cortex-debug",
-        "ms-vscode.vscode-serial-monitor"
+        "ms-vscode.vscode-serial-monitor",
+        "openai.chatgpt"
       ]
     }
   }

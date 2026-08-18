@@ -9,6 +9,10 @@ if [[ -z "$BUILD_PLATFORM" ]]; then
     exit 1
 fi
 
+echo "Building corekit-base, corekit-tool-${BUILD_PLATFORM}, and corekit-dev images..."
+
 docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build corekit-base
 docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build corekit-tool-${BUILD_PLATFORM}
 docker compose -f "${SCRIPT_DIR}/docker-compose.yml" build corekit-dev
+
+echo "Build of corekit-base, corekit-tool-${BUILD_PLATFORM}, and corekit-dev images completed successfully."
