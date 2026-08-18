@@ -37,5 +37,3 @@ macro(corekit_pal_stage_1)
 	endif()
 
 endmacro()
-
-

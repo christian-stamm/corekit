@@ -8,7 +8,7 @@
             "binaryDir": "${sourceDir}/build/corekit",
             "cacheVariables": {
                 "COREKIT_CTEST_ENABLED": true,
-                "COREKIT_PAL": "freertos",
+                "COREKIT_PAL": "stdlib",
                 "COREKIT_BSP": "pico",
                 "PICO_PLATFORM": "rp2350-arm-s",
                 "PICO_BOARD": "bernd"

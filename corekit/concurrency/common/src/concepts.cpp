@@ -1,5 +1,8 @@
 #include "corekit/concepts.hpp"
-#include "corekit/platform.hpp"
+#include "corekit/atomic.hpp"
+#include "corekit/mutex.hpp"
+#include "corekit/smphr.hpp"
+#include "corekit/thread.hpp"
 
 namespace corekit {
 

@@ -5,13 +5,15 @@
 
 namespace corekit {
 
-    using PosixStopToken = std::stop_token;
-    using PosixStopSource = std::stop_source;
+    using StopToken  = std::stop_token;
+    using StopSource = std::stop_source;
     
-    class PosixThread : public std::jthread {
+    class StdlibThread : public std::jthread {
        public:
-        using Ptr = std::shared_ptr<PosixThread>;
+        using Ptr = std::shared_ptr<StdlibThread>;
         using std::jthread::jthread;
     };
+
+    using Thread = StdlibThread;
 
 }  // namespace corekit

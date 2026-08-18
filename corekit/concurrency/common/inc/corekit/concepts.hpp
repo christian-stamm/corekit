@@ -30,17 +30,18 @@ namespace corekit {
     template<class T>
     concept StopTokenType =
     requires(const T& token) {
-        { token.stop_requested() } -> std::convertible_to<bool>;
-        { token.stop_possible() } -> std::convertible_to<bool>;
+        { token.stop_requested() } -> std::same_as<bool>;
+        { token.stop_possible() } -> std::same_as<bool>;
     };
 
-    template<class T>
+    template<class T, typename Token>
     concept StopSourceType =
+    StopTokenType<Token> &&
     requires(T& source, const T& csource) {
-        { csource.get_token() };
-        { csource.stop_requested() } -> std::convertible_to<bool>;
-        { csource.stop_possible() } -> std::convertible_to<bool>;
-        { source.request_stop() } -> std::convertible_to<bool>;
+        { csource.get_token() } -> std::same_as<Token>;
+        { csource.stop_requested() } -> std::same_as<bool>;
+        { csource.stop_possible() } -> std::same_as<bool>;
+        { source.request_stop() } -> std::same_as<bool>;
     };
 
     template <typename T, typename Token>

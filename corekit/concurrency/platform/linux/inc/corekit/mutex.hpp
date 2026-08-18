@@ -4,10 +4,12 @@
 
 namespace corekit {
 
-    class PosixMutex : public std::mutex {
+    class StdlibMutex : public std::mutex {
        public:
-        using Ptr = std::shared_ptr<PosixMutex>;
+        using Ptr = std::shared_ptr<StdlibMutex>;
         using std::mutex::mutex;
     };
+
+    using Mutex = StdlibMutex;
 
 }  // namespace corekit
