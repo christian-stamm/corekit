@@ -15,7 +15,9 @@ namespace corekit {
 
         StdlibThread(const Task::Ptr& task) : task_(task) {}
 
-        ~StdlibThread() = default;
+        ~StdlibThread() {
+            join();
+        }
 
         void request_stop() {
             thread_.request_stop();
@@ -30,6 +32,8 @@ namespace corekit {
         }
 
         void join() {
+            request_stop();
+
             if (thread_.joinable()) {
                 thread_.join();
             }

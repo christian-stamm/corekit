@@ -6,9 +6,6 @@ ENV GIT_SSL_NO_VERIFY=1
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ${SYSTEM_DEPS} && \
-    add-apt-repository universe && \
-    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
     apt-get install -y --no-install-recommends \
         net-tools \
         usbutils \
