@@ -6,66 +6,64 @@
 
 namespace corekit {
 
-        template <typename T>
-        class SafeQueue {
-           public:
+    template <typename T>
+    class SafeQueue {
+       public:
+        SafeQueue(const size_t& capacity = std::numeric_limits<size_t>::max())
+            : capacity(capacity){};
 
-            SafeQueue(
-                const size_t& capacity = std::numeric_limits<size_t>::max())
-                : capacity(capacity){};
+        SafeQueue(const SafeQueue&)             = delete;
+        SafeQueue(const SafeQueue&&)            = delete;
+        SafeQueue& operator=(const SafeQueue&)  = delete;
+        SafeQueue& operator=(const SafeQueue&&) = delete;
 
-            SafeQueue(const SafeQueue&)             = delete;
-            SafeQueue(const SafeQueue&&)            = delete;
-            SafeQueue& operator=(const SafeQueue&)  = delete;
-            SafeQueue& operator=(const SafeQueue&&) = delete;
+        ~SafeQueue() = default;
 
-            ~SafeQueue() = default;
+        bool try_push(const T& item) {
+            std::lock_guard<Mutex> lock(mutex);
 
-            bool try_push(const T& item) {
-                std::lock_guard<Mutex> lock(mutex);
-                
-                if(full()) {
-                    return false;
-                }
-
-                queue.emplace_back(item);
-                return true;
+            if (full()) {
+                return false;
             }
 
-            bool try_pop(T& item) {
-                std::lock_guard<Mutex> lock(mutex);
-                
-                if (empty()) {
-                    return false;
-                }
+            queue.emplace_back(item);
+            return true;
+        }
 
-                item = queue.front();
-                queue.pop_front();
-                return true;
+        bool try_pop(T& item) {
+            std::lock_guard<Mutex> lock(mutex);
+
+            if (empty()) {
+                return false;
             }
 
-            void clear() {
-                std::lock_guard<Mutex> lock(mutex);
-                queue.clear();
-            }
+            item = queue.front();
+            queue.pop_front();
+            return true;
+        }
 
-            bool empty() const {
-                return queue.empty();
-            }
+        void clear() {
+            std::lock_guard<Mutex> lock(mutex);
+            queue.clear();
+        }
 
-            bool full() const {
-                return capacity <= queue.size();
-            }
+        bool empty() const {
+            return queue.empty();
+        }
 
-            size_t size() const {
-                return queue.size();
-            }
+        bool full() const {
+            return capacity <= queue.size();
+        }
 
-            const size_t capacity;
+        size_t size() const {
+            return queue.size();
+        }
 
-           private:
-            std::deque<T> queue;
-            mutable Mutex mutex;
-        };
+        const size_t capacity;
 
-};      // namespace corekit
+       private:
+        std::deque<T> queue;
+        mutable Mutex mutex;
+    };
+
+};  // namespace corekit

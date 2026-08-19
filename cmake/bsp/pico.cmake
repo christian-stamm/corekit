@@ -16,10 +16,6 @@ macro(corekit_bsp_stage_0)
         message(FATAL_ERROR "No valid PICO_SDK_PATH is set. Scanned path '$ENV{PICO_SDK_PATH}'.")
     endif()
 
-    if(NOT DEFINED PICO_PLATFORM)
-        message(FATAL_ERROR "PICO_PLATFORM is not set. Please set PICO_PLATFORM to <rp2040,rp2350-arm-s,risc-v>.")
-    endif()
-
     if(NOT DEFINED PICO_BOARD)
         message(FATAL_ERROR "PICO_BOARD is not set. Please set PICO_BOARD to the desired board. <pico,pico_w,...>.")
     endif()
@@ -43,6 +39,29 @@ macro(corekit_bsp_stage_1)
     endif()
 
     include(${PICO_SDK_IMPORT_FILE})
+
+    if(COREKIT_PAL_FREERTOS)
+        if(
+            PICO_BOARD STREQUAL "pico" OR
+            PICO_BOARD STREQUAL "pico_w"
+        )
+            set(PICO_PLATFORM "rp2040")
+            set(FREERTOS_PORTABLE_IMPL_DIR ${COREKIT_WORKDIR}/thirdparty/freertos/portable/pico/rp2040)
+        elseif(
+            PICO_BOARD STREQUAL "bernd" OR
+            PICO_BOARD STREQUAL "pico2" OR
+            PICO_BOARD STREQUAL "pico2_w"
+        )
+            set(PICO_PLATFORM "rp2350-arm-s")
+            set(FREERTOS_PORTABLE_IMPL_DIR ${COREKIT_WORKDIR}/thirdparty/freertos/portable/pico/rp2350/arm)
+        elseif(PICO_BOARD STREQUAL "<unsupported>")
+            set(PICO_PLATFORM "rp2350-risc-v")
+            set(FREERTOS_PORTABLE_IMPL_DIR ${COREKIT_WORKDIR}/thirdparty/freertos/portable/pico/rp2350/riscv)
+        else()
+            message(FATAL_ERROR "Unsupported PICO_BOARD: ${PICO_BOARD}. Supported boards are: pico, pico_w, pico2, pico2_w, bernd.")
+        endif()
+         
+    endif()
     
 endmacro()
 
@@ -53,19 +72,6 @@ endmacro()
 macro(corekit_bsp_stage_2)
 
     pico_sdk_init()
-
-    if(COREKIT_PAL_FREERTOS)
-        if(PICO_PLATFORM STREQUAL "rp2040")
-            set(FREERTOS_PORTABLE_IMPL_DIR ${COREKIT_WORKDIR}/thirdparty/freertos/portable/pico/rp2040)
-        elseif(PICO_PLATFORM STREQUAL "rp2350-arm-s")
-            set(FREERTOS_PORTABLE_IMPL_DIR ${COREKIT_WORKDIR}/thirdparty/freertos/portable/pico/rp2350/arm)
-        elseif(PICO_PLATFORM STREQUAL "risc-v")
-            set(FREERTOS_PORTABLE_IMPL_DIR ${COREKIT_WORKDIR}/thirdparty/freertos/portable/pico/rp2350/riscv)
-        else()
-            message(FATAL_ERROR "Unsupported PICO_PLATFORM: ${PICO_PLATFORM}. Supported platforms are: rp2040, rp2350-arm-s, riscv.")
-        endif()
-         
-    endif()
     
 endmacro()
 

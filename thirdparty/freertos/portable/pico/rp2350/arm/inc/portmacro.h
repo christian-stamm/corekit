@@ -187,7 +187,7 @@ static inline void vPortRecursiveLock( uint32_t ulLockNum,
             if( ucOwnedByCore[ ulCoreNum ][ ulLockNum ] )
             {
                 configASSERT( ucRecursionCountByLock[ ulLockNum ] != 255u );
-                ucRecursionCountByLock[ ulLockNum ]++;
+                ucRecursionCountByLock[ ulLockNum ] = ucRecursionCountByLock[ ulLockNum ] + 1u;
                 return;
             }
             spin_lock_unsafe_blocking(pxSpinLock);
@@ -201,7 +201,9 @@ static inline void vPortRecursiveLock( uint32_t ulLockNum,
         configASSERT( ( ucOwnedByCore[ ulCoreNum ] [ulLockNum ] ) != 0 );
         configASSERT( ucRecursionCountByLock[ ulLockNum ] != 0 );
 
-        if( !--ucRecursionCountByLock[ ulLockNum ] )
+        ucRecursionCountByLock[ ulLockNum ] -= 1u;
+
+        if( ucRecursionCountByLock[ ulLockNum ] == 0u )
         {
             ucOwnedByCore[ ulCoreNum ] [ ulLockNum ] = 0;
             spin_unlock_unsafe(pxSpinLock);

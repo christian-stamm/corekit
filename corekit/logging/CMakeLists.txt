@@ -19,9 +19,11 @@ target_link_libraries(corekit-logging
 
 add_library(corekit::logging ALIAS corekit-logging)
 
-if(COREKIT_BUILD_TEST AND COREKIT_BUILD_PLATFORM_LINUX)
+find_package(GTest REQUIRED)
 
-    find_package(GTest REQUIRED)
+if(COREKIT_BUILD_TEST AND GTest_FOUND)
+
+    include(GoogleTest)
 
     add_executable(corekit-logging-test
         ${CMAKE_CURRENT_SOURCE_DIR}/test/watch.cpp
@@ -34,7 +36,6 @@ if(COREKIT_BUILD_TEST AND COREKIT_BUILD_PLATFORM_LINUX)
             GTest::gtest_main
     )
 
-    include(GoogleTest)
     gtest_discover_tests(corekit-logging-test)
 
 endif()

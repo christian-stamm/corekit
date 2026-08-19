@@ -31,7 +31,11 @@
               "--pretty",
               "--query-driver=arm-none-eabi-g++",
               "--compile-commands-dir=${workspaceFolder}/build"
-          ]
+          ],
+          "chat.tools.terminal.autoApprove": {
+              "true": true,
+              "cmake": true
+          }
       },
       "extensions": [
         "ms-vscode.cpptools",

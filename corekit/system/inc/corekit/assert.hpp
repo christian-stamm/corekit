@@ -17,4 +17,4 @@ namespace corekit {
                        const Location& location = Location::current());
 
     };  // namespace utils
-};      // namespace corekit
+};  // namespace corekit

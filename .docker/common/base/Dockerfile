@@ -20,6 +20,7 @@ RUN apt-get update && \
         gdb-multiarch \
         git \
         git-lfs \
+        libgtest-dev \
         libtool \
         locales \
         ninja-build \

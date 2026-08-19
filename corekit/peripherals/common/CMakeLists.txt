@@ -18,9 +18,11 @@ target_link_libraries(corekit-peripherals-common PUBLIC
 
 add_library(corekit::peripherals::common ALIAS corekit-peripherals-common)
 
-if(COREKIT_BUILD_TEST AND COREKIT_BUILD_PLATFORM_LINUX)
+find_package(GTest REQUIRED)
 
-    find_package(GTest REQUIRED)
+if(COREKIT_BUILD_TEST AND GTest_FOUND)
+
+    include(GoogleTest)
 
     add_executable(corekit-peripherals-common-test
         ${CMAKE_CURRENT_SOURCE_DIR}/test/basedevice.cpp
@@ -32,7 +34,6 @@ if(COREKIT_BUILD_TEST AND COREKIT_BUILD_PLATFORM_LINUX)
         GTest::gtest_main
     )
 
-    include(GoogleTest)
     gtest_discover_tests(corekit-peripherals-common-test)
 
 endif()
