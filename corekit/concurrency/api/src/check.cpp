@@ -1,14 +1,17 @@
-#include "corekit/concepts.hpp"
+#include "corekit/check.hpp"
 
 #include "corekit/atomic.hpp"
 #include "corekit/mutex.hpp"
 #include "corekit/semaphore.hpp"
-#include "corekit/task.hpp"
-#include "corekit/thread.hpp"
+#include "corekit/stoptoken.hpp"
+#include "corekit/time.hpp"
 
 namespace corekit {
 
-    static_assert(AtomicType<Atomic<bool>>,
+    static_assert(TimeType<Time>,  //
+                  "Platform does not satisfy the Time concept");
+
+    static_assert(AtomicType<Atomic<bool>, bool>,
                   "Platform does not satisfy the Atomic concept");
 
     static_assert(MutexType<Mutex>,
@@ -22,8 +25,5 @@ namespace corekit {
 
     static_assert(StopSourceType<StopSource, StopToken>,
                   "Platform does not satisfy the StopSource concept");
-
-    static_assert(ThreadType<Thread, StopToken>,
-                  "Platform does not satisfy the Thread concept");
 
 }  // namespace corekit

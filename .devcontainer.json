@@ -15,22 +15,22 @@
           "cmake.useCMakePresets": "always",
           "cmake.options.advanced": {
             "build": {
-              "statusBarVisibility": "inherit",
+              "statusBarVisibility": "visible",
               "inheritDefault": "visible"
             },
             "launch": {
-              "statusBarVisibility": "inherit",
+              "statusBarVisibility": "visible",
               "inheritDefault": "visible"
             },
             "debug": {
-              "statusBarVisibility": "inherit",
+              "statusBarVisibility": "visible",
               "inheritDefault": "visible"
             }
           },
           "clangd.arguments": [
               "--pretty",
-              "--query-driver=arm-none-eabi-g++",
-              "--compile-commands-dir=${workspaceFolder}/build"
+              "--query-driver=g++",
+              "--compile-commands-dir=${workspaceFolder}/build/corekit"
           ],
           "chat.tools.terminal.autoApprove": {
               "true": true,

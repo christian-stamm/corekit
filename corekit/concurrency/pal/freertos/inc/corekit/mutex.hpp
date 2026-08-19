@@ -4,7 +4,7 @@
 
 #include <memory>
 
-#include "corekit/smphr.hpp"
+#include "corekit/semaphore.hpp"
 #include "task.h"
 
 namespace corekit {
@@ -13,7 +13,7 @@ namespace corekit {
        public:
         using Ptr = std::shared_ptr<FreeRTOSMutex>;
 
-        FreeRTOSMutex() : FreeRTOSSemaphore(1, 1) {}
+        FreeRTOSMutex() : FreeRTOSSemaphore(0, 1) {}
 
         void lock() {
             acquire();
@@ -27,5 +27,7 @@ namespace corekit {
             return try_acquire();
         }
     };
+
+    using Mutex = FreeRTOSMutex;
 
 }  // namespace corekit

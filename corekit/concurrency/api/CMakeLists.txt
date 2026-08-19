@@ -11,7 +11,7 @@ target_include_directories(corekit-concurrency-api
 add_library(corekit::concurrency::api ALIAS corekit-concurrency-api)
 
 add_library(corekit-concurrency 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/concepts.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/check.cpp
 )
 
 target_link_libraries(corekit-concurrency
@@ -32,7 +32,7 @@ if(COREKIT_BUILD_TEST AND GTest_FOUND)
         ${CMAKE_CURRENT_SOURCE_DIR}/test/atomic.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/test/mutex.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/test/smphr.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/test/thread.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/test/rtoshook.cpp
     )
 
     target_link_libraries(corekit-concurrency-test PUBLIC 

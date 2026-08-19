@@ -8,37 +8,9 @@
             "binaryDir": "${sourceDir}/build/corekit",
             "cacheVariables": {
                 "COREKIT_BUILD_TEST": true,
-                "COREKIT_PAL": "<NO PAL SET>",
-                "COREKIT_BSP": "pico",
+                "COREKIT_PAL": "freertos",
+                "COREKIT_BSP": "posix",
                 "PICO_BOARD": "bernd"
-            }
-        },
-        {
-            "name": "corekit-stdlib",
-            "inherits": "corekit-base",
-            "displayName": "Corekit Standard Library",
-            "binaryDir": "${sourceDir}/build/corekit/stdlib",
-            "cacheVariables": {
-                "COREKIT_PAL": "stdlib",
-                "COREKIT_BSP": "generic"
-            }
-        },
-        {
-            "name": "corekit-freertos",
-            "inherits": "corekit-base",
-            "displayName": "Corekit FreeRTOS",
-            "binaryDir": "${sourceDir}/build/corekit/freertos",
-            "cacheVariables": {
-                "COREKIT_PAL": "freertos"
-            }
-        },
-        {
-            "name": "corekit-baremetal",
-            "inherits": "corekit-base",
-            "displayName": "Corekit Baremetal",
-            "binaryDir": "${sourceDir}/build/corekit/baremetal",
-            "cacheVariables": {
-                "COREKIT_PAL": "baremetal"
             }
         }
     ]

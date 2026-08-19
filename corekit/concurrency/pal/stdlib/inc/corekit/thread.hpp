@@ -1,47 +1,20 @@
 #pragma once
 #include <memory>
 #include <thread>
-#include <utility>
 
-#include "corekit/concepts.hpp"
-#include "corekit/stoptoken.hpp"
 #include "corekit/task.hpp"
 
 namespace corekit {
 
-    class StdlibThread {
+    class StdlibThread : public std::jthread {
        public:
         using Ptr = std::shared_ptr<StdlibThread>;
 
-        StdlibThread(const Task::Ptr& task) : task_(task) {}
-
-        ~StdlibThread() {
-            join();
-        }
-
-        void request_stop() {
-            thread_.request_stop();
-        }
-
-        void run() {
-            if (!thread_.joinable()) {
-                thread_ = std::jthread(
-                    [task = std::forward<Task::Ptr>(task_)](
-                        StopToken token) mutable { task->exec(token); });
-            }
-        }
-
-        void join() {
-            request_stop();
-
-            if (thread_.joinable()) {
-                thread_.join();
-            }
-        }
+        StdlibThread(Task::Ptr task);
 
        private:
-        Task::Ptr    task_;
-        std::jthread thread_;
+        using std::jthread::jthread;
+        Task::Ptr task_;
     };
 
     using Thread = StdlibThread;

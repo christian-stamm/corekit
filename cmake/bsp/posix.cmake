@@ -4,31 +4,37 @@ cmake_minimum_required(VERSION 3.25)
 ########### BSP Stage 0 ###########
 ###################################
 
-function(corekit_bsp_stage_0)
-    
-endfunction()
+macro(corekit_bsp_stage_0)
+
+endmacro()
 
 ###################################
 ########### BSP Stage 1 ###########
 ###################################
 
-function(corekit_bsp_stage_1)
-    
-endfunction()
+macro(corekit_bsp_stage_1)
+
+endmacro()
 
 ###################################
 ########### BSP Stage 2 ###########
 ###################################
 
-function(corekit_bsp_stage_2)
+macro(corekit_bsp_stage_2)
     
-endfunction()
+    if(COREKIT_PAL_FREERTOS)
+
+        set(FREERTOS_PORTABLE_IMPL_DIR "${COREKIT_WORKDIR}/thirdparty/freertos/portable/posix")
+       
+    endif()
+
+endmacro()
 
 ###################################
 ########### BSP Stage 3 ###########
 ###################################
 
-function(corekit_bsp_stage_3)
+macro(corekit_bsp_stage_3)
     
-endfunction()
+endmacro()
     

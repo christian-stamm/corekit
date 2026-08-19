@@ -12,8 +12,8 @@ namespace corekit {
        public:
         using Ptr = std::shared_ptr<FreeRTOSSemaphore>;
 
-        FreeRTOSSemaphore(uint32_t max_count = 1, uint32_t initial_count = 0)
-            : semaphore(xSemaphoreCreateCounting(max_count, initial_count))
+        FreeRTOSSemaphore(uint32_t initial = 0, uint32_t limit = 1)
+            : semaphore(xSemaphoreCreateCounting(limit, initial))
             , pxHigherPriorityTaskWoken(nullptr) {
             if (semaphore == nullptr) {
                 throw std::bad_alloc();
@@ -21,7 +21,9 @@ namespace corekit {
         }
 
         ~FreeRTOSSemaphore() {
-            vSemaphoreDelete(semaphore);
+            if (semaphore) {
+                vSemaphoreDelete(semaphore);
+            }
         }
 
         void acquire() {
@@ -53,11 +55,14 @@ namespace corekit {
 
        private:
         static bool in_isr() {
-            return xPortIsInsideInterrupt() != pdFALSE;
+            return false;  // FreeRTOS does not provide a standard way to check
+                           // if in ISR
         }
 
         SemaphoreHandle_t semaphore;
         BaseType_t       *pxHigherPriorityTaskWoken;
     };
+
+    using Semaphore = FreeRTOSSemaphore;
 
 }  // namespace corekit

@@ -19,15 +19,10 @@ target_sources(FreeRTOS-Kernel-Core INTERFACE
 
 target_include_directories(FreeRTOS-Kernel-Core INTERFACE ${FREERTOS_KERNEL_PATH}/include)
 
-if (PICO_SDK_VERSION_STRING VERSION_GREATER_EQUAL "1.3.2")
-    target_compile_definitions(FreeRTOS-Kernel-Core INTERFACE
-            PICO_CONFIG_RTOS_ADAPTER_HEADER=${FREERTOS_PORTABLE_IMPL_DIR}/inc/freertos_sdk_config.h)
-endif()
-
 add_library(FreeRTOS-Kernel INTERFACE)
 target_sources(FreeRTOS-Kernel INTERFACE
         ${FREERTOS_PORTABLE_IMPL_DIR}/src/port.c
-        ${FREERTOS_PORTABLE_IMPL_DIR}/src/portasm.c
+        ${FREERTOS_PORTABLE_IMPL_DIR}/src/wait_for_event.c
 )
 
 target_include_directories(FreeRTOS-Kernel INTERFACE
@@ -36,10 +31,6 @@ target_include_directories(FreeRTOS-Kernel INTERFACE
 
 target_link_libraries(FreeRTOS-Kernel INTERFACE
         FreeRTOS-Kernel-Core
-        pico_base_headers
-        hardware_clocks
-        hardware_exception
-        pico_multicore
 )
 
 target_compile_definitions(FreeRTOS-Kernel INTERFACE

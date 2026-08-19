@@ -1,15 +1,28 @@
 #pragma once
+#include <condition_variable>
 #include <memory>
-#include <semaphore>
+#include <mutex>
 
 namespace corekit {
 
-    class StdlibSemaphore : public std::counting_semaphore<> {
+    class Semaphore {
        public:
-        using Ptr = std::shared_ptr<StdlibSemaphore>;
-        using std::counting_semaphore<>::counting_semaphore;
-    };
+        using Ptr = std::shared_ptr<Semaphore>;
 
-    using Semaphore = StdlibSemaphore;
+        Semaphore(uint64_t initial = 0, uint64_t limit = 1);
+
+        void acquire();
+        void release();
+        bool try_acquire();
+
+       private:
+        bool try_acquire_unsafe();
+
+        uint64_t count_;
+        uint64_t limit_;
+
+        std::mutex              mutex_;
+        std::condition_variable cv_;
+    };
 
 }  // namespace corekit

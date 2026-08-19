@@ -4,8 +4,9 @@
 
 # Called after the Raspberry Pi Pico SDK has been initialized to add our libraries
 
-add_library(FreeRTOS-Kernel-Core INTERFACE)
+set(FREERTOS_CONFIG_FILE_DIRECTORY ${FREERTOS_PORTABLE_IMPL_DIR}/config)
 
+add_library(FreeRTOS-Kernel-Core INTERFACE)
 target_sources(FreeRTOS-Kernel-Core INTERFACE
         ${FREERTOS_KERNEL_PATH}/croutine.c
         ${FREERTOS_KERNEL_PATH}/event_groups.c
@@ -16,21 +17,21 @@ target_sources(FreeRTOS-Kernel-Core INTERFACE
         ${FREERTOS_KERNEL_PATH}/timers.c
         )
 
-target_include_directories(FreeRTOS-Kernel-Core INTERFACE ${FREERTOS_KERNEL_PATH}/inc)
+target_include_directories(FreeRTOS-Kernel-Core INTERFACE ${FREERTOS_KERNEL_PATH}/include)
 
 if (PICO_SDK_VERSION_STRING VERSION_GREATER_EQUAL "1.3.2")
     target_compile_definitions(FreeRTOS-Kernel-Core INTERFACE
-            PICO_CONFIG_RTOS_ADAPTER_HEADER=${CMAKE_CURRENT_LIST_DIR}/inc/freertos_sdk_config.h)
+            PICO_CONFIG_RTOS_ADAPTER_HEADER=${FREERTOS_PORTABLE_IMPL_DIR}/inc/freertos_sdk_config.h)
 endif()
 
 add_library(FreeRTOS-Kernel INTERFACE)
 target_sources(FreeRTOS-Kernel INTERFACE
-        ${CMAKE_CURRENT_LIST_DIR}/src/port.c
-        ${CMAKE_CURRENT_LIST_DIR}/src/portASM.S
+        ${FREERTOS_PORTABLE_IMPL_DIR}/src/port.c
+        ${FREERTOS_PORTABLE_IMPL_DIR}/src/portasm.c
 )
 
 target_include_directories(FreeRTOS-Kernel INTERFACE
-        ${CMAKE_CURRENT_LIST_DIR}/inc
+        ${FREERTOS_PORTABLE_IMPL_DIR}/inc
         ${FREERTOS_CONFIG_FILE_DIRECTORY})
 
 target_link_libraries(FreeRTOS-Kernel INTERFACE
@@ -38,7 +39,6 @@ target_link_libraries(FreeRTOS-Kernel INTERFACE
         pico_base_headers
         hardware_clocks
         hardware_exception
-        hardware_riscv_platform_timer
         pico_multicore
 )
 

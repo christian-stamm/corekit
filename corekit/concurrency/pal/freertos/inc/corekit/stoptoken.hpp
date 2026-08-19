@@ -8,9 +8,9 @@ namespace corekit {
 
     using StopState = Atomic<bool>;
 
-    class PicoStopToken {
+    class FreeRTOSStopToken {
        public:
-        explicit PicoStopToken(const StopState::Ptr& state);
+        explicit FreeRTOSStopToken(const StopState::Ptr& state);
 
         bool stop_requested() const;
         bool stop_possible() const;
@@ -19,13 +19,13 @@ namespace corekit {
         StopState::Ptr m_state;
     };
 
-    using StopToken = PicoStopToken;
+    using StopToken = FreeRTOSStopToken;
 
-    class PicoStopSource {
+    class FreeRTOSStopSource {
        public:
-        using Ptr = std::shared_ptr<PicoStopSource>;
+        using Ptr = std::shared_ptr<FreeRTOSStopSource>;
 
-        PicoStopSource();
+        FreeRTOSStopSource();
 
         bool stop_requested() const;
         bool stop_possible() const;
@@ -38,6 +38,6 @@ namespace corekit {
         const StopToken m_token;
     };
 
-    using StopSource = PicoStopSource;
+    using StopSource = FreeRTOSStopSource;
 
 }  // namespace corekit

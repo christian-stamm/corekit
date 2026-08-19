@@ -13,8 +13,7 @@ macro(corekit_pal_stage_0)
     )
 
     set(FREERTOS_KERNEL_PATH $ENV{FREERTOS_KERNEL_PATH})
-    set(FREERTOS_CONFIG_FILE_DIRECTORY ${COREKIT_WORKDIR}/thirdparty/freertos/common)
-
+    
 endmacro()
 
 ###################################
