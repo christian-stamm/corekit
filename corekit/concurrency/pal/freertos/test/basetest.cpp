@@ -1,8 +1,8 @@
 
-#include <stdio.h>
+#include <iostream>
 
-#include "FreeRTOS.h"
-#include "task.h"
+#include "corekit/thread.hpp"
+#include "corekit/time.hpp"
 
 extern "C" void vApplicationMallocFailedHook(void) {
     // Fail loudly during tests.
@@ -10,7 +10,7 @@ extern "C" void vApplicationMallocFailedHook(void) {
 }
 
 extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask,
-                                              char        *pcTaskName) {
+                                              char*        pcTaskName) {
     // Fail loudly during tests.
     __builtin_trap();
 }
@@ -19,30 +19,55 @@ extern "C" void vApplicationDaemonTaskStartupHook(void) {
     // Nothing required for tests.
 }
 
-static void task1(void *arg) {
-    (void)arg;
+namespace corekit {
 
-    for (;;) {
-        printf("Task 1 running\n");
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
+    class TestTask : public Task {
+       public:
+        TestTask(std::string name) : name(name) {
+            std::cout << "TestTask " << name << " created." << std::endl;
+        }
 
-static void task2(void *arg) {
-    (void)arg;
+        ~TestTask() {
+            std::cout << "TestTask " << name << " destroyed." << std::endl;
+        }
 
-    for (;;) {
-        printf("Task 2 running\n");
-        vTaskDelay(pdMS_TO_TICKS(500));
-    }
-}
+       protected:
+        virtual bool on_run(const StopToken& token) override {
+            while (!token.stop_requested()) {
+                std::cout << "TestTask " << name << " is running..."
+                          << std::endl;
+
+                Time::sleep(1e-6);
+            }
+
+            return true;
+        }
+
+        virtual bool on_enter(const StopToken& token) override {
+            std::cout << "TestTask " << name << " is entering..." << std::endl;
+            return true;
+        }
+
+        virtual bool on_leave(const StopToken& token) override {
+            std::cout << "TestTask " << name << " is leaving..." << std::endl;
+            return true;
+        }
+
+        std::string name;
+    };
+
+}  // namespace corekit
 
 int main(void) {
-    xTaskCreate(task1, "Task1", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-    xTaskCreate(task2, "Task2", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    using namespace corekit;
 
-    vTaskStartScheduler();
+    TestTask::Ptr task1 = std::make_shared<TestTask>("Task 1");
+    TestTask::Ptr task2 = std::make_shared<TestTask>("Task 2");
 
-    /* Should never reach here if the scheduler starts successfully. */
-    for (;;);
+    Thread::Ptr thread1 = std::make_shared<FreeRTOSThread>(task1);
+    Thread::Ptr thread2 = std::make_shared<FreeRTOSThread>(task2);
+
+    FreeRTOSRuntime::launch();
+
+    return 0;
 }

@@ -12,6 +12,7 @@ add_library(corekit::concurrency::api ALIAS corekit-concurrency-api)
 
 add_library(corekit-concurrency 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/check.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/task.cpp
 )
 
 target_link_libraries(corekit-concurrency
