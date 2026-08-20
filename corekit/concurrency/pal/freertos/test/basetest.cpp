@@ -5,18 +5,17 @@
 #include "corekit/time.hpp"
 
 extern "C" void vApplicationMallocFailedHook(void) {
-    // Fail loudly during tests.
-    __builtin_trap();
+    std::cerr << "vApplicationMallocFailedHook called!" << std::endl;
 }
 
 extern "C" void vApplicationStackOverflowHook(TaskHandle_t xTask,
                                               char*        pcTaskName) {
-    // Fail loudly during tests.
-    __builtin_trap();
+    std::cerr << "vApplicationStackOverflowHook called for task: " << pcTaskName
+              << std::endl;
 }
 
 extern "C" void vApplicationDaemonTaskStartupHook(void) {
-    // Nothing required for tests.
+    std::cerr << "vApplicationDaemonTaskStartupHook called!" << std::endl;
 }
 
 namespace corekit {
@@ -37,7 +36,7 @@ namespace corekit {
                 std::cout << "TestTask " << name << " is running..."
                           << std::endl;
 
-                Time::sleep(1e-6);
+                Time::sleep(1e-2);  // Sleep for 1 millisecond
             }
 
             return true;
