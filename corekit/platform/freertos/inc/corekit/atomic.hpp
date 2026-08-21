@@ -7,11 +7,11 @@
 namespace corekit {
 
     template <typename T>
-    class FreeRTOSAtomic {
+    class Atomic {
        public:
-        using Ptr = std::shared_ptr<FreeRTOSAtomic<T>>;
+        using Ptr = std::shared_ptr<Atomic<T>>;
 
-        FreeRTOSAtomic(T value = T()) : value(value) {}
+        Atomic(T value = T()) : value(value) {}
 
         T load() const {
             UBaseType_t state        = enter_critical();
@@ -63,8 +63,5 @@ namespace corekit {
 
         T value;
     };
-
-    template <typename T>
-    using Atomic = FreeRTOSAtomic<T>;
 
 }  // namespace corekit

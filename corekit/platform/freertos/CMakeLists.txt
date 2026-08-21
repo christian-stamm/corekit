@@ -1,5 +1,29 @@
 cmake_minimum_required(VERSION 3.25)
 
+cmake_minimum_required(VERSION 3.25)
+
+corekit_module(atomic)
+corekit_module(mutex)
+
+corekit_module(semaphore 
+    SOURCES src/semaphore.cpp
+    DEPENDS atomic
+)
+
+corekit_module(stoptoken)
+
+corekit_module(thread
+    SOURCES src/thread.cpp
+    DEPENDS atomic stoptoken task
+)
+
+corekit_module(time)
+
+
+
+
+
+
 if(COREKIT_PAL_FREERTOS)
 
     add_library(corekit-concurrency-pal-freertos 
