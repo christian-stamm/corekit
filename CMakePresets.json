@@ -8,7 +8,7 @@
             "binaryDir": "${sourceDir}/build/corekit",
             "cacheVariables": {
                 "COREKIT_BUILD_TEST": true,
-                "COREKIT_PAL": "freertos",
+                "COREKIT_PAL": "stdlib",
                 "COREKIT_BSP": "posix",
                 "PICO_BOARD": "bernd"
             }

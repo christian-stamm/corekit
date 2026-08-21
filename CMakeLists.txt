@@ -9,12 +9,14 @@ set(COREKIT_WORKDIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(COREKIT_CMAKE_DIR "${COREKIT_WORKDIR}/cmake")
 set(COREKIT_PAL_FILE "${COREKIT_CMAKE_DIR}/pal/${COREKIT_PAL}.cmake")
 set(COREKIT_BSP_FILE "${COREKIT_CMAKE_DIR}/bsp/${COREKIT_BSP}.cmake")
+set(COREKIT_COMMON_PATH "${COREKIT_WORKDIR}/corekit/common")
+set(COREKIT_PLATFORM_PATH "${COREKIT_WORKDIR}/corekit/platform/${COREKIT_PAL}")
 
 include("${COREKIT_CMAKE_DIR}/core.cmake")
 
-corekit_bsp_stage_0()
-corekit_pal_stage_0()
-corekit_bsp_stage_1()
+# corekit_bsp_stage_0()
+# corekit_pal_stage_0()
+# corekit_bsp_stage_1()
 
 project(corekit
     VERSION 0.0.1
@@ -22,9 +24,9 @@ project(corekit
     LANGUAGES C CXX ASM
 )
 
-corekit_bsp_stage_2()
-corekit_pal_stage_1()
-corekit_bsp_stage_3()
+# corekit_bsp_stage_2()
+# corekit_pal_stage_1()
+# corekit_bsp_stage_3()
 
-add_subdirectory(corekit)
-add_subdirectory(thirdparty)
+# add_subdirectory(corekit)
+# add_subdirectory(thirdparty)
