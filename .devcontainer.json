@@ -30,7 +30,7 @@
           "clangd.arguments": [
               "--pretty",
               "--query-driver=g++",
-              "--compile-commands-dir=${workspaceFolder}/build/corekit"
+              "--compile-commands-dir=${workspaceFolder}/build/corekit-lib"
           ],
           "chat.tools.terminal.autoApprove": {
               "true": true,

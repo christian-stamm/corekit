@@ -8,9 +8,9 @@ namespace corekit {
 
     using StopState = Atomic<bool>;
 
-    class FreeRTOSStopToken {
+    class StopToken {
        public:
-        explicit FreeRTOSStopToken(const StopState::Ptr& state);
+        explicit StopToken(const StopState::Ptr& state);
 
         bool stop_requested() const;
         bool stop_possible() const;
@@ -19,13 +19,13 @@ namespace corekit {
         StopState::Ptr m_state;
     };
 
-    using StopToken = FreeRTOSStopToken;
+    using StopToken = StopToken;
 
-    class FreeRTOSStopSource {
+    class StopSource {
        public:
-        using Ptr = std::shared_ptr<FreeRTOSStopSource>;
+        using Ptr = std::shared_ptr<StopSource>;
 
-        FreeRTOSStopSource();
+        StopSource();
 
         bool stop_requested() const;
         bool stop_possible() const;
@@ -38,6 +38,6 @@ namespace corekit {
         const StopToken m_token;
     };
 
-    using StopSource = FreeRTOSStopSource;
+    using StopSource = StopSource;
 
 }  // namespace corekit

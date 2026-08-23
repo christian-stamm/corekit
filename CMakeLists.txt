@@ -5,14 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
-set(COREKIT_WORKDIR ${CMAKE_CURRENT_SOURCE_DIR})
-set(COREKIT_CMAKE_PATH "${COREKIT_WORKDIR}/cmake")
-set(COREKIT_COMMON_PATH "${COREKIT_WORKDIR}/corekit/common")
-set(COREKIT_PLATFORM_PATH "${COREKIT_WORKDIR}/corekit/platform/${COREKIT_PAL}")
-
-include("${COREKIT_CMAKE_PATH}/module.cmake")
-include("${COREKIT_CMAKE_PATH}/path.cmake")
-include("${COREKIT_CMAKE_PATH}/test.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/env.cmake")
 
 project(corekit
     VERSION 0.0.1
@@ -20,7 +13,6 @@ project(corekit
     LANGUAGES C CXX ASM
 )
 
+enable_testing()
 add_subdirectory(corekit)
 add_subdirectory(thirdparty)
-
-corekit_finalize()

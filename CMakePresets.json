@@ -5,12 +5,10 @@
             "name": "corekit-base",
             "generator": "Ninja",
             "displayName": "Corekit Base Toolchain",
-            "binaryDir": "${sourceDir}/build/corekit",
+            "binaryDir": "${sourceDir}/build/corekit-lib",
             "cacheVariables": {
-                "COREKIT_BUILD_TEST": true,
-                "COREKIT_PAL": "stdlib",
-                "COREKIT_BSP": "posix",
-                "PICO_BOARD": "bernd"
+                "COREKIT_RUNTIME": "stdlib",
+                "COREKIT_TARGET": "posix"
             }
         }
     ]

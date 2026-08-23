@@ -1,18 +1,6 @@
-function(make_paths_abs ABS_PATHS)
-    set(paths "")
+cmake_minimum_required(VERSION 3.25)
 
-    foreach(path IN LISTS ARGN)
-        if(IS_ABSOLUTE "${path}")
-            list(APPEND paths "${path}")
-        else()
-            list(APPEND paths "${CMAKE_CURRENT_SOURCE_DIR}/${path}")
-        endif()
-    endforeach()
-
-    set(${ABS_PATHS} "${paths}" PARENT_SCOPE)
-endfunction()
-
-function(corekit_module NAME)
+function(corekit_add_module NAME)
     # ----------------------------------------------------------
     # Pass 1: Create ALL targets
     # ----------------------------------------------------------
@@ -86,16 +74,24 @@ function(corekit_finalize)
 
         foreach(dependency IN LISTS depends)
 
-            if(NOT TARGET ${dependency} AND NOT TARGET "corekit::${dependency}")
-                list(APPEND missing_depends "${dependency}")
-                continue()
-            endif()
+            if(TARGET ${dependency})
+                target_link_libraries(
+                    "corekit_${module}"
+                    PUBLIC
+                        "corekit::${dependency}"
+                )
 
-            target_link_libraries(
-                "corekit_${module}"
-                PUBLIC
-                    "corekit::${dependency}"
-            )
+            elseif(TARGET "corekit::${dependency}")
+                target_link_libraries(
+                    "corekit_${module}"
+                    PUBLIC
+                        "corekit::${dependency}"
+                )
+
+            else()
+                list(APPEND missing_depends "${dependency}")
+
+            endif()
 
         endforeach()
 
