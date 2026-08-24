@@ -7,12 +7,22 @@ set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/env.cmake")
 
+add_subdirectory(corekit)
+add_subdirectory(thirdparty)
+
+if(COMMAND corekit_runtime_bootstrap)
+    corekit_runtime_bootstrap()
+endif()
+
 project(corekit
     VERSION 0.0.1
     DESCRIPTION "COREKIT - A C++ Utility Library"
     LANGUAGES C CXX ASM
 )
 
+if(COMMAND corekit_runtime_configure)
+    corekit_runtime_configure()
+endif()
+
 enable_testing()
-add_subdirectory(corekit)
-add_subdirectory(thirdparty)
+corekit_finalize()
