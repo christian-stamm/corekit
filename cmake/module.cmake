@@ -13,6 +13,9 @@ function(corekit_add_module NAME)
         ${ARGN}                     # arguments to parse
     )
 
+    make_paths_abs(sources ${ARG_SOURCES})
+    make_paths_abs(includes "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+
     # Remember module name.
     set_property(
         GLOBAL APPEND
@@ -22,28 +25,21 @@ function(corekit_add_module NAME)
 
     set_property(
         GLOBAL
+        PROPERTY "COREKIT_${NAME}_SOURCES"
+        "${sources}"
+    )
+
+    set_property(
+        GLOBAL
+        PROPERTY "COREKIT_${NAME}_INCLUDES"
+        "${includes}"
+    )
+
+    set_property(
+        GLOBAL
         PROPERTY "COREKIT_${NAME}_DEPENDS"
         "${ARG_DEPENDS}"
     )
-
-    make_paths_abs(sources ${ARG_SOURCES})
-
-    set(lib_name "corekit_${NAME}")
-    set(lib_type INTERFACE)
-
-    if(sources)
-        set(lib_type STATIC)
-    endif()
-
-    add_library(${lib_name} ${lib_type} ${sources})
-
-    if(lib_type STREQUAL "STATIC")
-        set(lib_type PUBLIC)
-    endif()
-
-    target_include_directories(${lib_name} ${lib_type} ${CMAKE_CURRENT_SOURCE_DIR}/inc)
-
-    add_library("corekit::${NAME}" ALIAS "${lib_name}")
 
 endfunction()
 
@@ -52,7 +48,7 @@ function(corekit_finalize)
     # ----------------------------------------------------------
     # Pass 2: Configure targets
     #
-    # At this point ALL corekit::* targets exist, so dependency
+    # At this point ALL corekit::* targets exist, so dep
     # ordering is irrelevant.
     # ----------------------------------------------------------
 
@@ -65,52 +61,79 @@ function(corekit_finalize)
     foreach(module IN LISTS modules)
 
         get_property(
+            sources
+            GLOBAL
+            PROPERTY "COREKIT_${module}_SOURCES"
+        )
+
+        get_property(
+            includes
+            GLOBAL
+            PROPERTY "COREKIT_${module}_INCLUDES"
+        )
+
+        get_property(
             depends
             GLOBAL
             PROPERTY "COREKIT_${module}_DEPENDS"
         )
 
-        set(missing_depends "")
+        
+        set(missing_deps "")
 
-        foreach(dependency IN LISTS depends)
-
-            if(TARGET ${dependency})
-                target_link_libraries(
-                    "corekit_${module}"
-                    PUBLIC
-                        "corekit::${dependency}"
-                )
-
-            elseif(TARGET "corekit::${dependency}")
-                target_link_libraries(
-                    "corekit_${module}"
-                    PUBLIC
-                        "corekit::${dependency}"
-                )
-
-            else()
-                list(APPEND missing_depends "${dependency}")
-
+        foreach(dep IN LISTS depends)
+            if(NOT "${dep}" MATCHES "^corekit::")
+                continue()
             endif()
 
+            if(NOT dep IN_LIST modules)
+                list(APPEND missing_deps "${dep}")
+            endif()
         endforeach()
 
-        list(JOIN missing_depends "\n - " missing_depends_pretty)
+        if(missing_deps)
+            list(JOIN missing_deps "\n - " missing_deps_pretty)
 
-        if(missing_depends)
             message(
                 WARNING
                 "corekit module '${module}' is not available due to missing dependencies:\n"
-                " - ${missing_depends_pretty}"
+                " - ${missing_deps_pretty}"
             )
-        else()
-            string(TOUPPER "${module}" module)
-            option(
-                "COREKIT_HAS_${module}"
-                "COREKIT module '${module}' is available."
-                ON
-            )
+
+            continue()
+
         endif()
+
+        set(lib_name "corekit_${module}")
+        set(lib_type INTERFACE)
+        set(lib_link INTERFACE)
+
+        if(sources)
+            set(lib_type STATIC)
+            set(lib_link PUBLIC)
+        endif()
+
+
+        add_library(${lib_name} ${lib_type} ${sources})
+
+        target_include_directories(${lib_name} ${lib_link} ${includes})
+
+        foreach(dep IN LISTS depends)
+
+            if(dep IN_LIST modules)
+                set(dep "corekit::${dep}")
+            endif()
+
+            target_link_libraries("corekit_${module}" ${lib_link} "${dep}")
+            message(STATUS "Linked corekit module '${module}' to '${dep}'")
+
+        endforeach()
+
+
+        add_library("corekit::${module}" ALIAS "${lib_name}")
+
+        string(TOUPPER "${module}" module_upper)
+        add_compile_definitions("COREKIT_HAS_${module_upper}=1")
 
     endforeach()
 endfunction()

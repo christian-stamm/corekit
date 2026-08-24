@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.25)
+
+set(FREERTOS_PORTABLE_IMPL_DIR "${CMAKE_CURRENT_SOURCE_DIR}/${COREKIT_TARGET}")
+
+add_subdirectory("${FREERTOS_PORTABLE_IMPL_DIR}")
