@@ -40,7 +40,6 @@ target_link_libraries(FreeRTOS-Kernel INTERFACE
         hardware_clocks
         hardware_exception
         pico_multicore
-        pico_time
 )
 
 target_compile_definitions(FreeRTOS-Kernel INTERFACE

@@ -41,7 +41,6 @@
 
 #pragma once
 #include <assert.h>
-#include <pico/time.h>
 /* Define to trap errors during development. */
 #define configASSERT(x) assert(x)
 
@@ -144,5 +143,3 @@ to exclude the API function. */
 #define INCLUDE_xTaskGetHandle              1
 #define INCLUDE_xTaskResumeFromISR          1
 #define INCLUDE_xQueueGetMutexHolder        1
-
-#define portGET_RUN_TIME_COUNTER_VALUE() ((uint64_t)time_us_64())

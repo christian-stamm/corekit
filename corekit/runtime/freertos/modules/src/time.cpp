@@ -19,7 +19,7 @@ namespace corekit {
     }
 
     double Time::now() {
-        uint64_t value = portGET_RUN_TIME_COUNTER_VALUE();
+        uint64_t value = xTaskGetTickCount();
         double   time  = static_cast<double>(value) / configTICK_RATE_HZ;
         return time;
     }
