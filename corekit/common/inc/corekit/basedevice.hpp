@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 
-#include "corekit/platform.hpp"
+#include "corekit/atomic.hpp"
 #include "corekit/types.hpp"
 #include "corekit/watch.hpp"
 

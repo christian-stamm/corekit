@@ -4,6 +4,11 @@ corekit_add_module(atomic
     DEPENDS FreeRTOS-Kernel-Heap4
 )
 
+corekit_add_module(executor
+    SOURCES src/executor.cpp
+    DEPENDS FreeRTOS-Kernel-Heap4 task watch
+)
+
 corekit_add_module(mutex
     SOURCES src/mutex.cpp
     DEPENDS FreeRTOS-Kernel-Heap4 semaphore

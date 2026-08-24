@@ -15,6 +15,7 @@ function(corekit_add_module NAME)
 
     make_paths_abs(sources ${ARG_SOURCES})
     make_paths_abs(includes "${CMAKE_CURRENT_SOURCE_DIR}/inc")
+    make_paths_abs(tests "${CMAKE_CURRENT_SOURCE_DIR}/test/${NAME}.cpp")
 
     # Remember module name.
     set_property(
@@ -39,6 +40,12 @@ function(corekit_add_module NAME)
         GLOBAL
         PROPERTY "COREKIT_${NAME}_DEPENDS"
         "${ARG_DEPENDS}"
+    )
+
+    set_property(
+        GLOBAL
+        PROPERTY "COREKIT_${NAME}_TESTS"
+        "${tests}"
     )
 
 endfunction()
@@ -76,6 +83,12 @@ function(corekit_finalize)
             depends
             GLOBAL
             PROPERTY "COREKIT_${module}_DEPENDS"
+        )
+
+        get_property(
+            tests
+            GLOBAL
+            PROPERTY "COREKIT_${module}_TESTS"
         )
 
         
@@ -125,7 +138,6 @@ function(corekit_finalize)
             endif()
 
             target_link_libraries("corekit_${module}" ${lib_link} "${dep}")
-            message(STATUS "Linked corekit module '${module}' to '${dep}'")
 
         endforeach()
 
@@ -134,6 +146,19 @@ function(corekit_finalize)
 
         string(TOUPPER "${module}" module_upper)
         add_compile_definitions("COREKIT_HAS_${module_upper}=1")
+
+        find_package(GTest QUIET)
+
+        if(EXISTS "${tests}" AND GTest_FOUND)
+
+            add_executable("corekit-${module}-test" ${tests})
+            target_link_libraries("corekit-${module}-test" PUBLIC 
+                "corekit::${module}"
+                GTest::gtest 
+                GTest::gtest_main
+            )
+
+        endif()
 
     endforeach()
 endfunction()

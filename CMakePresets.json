@@ -8,8 +8,8 @@
             "binaryDir": "${sourceDir}/build/corekit-lib",
             "cacheVariables": {
                 "COREKIT_RUNTIME": "freertos",
-                "COREKIT_TARGET": "pico",
-                "COREKIT_BOARD": "bernd"
+                "COREKIT_TARGET": "posix",
+                "COREKIT_BOARD": "<NONE>"
             }
         }
     ]

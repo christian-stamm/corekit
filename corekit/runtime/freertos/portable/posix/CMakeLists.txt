@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # Called after the Raspberry Pi Pico SDK has been initialized to add our libraries
-set(FREERTOS_CONFIG_FILE_DIRECTORY ${FREERTOS_PORTABLE_IMPL_DIR}/config)
+
+set(FREERTOS_CONFIG_FILE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/config)
 
 add_library(FreeRTOS-Kernel-Core INTERFACE)
 target_sources(FreeRTOS-Kernel-Core INTERFACE
@@ -20,12 +21,12 @@ target_include_directories(FreeRTOS-Kernel-Core INTERFACE ${FREERTOS_KERNEL_PATH
 
 add_library(FreeRTOS-Kernel INTERFACE)
 target_sources(FreeRTOS-Kernel INTERFACE
-        ${FREERTOS_PORTABLE_IMPL_DIR}/src/port.c
-        ${FREERTOS_PORTABLE_IMPL_DIR}/src/wait_for_event.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/port.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/wait_for_event.c
 )
 
 target_include_directories(FreeRTOS-Kernel INTERFACE
-        ${FREERTOS_PORTABLE_IMPL_DIR}/inc
+        ${CMAKE_CURRENT_SOURCE_DIR}/inc
         ${FREERTOS_CONFIG_FILE_DIRECTORY})
 
 target_link_libraries(FreeRTOS-Kernel INTERFACE

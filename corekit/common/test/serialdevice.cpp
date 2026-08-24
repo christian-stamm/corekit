@@ -4,6 +4,23 @@
 
 #include <sstream>
 
+extern "C" {
+
+void vApplicationMallocFailedHook(void) {
+    FAIL() << "Malloc failed";
+}
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char* pcTaskName) {
+    FAIL() << "Stack overflow in task: " << pcTaskName;
+}
+
+void vApplicationDaemonTaskStartupHook(void) {
+    // This function is called when the FreeRTOS daemon task starts up.
+    // You can perform any necessary initialization here.
+}
+
+}  // extern "C"
+
 namespace corekit {
 
     class SerialTestDev : public SerialDevice<uint32_t> {

@@ -29,7 +29,7 @@
           },
           "clangd.arguments": [
               "--pretty",
-              "--query-driver=g++",
+              "--query-driver=arm-none-eabi-g++",
               "--compile-commands-dir=${workspaceFolder}/build/corekit-lib"
           ],
           "chat.tools.terminal.autoApprove": {
