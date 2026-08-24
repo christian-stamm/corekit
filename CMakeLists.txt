@@ -10,8 +10,8 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/env.cmake")
 add_subdirectory(corekit)
 add_subdirectory(thirdparty)
 
-if(COMMAND corekit_runtime_bootstrap)
-    corekit_runtime_bootstrap()
+if(COMMAND corekit_bsp_bootstrap)
+    corekit_bsp_bootstrap()
 endif()
 
 project(corekit
@@ -20,9 +20,10 @@ project(corekit
     LANGUAGES C CXX ASM
 )
 
-if(COMMAND corekit_runtime_configure)
-    corekit_runtime_configure()
+enable_testing()
+
+if(COMMAND corekit_bsp_configure)
+    corekit_bsp_configure()
 endif()
 
-enable_testing()
 corekit_finalize()

@@ -1,2 +1,3 @@
 cmake_minimum_required(VERSION 3.25)
+set(FREERTOS_KERNEL_PATH "$ENV{FREERTOS_KERNEL_PATH}")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${COREKIT_TARGET}")
