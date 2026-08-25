@@ -7,7 +7,7 @@
             "displayName": "Corekit Base Toolchain",
             "binaryDir": "${sourceDir}/build/corekit-lib",
             "cacheVariables": {
-                "COREKIT_RUNTIME": "stdlib",
+                "COREKIT_BACKEND": "stdlib",
                 "COREKIT_TARGET": "posix"
             }
         }

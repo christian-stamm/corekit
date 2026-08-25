@@ -46,7 +46,8 @@
         "GitHub.copilot-chat",
         "chris-hock.pioasm",
         "marus25.cortex-debug",
-        "ms-vscode.vscode-serial-monitor"
+        "ms-vscode.vscode-serial-monitor",
+        "openai.chatgpt"
       ]
     }
   }

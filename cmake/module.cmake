@@ -1,351 +1,232 @@
 cmake_minimum_required(VERSION 3.25)
 
-function(corekit_add_module NAME)
-    # ----------------------------------------------------------
-    # Pass 1: Create ALL targets
-    # ----------------------------------------------------------
+function(corekit_add_module MODULE_NAME)
 
     cmake_parse_arguments(
-        ARG                                         # prefix
-        ""                                          # options
-        ""                                          # one-value arguments
-        "INCLUDE_PATHS;DEPENDENCIES;TEST_FILES"     # multi-value arguments
-        ${ARGN}                                     # arguments to parse
+        ARG                                 # prefix
+        ""                                  # options
+        ""                                  # one-value arguments
+        "SOURCES;INCLUDES;DEPENDS;TESTS"    # multi-value arguments
+        ${ARGN}                             # arguments to parse
     )
 
-    # Remember module name.
-    set_property(
-        GLOBAL APPEND
-        PROPERTY COREKIT_API_MODULES
-        "${NAME}"
+    if(NOT MODULE_NAME)
+        message(WARNING "Missing required argument: MODULE_NAME")
+        return()
+    endif()
+
+    get_property(
+        modules
+        GLOBAL
+        PROPERTY COREKIT_MODULE_NAMES
     )
 
-    make_paths_abs(includes ${ARG_INCLUDE_PATHS})
-    make_paths_abs(tests ${ARG_TEST_FILES})
+    if(NOT ${MODULE_NAME} IN_LIST modules)
+        set_property(
+            GLOBAL APPEND
+            PROPERTY COREKIT_MODULE_NAMES
+            "${MODULE_NAME}"
+        )
+    endif()
+
+    get_property(
+        existing_source_files
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_SOURCE_FILES"
+    )
+
+    get_property(
+        existing_include_paths
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_INCLUDE_PATHS"
+    )
+
+    get_property(
+        existing_dependencies
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_DEPENDENCIES"
+    )
+
+    get_property(
+        existing_test_files
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_TEST_FILES"
+    )
+    
+    set(new_dependencies ${ARG_DEPENDS})
+    make_paths_abs(new_source_files "${ARG_SOURCES}")
+    make_paths_abs(new_include_paths "${ARG_INCLUDES}")
+    make_paths_abs(new_test_files "${ARG_TESTS}")
+
+    list(APPEND new_source_files ${existing_source_files})
+    list(APPEND new_include_paths ${existing_include_paths})
+    list(APPEND new_dependencies ${existing_dependencies})
+    list(APPEND new_test_files ${existing_test_files})
 
     set_property(
-        GLOBAL APPEND
-        PROPERTY "COREKIT_API_${NAME}_INCLUDE_PATHS"
-        "${includes}"
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_SOURCE_FILES"
+        "${new_source_files}"
     )
 
     set_property(
-        GLOBAL APPEND
-        PROPERTY "COREKIT_API_${NAME}_DEPENDENCIES"
-        "${ARG_DEPENDENCIES}"
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_INCLUDE_PATHS"
+        "${new_include_paths}"
     )
 
     set_property(
-        GLOBAL APPEND
-        PROPERTY "COREKIT_API_${NAME}_TEST_FILES"
-        "${tests}"
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_DEPENDENCIES"
+        "${new_dependencies}"
+    )
+
+    set_property(
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_TEST_FILES"
+        "${new_test_files}"
+    )
+
+    set_property(
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_BINARY_DIR"
+        "${CMAKE_CURRENT_BINARY_DIR}"
     )
 
 endfunction()
 
-function(corekit_add_impl NAME)
-    # ----------------------------------------------------------
-    # Pass 1: Create ALL targets
-    # ----------------------------------------------------------
-
-    cmake_parse_arguments(
-        ARG                                                     # prefix
-        ""                                                      # options
-        ""                                                      # one-value arguments
-        "SOURCE_FILES;INCLUDE_PATHS;DEPENDENCIES;TEST_FILES"    # multi-value arguments
-        ${ARGN}                                                 # arguments to parse
-    )
-
-    make_paths_abs(sources ${ARG_SOURCE_FILES})
-    make_paths_abs(includes ${ARG_INCLUDE_PATHS})
-    make_paths_abs(tests ${ARG_TEST_FILES})
-
-    # Remember module name.
-    set_property(
-        GLOBAL APPEND
-        PROPERTY COREKIT_IMPL_MODULES
-        "${NAME}"
-    )
-
-    set_property(
-        GLOBAL
-        PROPERTY "COREKIT_IMPL_${NAME}_SOURCE_FILES"
-        "${sources}"
-    )
-
-    set_property(
-        GLOBAL
-        PROPERTY "COREKIT_IMPL_${NAME}_INCLUDE_PATHS"
-        "${includes}"
-    )
-
-    set_property(
-        GLOBAL
-        PROPERTY "COREKIT_IMPL_${NAME}_DEPENDENCIES"
-        "${ARG_DEPENDENCIES}"
-    )
-
-    set_property(
-        GLOBAL
-        PROPERTY "COREKIT_IMPL_${NAME}_TEST_FILES"
-        "${tests}"
-    )
-
-endfunction()
-
-
-function(corekit_finalize)
+function(corekit_build_modules)
     find_package(GTest QUIET)
 
     get_property(
-        api_modules
+        modules
         GLOBAL
-        PROPERTY COREKIT_API_MODULES
+        PROPERTY COREKIT_MODULE_NAMES
     )
 
-    get_property(
-        impl_modules
-        GLOBAL
-        PROPERTY COREKIT_IMPL_MODULES
-    )
-
-    list(REMOVE_DUPLICATES api_modules)
-    list(REMOVE_DUPLICATES impl_modules)
+    list(REMOVE_DUPLICATES modules)
 
     # ----------------------------------------------------------
-    # Pass 1: Create all public API facade targets
+    # Pass 1: Create all targets
     # ----------------------------------------------------------
 
-    foreach(module IN LISTS api_modules)
-        set(api_target "corekit-${module}")
-
-        if(NOT TARGET "${api_target}")
-            add_library("${api_target}" INTERFACE)
-            add_library("corekit::${module}" ALIAS "${api_target}")
-        endif()
-    endforeach()
-
-    # ----------------------------------------------------------
-    # Pass 2: Create all implementation targets
-    # ----------------------------------------------------------
-
-    foreach(module IN LISTS impl_modules)
+    foreach(module IN LISTS modules)
+    
         get_property(
-            sources
+            src_files
             GLOBAL
-            PROPERTY "COREKIT_IMPL_${module}_SOURCE_FILES"
+            PROPERTY "COREKIT_${module}_SOURCE_FILES"
         )
 
-        set(impl_target "corekit-${module}-impl")
+        get_property(
+            inc_paths
+            GLOBAL
+            PROPERTY "COREKIT_${module}_INCLUDE_PATHS"
+        )
 
-        if(TARGET "${impl_target}")
-            continue()
-        endif()
+        get_property(
+            lib_deps
+            GLOBAL
+            PROPERTY "COREKIT_${module}_DEPENDENCIES"
+        )
 
-        if(sources)
-            add_library("${impl_target}" STATIC ${sources})
+        get_property(
+            test_files
+            GLOBAL
+            PROPERTY "COREKIT_${module}_TEST_FILES"
+        )
+
+        set(target_name "corekit-${module}")
+
+        if(src_files)
+            set(target_type STATIC)
+            set(target_link PUBLIC)
         else()
-            add_library("${impl_target}" INTERFACE)
+            set(target_type INTERFACE)
+            set(target_link INTERFACE)
         endif()
 
-        add_library(
-            "corekit::${module}::impl"
-            ALIAS
-            "${impl_target}"
-        )
-    endforeach()
+        set(missing_deps "")
+        set(matched_deps "")
 
-    # ----------------------------------------------------------
-    # Pass 3: Configure all implementation targets
-    # ----------------------------------------------------------
-
-    foreach(module IN LISTS impl_modules)
-        get_property(
-            sources
-            GLOBAL
-            PROPERTY "COREKIT_IMPL_${module}_SOURCE_FILES"
-        )
-
-        get_property(
-            includes
-            GLOBAL
-            PROPERTY "COREKIT_IMPL_${module}_INCLUDE_PATHS"
-        )
-
-        get_property(
-            dependencies
-            GLOBAL
-            PROPERTY "COREKIT_IMPL_${module}_DEPENDENCIES"
-        )
-
-        set(impl_target "corekit-${module}-impl")
-
-        if(sources)
-            set(usage PUBLIC)
-        else()
-            set(usage INTERFACE)
-        endif()
-
-        if(includes)
-            target_include_directories(
-                "${impl_target}"
-                ${usage}
-                ${includes}
-            )
-        endif()
-
-        foreach(dep IN LISTS dependencies)
-            if(dep IN_LIST api_modules)
-                target_link_libraries(
-                    "${impl_target}"
-                    ${usage}
-                    "corekit::${dep}"
-                )
+        foreach(dep IN LISTS lib_deps)
+            if(dep IN_LIST modules)
+                # Internal module name, such as atomic, mutex, semaphore, etc.
+                list(APPEND matched_deps "corekit::${dep}")
             elseif(TARGET "${dep}")
-                target_link_libraries(
-                    "${impl_target}"
-                    ${usage}
-                    "${dep}"
-                )
-            elseif("${dep}" MATCHES "^corekit::")
-                message(
-                    WARNING
-                    "Implementation '${module}' references unavailable "
-                    "dependency '${dep}'"
-                )
-            else()
                 # External library name, such as pthread, fmt::fmt,
                 # Threads::Threads, etc.
-                target_link_libraries(
-                    "${impl_target}"
-                    ${usage}
-                    "${dep}"
-                )
-            endif()
-        endforeach()
-    endforeach()
-
-    # ----------------------------------------------------------
-    # Pass 4: Configure public API facade targets
-    # ----------------------------------------------------------
-
-    foreach(module IN LISTS api_modules)
-        get_property(
-            api_includes
-            GLOBAL
-            PROPERTY "COREKIT_API_${module}_INCLUDE_PATHS"
-        )
-
-        get_property(
-            api_dependencies
-            GLOBAL
-            PROPERTY "COREKIT_API_${module}_DEPENDENCIES"
-        )
-
-        set(api_target "corekit-${module}")
-
-        if(api_includes)
-            target_include_directories(
-                "${api_target}"
-                INTERFACE
-                ${api_includes}
-            )
-        endif()
-
-        # Attach this module's concrete implementation.
-        if(module IN_LIST impl_modules)
-            target_link_libraries(
-                "${api_target}"
-                INTERFACE
-                "corekit::${module}::impl"
-            )
-
-            string(TOUPPER "${module}" module_upper)
-
-            target_compile_definitions(
-                "${api_target}"
-                INTERFACE
-                "COREKIT_HAS_${module_upper}=1"
-            )
-        endif()
-
-        # Attach other public module dependencies.
-        foreach(dep IN LISTS api_dependencies)
-            if(dep IN_LIST api_modules)
-                target_link_libraries(
-                    "${api_target}"
-                    INTERFACE
-                    "corekit::${dep}"
-                )
+                list(APPEND matched_deps "${dep}")
             else()
-                message(
-                    WARNING
-                    "API module '${module}' references unavailable "
-                    "module dependency '${dep}'"
-                )
+                # Dependency is missing, so we will skip this module.
+                list(APPEND missing_deps "${dep}")
             endif()
         endforeach()
+
+        if(missing_deps)
+            message(
+                WARNING
+                "Module '${module}' requires unavailable dependencies: "
+                "${missing_deps}"
+                "Skipping target creation."
+            )
+
+            continue()
+
+        endif()
+
+        add_library(${target_name} "${target_type}" ${src_files})
+        target_include_directories(${target_name} ${target_link} ${inc_paths})
+        target_link_libraries(${target_name} ${target_link} ${matched_deps})
+        add_library("corekit::${module}" ALIAS ${target_name})
+
+        get_property(
+            module_binary_dir
+            GLOBAL
+            PROPERTY "COREKIT_${module}_BINARY_DIR"
+        )
+
+        set(export_dir "${module_binary_dir}/build/${module}")
+
+        set_target_properties(${target_name} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${export_dir}"
+            LIBRARY_OUTPUT_DIRECTORY "${export_dir}"
+            ARCHIVE_OUTPUT_DIRECTORY "${export_dir}"
+        )
+
+        message(
+        STATUS
+            "Added module '${target_name}', "
+            "with sources: '${src_files}', "
+            "with includes: '${inc_paths}', "
+            "with dependencies: '${lib_deps}', "
+            "with tests: '${test_files}'"
+        )
+
+        if(GTest_FOUND AND test_files)
+
+            include(GoogleTest)
+
+            add_executable("${target_name}-test" ${test_files})
+
+            set_target_properties("${target_name}-test" PROPERTIES
+                RUNTIME_OUTPUT_DIRECTORY "${export_dir}"
+                LIBRARY_OUTPUT_DIRECTORY "${export_dir}"
+                ARCHIVE_OUTPUT_DIRECTORY "${export_dir}"
+            )
+
+            target_link_libraries("${target_name}-test" PRIVATE 
+                ${target_name}
+                GTest::gtest 
+                GTest::gtest_main
+            )
+
+            gtest_add_tests(TARGET "${target_name}-test")
+
+        endif()
+
     endforeach()
 
-    # ----------------------------------------------------------
-    # Pass 5: Create tests after the full target graph is wired
-    # ----------------------------------------------------------
 
-    if(GTest_FOUND)
-        foreach(module IN LISTS api_modules)
-            get_property(
-                api_tests
-                GLOBAL
-                PROPERTY "COREKIT_API_${module}_TEST_FILES"
-            )
 
-            if(api_tests)
-                add_executable(
-                    "corekit-${module}-api-test"
-                    ${api_tests}
-                )
-
-                target_link_libraries(
-                    "corekit-${module}-api-test"
-                    PRIVATE
-                    "corekit::${module}"
-                    GTest::gtest
-                    GTest::gtest_main
-                )
-
-                include(GoogleTest)
-                gtest_discover_tests("corekit-${module}-api-test")
-
-            endif()
-        endforeach()
-
-        foreach(module IN LISTS impl_modules)
-            get_property(
-                impl_tests
-                GLOBAL
-                PROPERTY "COREKIT_IMPL_${module}_TEST_FILES"
-            )
-
-            if(impl_tests)
-                add_executable(
-                    "corekit-${module}-impl-test"
-                    ${impl_tests}
-                )
-
-                # Tests intentionally consume the public facade.
-                # That verifies that API -> implementation wiring works.
-                target_link_libraries(
-                    "corekit-${module}-impl-test"
-                    PRIVATE
-                    "corekit::${module}"
-                    GTest::gtest
-                    GTest::gtest_main
-                )
-
-                include(GoogleTest)
-                gtest_discover_tests("corekit-${module}-impl-test")
-
-            endif()
-        endforeach()
-    endif()
 endfunction()

@@ -26,4 +26,4 @@ if(COMMAND corekit_bsp_configure)
     corekit_bsp_configure()
 endif()
 
-corekit_finalize()
+corekit_build_modules()
