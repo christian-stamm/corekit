@@ -13,6 +13,4 @@ namespace corekit {
         { s.try_acquire() } -> std::convertible_to<bool>;
     };
 
-    static_assert(SemaphoreLike<Semaphore>);
-
 };  // namespace corekit

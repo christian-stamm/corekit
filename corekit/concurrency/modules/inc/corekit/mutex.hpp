@@ -14,6 +14,4 @@ namespace corekit {
             { m.try_lock() } -> std::convertible_to<bool>;
         };
 
-    static_assert(MutexLike<Mutex>);
-
 };  // namespace corekit

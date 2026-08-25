@@ -4,7 +4,7 @@ function(corekit_add_module MODULE_NAME)
 
     cmake_parse_arguments(
         ARG                                 # prefix
-        ""                                  # options
+        "API;IMPL"                          # options
         ""                                  # one-value arguments
         "SOURCES;INCLUDES;DEPENDS;TESTS"    # multi-value arguments
         ${ARGN}                             # arguments to parse
@@ -12,6 +12,11 @@ function(corekit_add_module MODULE_NAME)
 
     if(NOT MODULE_NAME)
         message(WARNING "Missing required argument: MODULE_NAME")
+        return()
+    endif()
+
+    if(NOT ARG_API AND NOT ARG_IMPL)
+        message(WARNING "Module '${MODULE_NAME}' must specify at least one of API or IMPL")
         return()
     endif()
 
@@ -93,6 +98,22 @@ function(corekit_add_module MODULE_NAME)
         "${CMAKE_CURRENT_BINARY_DIR}"
     )
 
+    if(ARG_API)
+        set_property(
+            GLOBAL
+            PROPERTY "COREKIT_${MODULE_NAME}_HAS_API"
+            TRUE
+        )
+    endif()
+
+    if(ARG_IMPL)
+        set_property(
+            GLOBAL
+            PROPERTY "COREKIT_${MODULE_NAME}_HAS_IMPL"
+            TRUE
+        )
+    endif()
+
 endfunction()
 
 function(corekit_build_modules)
@@ -136,6 +157,30 @@ function(corekit_build_modules)
             PROPERTY "COREKIT_${module}_TEST_FILES"
         )
 
+        get_property(
+            has_api
+            GLOBAL
+            PROPERTY "COREKIT_${module}_HAS_API"
+        )
+
+        get_property(
+            has_impl
+            GLOBAL
+            PROPERTY "COREKIT_${module}_HAS_IMPL"
+        )
+
+        set(is_buildable TRUE)
+
+        if(NOT ${has_api} OR NOT ${has_impl})
+            message(
+                WARNING
+                "Module '${module}' must specify both API and IMPL to be built. Skipping target creation."
+            )
+
+            set(is_buildable FALSE)
+
+        endif()
+
         set(target_name "corekit-${module}")
 
         if(src_files)
@@ -171,8 +216,12 @@ function(corekit_build_modules)
                 "Skipping target creation."
             )
 
-            continue()
+            set(is_buildable FALSE)
 
+        endif()
+
+        if(NOT is_buildable)
+            continue()
         endif()
 
         add_library(${target_name} "${target_type}" ${src_files})

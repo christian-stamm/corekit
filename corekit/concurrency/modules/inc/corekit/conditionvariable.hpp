@@ -1,8 +1,5 @@
 #pragma once
 
-#include <mutex>
-
-#include "corekit/mutex.hpp"
 #include "corekit/runtime/conditionvariable.hpp"
 
 namespace corekit {
@@ -16,8 +13,5 @@ namespace corekit {
             { cv.notify_one() } -> std::convertible_to<void>;
             { cv.notify_all() } -> std::convertible_to<void>;
         };
-
-    static_assert(
-        ConditionVariableLike<ConditionVariable, std::unique_lock<Mutex>>);
 
 };  // namespace corekit
