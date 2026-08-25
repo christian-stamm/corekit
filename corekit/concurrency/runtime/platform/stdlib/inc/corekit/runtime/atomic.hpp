@@ -2,7 +2,7 @@
 #include <atomic>
 #include <memory>
 
-namespace corekit::platform {
+namespace corekit::runtime {
 
     template <typename T>
     class Atomic : public std::atomic<T> {
@@ -15,4 +15,4 @@ namespace corekit::platform {
         }
     };
 
-};  // namespace corekit::platform
+};  // namespace corekit::runtime

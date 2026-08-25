@@ -1,10 +1,10 @@
 #pragma once
 
-#include "corekit/platform/semaphore.hpp"
+#include "corekit/runtime/semaphore.hpp"
 
 namespace corekit {
 
-    using Semaphore = platform::Semaphore;
+    using Semaphore = runtime::Semaphore;
 
     template <typename T>
     concept SemaphoreLike = requires(T s) {

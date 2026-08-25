@@ -5,7 +5,7 @@
 
 #include "corekit/conditionvariable.hpp"
 
-namespace corekit::platform {
+namespace corekit::runtime {
 
     class Semaphore {
        public:
@@ -28,4 +28,4 @@ namespace corekit::platform {
         std::size_t count_;
     };
 
-}  // namespace corekit::platform
+}  // namespace corekit::runtime

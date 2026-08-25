@@ -1,8 +1,8 @@
-#include "corekit/platform/semaphore.hpp"
+#include "corekit/runtime/semaphore.hpp"
 
 #include <cassert>
 
-namespace corekit::platform {
+namespace corekit::runtime {
 
     Semaphore::Semaphore(const std::size_t init_count,
                          const std::size_t max_count)
@@ -45,4 +45,4 @@ namespace corekit::platform {
         cv_.notify_one();
     }
 
-}  // namespace corekit::platform
+}  // namespace corekit::runtime

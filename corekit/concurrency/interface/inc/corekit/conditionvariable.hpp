@@ -3,11 +3,11 @@
 #include <mutex>
 
 #include "corekit/mutex.hpp"
-#include "corekit/platform/conditionvariable.hpp"
+#include "corekit/runtime/conditionvariable.hpp"
 
 namespace corekit {
 
-    using ConditionVariable = platform::ConditionVariable;
+    using ConditionVariable = runtime::ConditionVariable;
 
     template <typename T, typename Lock>
     concept ConditionVariableLike =  //

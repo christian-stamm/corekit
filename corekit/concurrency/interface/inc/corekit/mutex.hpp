@@ -1,10 +1,10 @@
 #pragma once
 
-#include "corekit/platform/mutex.hpp"
+#include "corekit/runtime/mutex.hpp"
 
 namespace corekit {
 
-    using Mutex = platform::Mutex;
+    using Mutex = runtime::Mutex;
 
     template <typename T>
     concept MutexLike =  //
