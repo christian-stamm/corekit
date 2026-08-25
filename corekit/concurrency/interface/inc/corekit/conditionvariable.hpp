@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "corekit/mutex.hpp"
 #include "corekit/platform/conditionvariable.hpp"
 
@@ -9,12 +11,13 @@ namespace corekit {
 
     template <typename T, typename Lock>
     concept ConditionVariableLike =  //
-        LockLike<Lock> && requires(T cv, Lock& lock) {
+        requires(T cv, Lock& lock) {
             { cv.wait(lock) } -> std::convertible_to<void>;
             { cv.notify_one() } -> std::convertible_to<void>;
             { cv.notify_all() } -> std::convertible_to<void>;
         };
 
-    static_assert(ConditionVariableLike<ConditionVariable, Mutex>);
+    static_assert(
+        ConditionVariableLike<ConditionVariable, std::unique_lock<Mutex>>);
 
 };  // namespace corekit

@@ -4,7 +4,8 @@
 
 namespace corekit {
 
-    using Atomic = platform::Atomic;
+    template <typename T>
+    using Atomic = platform::Atomic<T>;
 
     template <typename T, typename V>
     concept AtomicLike = requires(T a, V value) {

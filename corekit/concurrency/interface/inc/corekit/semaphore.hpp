@@ -1,6 +1,5 @@
 #pragma once
 
-#include "corekit/concepts/semaphore.hpp"
 #include "corekit/platform/semaphore.hpp"
 
 namespace corekit {

@@ -45,8 +45,4 @@ namespace corekit::platform {
         cv_.notify_one();
     }
 
-    std::size_t Semaphore::max_count() const noexcept {
-        return max_count_;
-    }
-
 }  // namespace corekit::platform
