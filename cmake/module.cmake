@@ -26,7 +26,7 @@ function(corekit_add_module MODULE_NAME)
         PROPERTY COREKIT_MODULE_NAMES
     )
 
-    if(NOT ${MODULE_NAME} IN_LIST modules)
+    if(NOT "${MODULE_NAME}" IN_LIST modules)
         set_property(
             GLOBAL APPEND
             PROPERTY COREKIT_MODULE_NAMES
@@ -68,6 +68,11 @@ function(corekit_add_module MODULE_NAME)
     list(APPEND new_dependencies ${existing_dependencies})
     list(APPEND new_test_files ${existing_test_files})
 
+    list(REMOVE_DUPLICATES new_source_files)
+    list(REMOVE_DUPLICATES new_include_paths)
+    list(REMOVE_DUPLICATES new_dependencies)
+    list(REMOVE_DUPLICATES new_test_files)
+
     set_property(
         GLOBAL
         PROPERTY "COREKIT_${MODULE_NAME}_SOURCE_FILES"
@@ -92,12 +97,6 @@ function(corekit_add_module MODULE_NAME)
         "${new_test_files}"
     )
 
-    set_property(
-        GLOBAL
-        PROPERTY "COREKIT_${MODULE_NAME}_BINARY_DIR"
-        "${CMAKE_CURRENT_BINARY_DIR}"
-    )
-
     if(ARG_API)
         set_property(
             GLOBAL
@@ -111,6 +110,12 @@ function(corekit_add_module MODULE_NAME)
             GLOBAL
             PROPERTY "COREKIT_${MODULE_NAME}_HAS_IMPL"
             TRUE
+        )
+
+        set_property(
+            GLOBAL
+            PROPERTY "COREKIT_${MODULE_NAME}_BINARY_DIR"
+            "${CMAKE_CURRENT_BINARY_DIR}"
         )
     endif()
 
@@ -171,7 +176,7 @@ function(corekit_build_modules)
 
         set(is_buildable TRUE)
 
-        if(NOT ${has_api} OR NOT ${has_impl})
+        if(NOT has_api OR NOT has_impl)
             message(
                 WARNING
                 "Module '${module}' must specify both API and IMPL to be built. Skipping target creation."
@@ -241,15 +246,6 @@ function(corekit_build_modules)
             RUNTIME_OUTPUT_DIRECTORY "${export_dir}"
             LIBRARY_OUTPUT_DIRECTORY "${export_dir}"
             ARCHIVE_OUTPUT_DIRECTORY "${export_dir}"
-        )
-
-        message(
-        STATUS
-            "Added module '${target_name}', "
-            "with sources: '${src_files}', "
-            "with includes: '${inc_paths}', "
-            "with dependencies: '${lib_deps}', "
-            "with tests: '${test_files}'"
         )
 
         if(GTest_FOUND AND test_files)

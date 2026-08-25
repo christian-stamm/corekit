@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/env.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
 
 add_subdirectory(corekit)
 add_subdirectory(thirdparty)
