@@ -1,9 +1,9 @@
 #pragma once
 
-#include <condition_variable>
-#include <cstddef>
 #include <memory>
 #include <mutex>
+
+#include "corekit/conditionvariable.hpp"
 
 namespace corekit::platform {
 
@@ -11,25 +11,21 @@ namespace corekit::platform {
        public:
         using Ptr = std::shared_ptr<Semaphore>;
 
-        explicit Semaphore(std::size_t init_count = 0,
-                           std::size_t max_count  = 1);
+        Semaphore(std::size_t init_count = 0, std::size_t max_count = 1);
 
+        void release();
         void acquire();
 
         [[nodiscard]]
         bool try_acquire();
 
-        void release();
-
-        [[nodiscard]]
-        std::size_t max_count() const noexcept;
+        const std::size_t max_count_;
 
        private:
-        mutable std::mutex      mutex_;
-        std::condition_variable cv_;
+        mutable std::mutex mutex_;
+        ConditionVariable  cv_;
 
-        std::size_t       count_;
-        const std::size_t max_count_;
+        std::size_t count_;
     };
 
 }  // namespace corekit::platform
