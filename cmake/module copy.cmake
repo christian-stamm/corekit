@@ -1,20 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-function(corekit_add_iface NAME)
-    # ----------------------------------------------------------
-    # Pass 1: Create ALL targets
-    # ----------------------------------------------------------
-
-    # Remember module name.
-    set_property(
-        GLOBAL APPEND
-        PROPERTY COREKIT_IFACES
-        "${NAME}"
-    )
-
-endfunction()
-
-function(corekit_add_impl NAME)
+function(corekit_add_module NAME)
     # ----------------------------------------------------------
     # Pass 1: Create ALL targets
     # ----------------------------------------------------------
@@ -34,7 +20,7 @@ function(corekit_add_impl NAME)
     # Remember module name.
     set_property(
         GLOBAL APPEND
-        PROPERTY COREKIT_IMPL_MODULES
+        PROPERTY COREKIT_MODULES
         "${NAME}"
     )
 

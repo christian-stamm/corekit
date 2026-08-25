@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.25)
+
+corekit_add_mod_iface(atomic)
+corekit_add_mod_iface(conditionvariable)
+corekit_add_mod_iface(mutex)
+corekit_add_mod_iface(semaphore)
