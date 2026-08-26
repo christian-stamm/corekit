@@ -16,13 +16,13 @@ namespace corekit {
             { token.stop_possible() } -> std::convertible_to<bool>;
         };
 
-    template <typename T, typename Token>
+    template <typename T>
     concept StopSourceLike =  //
-        StopTokenLike<Token> && requires(T& source, const T& csource) {
+        requires(T& source, const T& csource) {
             { source.request_stop() } -> std::convertible_to<bool>;
             { csource.stop_requested() } -> std::convertible_to<bool>;
             { csource.stop_possible() } -> std::convertible_to<bool>;
-            { csource.get_token() } -> std::convertible_to<Token>;
+            { csource.get_token() } -> std::convertible_to<StopToken>;
         };
 
 }  // namespace corekit

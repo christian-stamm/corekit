@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "corekit/assert.hpp"
 #include "corekit/atomic.hpp"
@@ -12,7 +13,8 @@ namespace corekit {
        public:
         enum class State { READY, RUNNING, TERMINATED };
 
-        using Ptr = std::shared_ptr<Task>;
+        using Ptr  = std::shared_ptr<Task>;
+        using List = std::vector<Ptr>;
 
         Task();
 
@@ -37,7 +39,7 @@ namespace corekit {
             return get_state() == State::TERMINATED;
         }
 
-        inline State get_state() const {
+        State get_state() const {
             return m_state.load();
         }
 

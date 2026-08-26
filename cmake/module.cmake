@@ -242,9 +242,6 @@ function(corekit_build_modules)
             missing_deps
         )
 
-        message(STATUS "${module} - MATCHED DEPS: ${matched_deps}")
-        message(STATUS "${module} - MISSING DEPS: ${missing_deps}")
-
         if(missing_deps)
             message(
                 WARNING

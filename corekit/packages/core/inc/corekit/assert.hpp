@@ -1,15 +1,32 @@
 #pragma once
 
 #include <expected>
+#include <optional>
 
 #include "corekit/error.hpp"
 
 namespace corekit {
 
     template <typename T>
-    using Result = std::expected<T, Error>;
+    struct Result : public std::expected<T, Error> {
+        Result(const T& value = T()) : std::expected<T, Error>(value) {}
 
-    extern Result<void> corecheck(bool         condition,
-                                  const Error& error = RuntimeError());
+        Result(const Error& error)
+            : std::expected<T, Error>(std::unexpected(error)) {}
+    };
+
+    template <>
+    struct Result<void> : public std::expected<void, Error> {
+        Result() : std::expected<void, Error>() {}
+
+        Result(const Error& error)
+            : std::expected<void, Error>(std::unexpected(error)) {}
+    };
+
+    using VoidResult = Result<void>;
+    using BoolResult = Result<bool>;
+
+    extern VoidResult corecheck(bool         condition,
+                                const Error& error = RuntimeError());
 
 };  // namespace corekit
