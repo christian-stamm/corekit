@@ -3,11 +3,11 @@ cmake_minimum_required(VERSION 3.25)
 function(corekit_add_module MODULE_NAME)
 
     cmake_parse_arguments(
-        "ARG"                               # prefix
-        "API;IMPL"                          # options
-        ""                                  # one-value arguments
-        "SOURCES;INCLUDES;DEPENDS;TESTS"    # multi-value arguments
-        ${ARGN}                             # arguments to parse
+        "ARG"                                                                       # prefix
+        "API;IMPL"                                                                  # options
+        ""                                                                          # one-value arguments
+        "SOURCE_FILES;PUBLIC_INCLUDES;PRIVATE_INCLUDES;DEPENDENCIES;GTEST_FILES"    # multi-value arguments
+        ${ARGN}                                                                     # arguments to parse
     )
 
     if(NOT MODULE_NAME)
@@ -15,9 +15,12 @@ function(corekit_add_module MODULE_NAME)
         return()
     endif()
 
-    if(ARG_API)
-        set(lib_flag PUBLIC)
+    if(NOT ARG_API AND NOT ARG_IMPL)
+        message(WARNING "Module '${MODULE_NAME}' must specify at least one of API or IMPL")
+        return()
+    endif()
 
+    if(ARG_API)
         get_property(
             api_modules
             GLOBAL
@@ -38,7 +41,6 @@ function(corekit_add_module MODULE_NAME)
     endif()
 
     if(ARG_IMPL)
-        set(lib_flag PRIVATE)
 
         get_property(
             impl_modules
@@ -65,73 +67,82 @@ function(corekit_add_module MODULE_NAME)
         
     endif()
 
-    if(NOT lib_flag)
-        message(WARNING "Module '${MODULE_NAME}' must specify at least one of API or IMPL")
-        return()
-    endif()
-
-
     get_property(
-        existing_src_files
+        existing_source_files
         GLOBAL
         PROPERTY "COREKIT_${MODULE_NAME}_SOURCE_FILES"
     )
 
     get_property(
-        existing_test_files
+        existing_gtest_files
         GLOBAL
-        PROPERTY "COREKIT_${MODULE_NAME}_TEST_FILES"
+        PROPERTY "COREKIT_${MODULE_NAME}_GTEST_FILES"
     )
 
     get_property(
-        existing_inc_paths
+        existing_public_includes
         GLOBAL
-        PROPERTY "COREKIT_${MODULE_NAME}_${lib_flag}_INC_PATHS"
+        PROPERTY "COREKIT_${MODULE_NAME}_PUBLIC_INCLUDES"
     )
 
     get_property(
-        existing_dep_libs
+        existing_private_includes
         GLOBAL
-        PROPERTY "COREKIT_${MODULE_NAME}_${lib_flag}_DEP_LIBS"
+        PROPERTY "COREKIT_${MODULE_NAME}_PRIVATE_INCLUDES"
     )
 
-    set(new_dep_libs ${ARG_DEPENDS})
-    make_paths_abs(new_inc_paths "${ARG_INCLUDES}")
-    make_paths_abs(new_src_files "${ARG_SOURCES}")
-    make_paths_abs(new_test_files "${ARG_TESTS}")
+    get_property(
+        existing_dependencies
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_DEPENDENCIES"
+    )
 
-    list(APPEND new_src_files ${existing_src_files})
-    list(APPEND new_inc_paths ${existing_inc_paths})
-    list(APPEND new_dep_libs ${existing_dep_libs})
-    list(APPEND new_test_files ${existing_test_files})
+    make_paths_abs(new_public_includes "${ARG_PUBLIC_INCLUDES}")
+    make_paths_abs(new_private_includes "${ARG_PRIVATE_INCLUDES}")
+    make_paths_abs(new_source_files "${ARG_SOURCE_FILES}")
+    make_paths_abs(new_gtest_files "${ARG_GTEST_FILES}")
+    set(new_dependencies ${ARG_DEPENDENCIES})
 
-    list(REMOVE_DUPLICATES new_src_files)
-    list(REMOVE_DUPLICATES new_inc_paths)
-    list(REMOVE_DUPLICATES new_dep_libs)
-    list(REMOVE_DUPLICATES new_test_files)
+    list(APPEND new_source_files ${existing_source_files})
+    list(APPEND new_public_includes ${existing_public_includes})
+    list(APPEND new_private_includes ${existing_private_includes})
+    list(APPEND new_dependencies ${existing_dependencies})
+    list(APPEND new_gtest_files ${existing_gtest_files})
+
+    list(REMOVE_DUPLICATES new_source_files)
+    list(REMOVE_DUPLICATES new_public_includes)
+    list(REMOVE_DUPLICATES new_private_includes)
+    list(REMOVE_DUPLICATES new_dependencies)
+    list(REMOVE_DUPLICATES new_gtest_files)
 
     set_property(
         GLOBAL
         PROPERTY "COREKIT_${MODULE_NAME}_SOURCE_FILES"
-        "${new_src_files}"
+        "${new_source_files}"
     )
 
     set_property(
         GLOBAL
-        PROPERTY "COREKIT_${MODULE_NAME}_${lib_flag}_INC_PATHS"
-        "${new_inc_paths}"
+        PROPERTY "COREKIT_${MODULE_NAME}_PUBLIC_INCLUDES"
+        "${new_public_includes}"
     )
 
     set_property(
         GLOBAL
-        PROPERTY "COREKIT_${MODULE_NAME}_${lib_flag}_DEP_LIBS"
-        "${new_dep_libs}"
+        PROPERTY "COREKIT_${MODULE_NAME}_PRIVATE_INCLUDES"
+        "${new_private_includes}"
     )
 
     set_property(
         GLOBAL
-        PROPERTY "COREKIT_${MODULE_NAME}_TEST_FILES"
-        "${new_test_files}"
+        PROPERTY "COREKIT_${MODULE_NAME}_DEPENDENCIES"
+        "${new_dependencies}"
+    )
+
+    set_property(
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_GTEST_FILES"
+        "${new_gtest_files}"
     )
 
 endfunction()
@@ -169,33 +180,27 @@ function(corekit_build_modules)
         )
 
         get_property(
-            pub_inc_paths
+            public_includes
             GLOBAL
-            PROPERTY "COREKIT_${module}_PUBLIC_INC_PATHS"
+            PROPERTY "COREKIT_${module}_PUBLIC_INCLUDES"
         )
 
         get_property(
-            priv_inc_paths
+            private_includes
             GLOBAL
-            PROPERTY "COREKIT_${module}_PRIVATE_INC_PATHS"
+            PROPERTY "COREKIT_${module}_PRIVATE_INCLUDES"
         )
 
         get_property(
-            pub_dep_libs
+            dependencies
             GLOBAL
-            PROPERTY "COREKIT_${module}_PUBLIC_DEP_LIBS"
+            PROPERTY "COREKIT_${module}_DEPENDENCIES"
         )
 
         get_property(
-            priv_dep_libs
+            gtest_files
             GLOBAL
-            PROPERTY "COREKIT_${module}_PRIVATE_DEP_LIBS"
-        )
-
-        get_property(
-            test_files
-            GLOBAL
-            PROPERTY "COREKIT_${module}_TEST_FILES"
+            PROPERTY "COREKIT_${module}_GTEST_FILES"
         )
 
         get_property(
@@ -227,34 +232,24 @@ function(corekit_build_modules)
             list(REMOVE_ITEM remaining_impl_modules ${module})
         endif()
 
-        unset(matched_api_deps)
-        unset(missing_api_deps)
-        unset(matched_impl_deps)
-        unset(missing_impl_deps)
+        unset(matched_deps)
+        unset(missing_deps)
 
-        match_lib_deps(
-            pub_dep_libs
+        resolve_dependencies(
+            dependencies
             api_modules
-            matched_api_deps
-            missing_api_deps
+            matched_deps
+            missing_deps
         )
 
-        match_lib_deps(
-            priv_dep_libs
-            api_modules
-            matched_impl_deps
-            missing_impl_deps
-        )
+        message(STATUS "${module} - MATCHED DEPS: ${matched_deps}")
+        message(STATUS "${module} - MISSING DEPS: ${missing_deps}")
 
-        message(STATUS "${module} - MATCHED API DEPS: ${matched_api_deps}")
-        message(STATUS "${module} - MATCHED IMPL DEPS: ${matched_impl_deps}")
-
-        if(missing_api_deps OR missing_impl_deps)
+        if(missing_deps)
             message(
                 WARNING
                 "Module '${module}' requires unavailable dependencies:\n"
-                "API: ${missing_api_deps},\n"
-                "IMPL: ${missing_impl_deps},\n"
+                "${missing_deps},\n"
                 "Skipping target creation."
             )
 
@@ -269,14 +264,12 @@ function(corekit_build_modules)
         add_library(${target_name} "${target_type}" ${src_files})
 
         if(target_type STREQUAL "INTERFACE")
-            target_include_directories(${target_name} INTERFACE ${pub_inc_paths} ${priv_inc_paths})
-            target_link_libraries(${target_name} INTERFACE ${matched_api_deps} ${matched_impl_deps})
+            target_include_directories(${target_name} INTERFACE ${public_includes} ${private_includes})
+            target_link_libraries(${target_name} INTERFACE ${matched_deps})
         elseif(target_type STREQUAL "STATIC")
-            target_include_directories(${target_name} PUBLIC ${pub_inc_paths})
-            target_include_directories(${target_name} PUBLIC ${priv_inc_paths})
-
-            target_link_libraries(${target_name} PUBLIC ${matched_api_deps})
-            target_link_libraries(${target_name} PRIVATE ${matched_impl_deps})
+            target_include_directories(${target_name} PUBLIC ${public_includes})
+            target_include_directories(${target_name} PRIVATE ${private_includes})
+            target_link_libraries(${target_name} PRIVATE ${matched_deps})
         endif()
 
         set_target_properties(${target_name} PROPERTIES
@@ -288,11 +281,11 @@ function(corekit_build_modules)
         add_library("corekit::${module}" ALIAS ${target_name})
         
         
-        if(GTest_FOUND AND test_files)
+        if(GTest_FOUND AND gtest_files)
 
             include(GoogleTest)
 
-            add_executable("${target_name}-test" ${test_files})
+            add_executable("${target_name}-test" ${gtest_files})
 
             set_target_properties("${target_name}-test" PROPERTIES
                 RUNTIME_OUTPUT_DIRECTORY "${export_dir}"

@@ -15,12 +15,12 @@ function(make_paths_abs ABS_PATHS)
 endfunction()
 
 
-function(match_lib_deps required_deps_var available_libs_var matched_out missing_out)
+function(resolve_dependencies required_deps available_libs matched_out missing_out)
     set(matched "")
     set(missing "")
 
-    foreach(dep IN LISTS ${required_deps_var})
-        if(dep IN_LIST ${available_libs_var})
+    foreach(dep IN LISTS ${required_deps})
+        if(dep IN_LIST ${available_libs})
             list(APPEND matched "corekit::${dep}")
         elseif(TARGET "${dep}")
             list(APPEND matched "${dep}")
