@@ -7,13 +7,18 @@ namespace corekit {
     template <typename T>
     using Atomic = platform::Atomic<T>;
 
-    template <typename T, typename V>
-    concept AtomicLike = requires(T a, V value) {
-        { a.load() } -> std::convertible_to<V>;
-        { a.store(value) } -> std::convertible_to<void>;
-        { a.compare_exchange(value, value) } -> std::convertible_to<bool>;
+    template <typename AtomicT, typename V>
+    concept AtomicLike = requires(  //
+        const AtomicT &catomic,
+        AtomicT        atomic,
+        V              desired,
+        V              expected  //
+    ) {
+        { catomic.load() } -> std::convertible_to<V>;
+        { atomic.store(desired) } -> std::convertible_to<void>;
+        {
+            atomic.compare_exchange(expected, desired)
+        } -> std::convertible_to<bool>;
     };
-
-    static_assert(AtomicLike<Atomic<bool>, bool>);
 
 };  // namespace corekit

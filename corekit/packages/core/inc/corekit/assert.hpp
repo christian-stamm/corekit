@@ -17,7 +17,7 @@ namespace corekit {
 
     template <>
     struct Result<void> : public std::expected<void, Error> {
-        Result() : std::expected<void, Error>() {}
+        Result() : std::expected<void, Error>(std::in_place) {}
 
         Result(const Error& error)
             : std::expected<void, Error>(std::unexpected(error)) {}

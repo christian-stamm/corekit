@@ -1,37 +1,127 @@
-#include <gtest/gtest.h>
-
 #include "corekit/semaphore.hpp"
 
-namespace corekit {
+#include <gtest/gtest.h>
 
-    // -------------------------------------------------------------------------
-    // Acquire and Release
-    // -------------------------------------------------------------------------
+namespace corekit::test {
 
-    TEST(Semaphore, CanAcquireAndRelease) {
-        Semaphore semaphore(1);
+    /*
+     * Standard semaphore objects generally should not be copyable.
+     *
+     * Remove these assertions if your implementation intentionally
+     * supports copy or move semantics.
+     */
+    static_assert(!std::is_copy_constructible_v<Semaphore>);
+    static_assert(!std::is_copy_assignable_v<Semaphore>);
+    static_assert(!std::is_move_constructible_v<Semaphore>);
+    static_assert(!std::is_move_assignable_v<Semaphore>);
 
-        EXPECT_TRUE(semaphore.try_acquire());
-        EXPECT_FALSE(semaphore.try_acquire());
+    TEST(Semaphore, ReleaseMakesTryAcquireSucceed) {
+        Semaphore semaphore;
+
         semaphore.release();
+
         EXPECT_TRUE(semaphore.try_acquire());
+    }
+
+    TEST(Semaphore, SingleReleaseProvidesSinglePermit) {
+        Semaphore semaphore;
+
         semaphore.release();
-    }
-
-    // -------------------------------------------------------------------------
-    // Try Acquire
-    // -------------------------------------------------------------------------
-    TEST(Semaphore, TryAcquireReturnsFalseWhenCountIsZero) {
-        Semaphore semaphore(0);
-
-        EXPECT_FALSE(semaphore.try_acquire());
-    }
-
-    TEST(Semaphore, TryAcquireReturnsTrueWhenCountIsGreaterThanZero) {
-        Semaphore semaphore(1);
 
         EXPECT_TRUE(semaphore.try_acquire());
         EXPECT_FALSE(semaphore.try_acquire());
     }
 
-}  // namespace corekit
+    TEST(Semaphore, MultipleReleasesProvideMultiplePermits) {
+        Semaphore semaphore;
+
+        semaphore.release();
+        semaphore.release();
+        semaphore.release();
+
+        EXPECT_TRUE(semaphore.try_acquire());
+        EXPECT_TRUE(semaphore.try_acquire());
+        EXPECT_TRUE(semaphore.try_acquire());
+
+        EXPECT_FALSE(semaphore.try_acquire());
+    }
+
+    TEST(Semaphore, AcquireConsumesPermit) {
+        Semaphore semaphore;
+
+        semaphore.release();
+
+        semaphore.acquire();
+
+        EXPECT_FALSE(semaphore.try_acquire());
+    }
+
+    TEST(Semaphore, AcquireConsumesOnlyOnePermit) {
+        Semaphore semaphore;
+
+        semaphore.release();
+        semaphore.release();
+
+        semaphore.acquire();
+
+        EXPECT_TRUE(semaphore.try_acquire());
+        EXPECT_FALSE(semaphore.try_acquire());
+    }
+
+    TEST(Semaphore, PermitCanBeReusedAfterAcquire) {
+        Semaphore semaphore;
+
+        semaphore.release();
+
+        semaphore.acquire();
+
+        EXPECT_FALSE(semaphore.try_acquire());
+
+        semaphore.release();
+
+        EXPECT_TRUE(semaphore.try_acquire());
+        EXPECT_FALSE(semaphore.try_acquire());
+    }
+
+    TEST(Semaphore, AlternatingReleaseAndAcquireWorks) {
+        Semaphore semaphore;
+
+        for (int i = 0; i < 1000; ++i) {
+            semaphore.release();
+
+            EXPECT_TRUE(semaphore.try_acquire());
+            EXPECT_FALSE(semaphore.try_acquire());
+        }
+    }
+
+    TEST(Semaphore, ConsecutiveReleasesAccumulatePermits) {
+        Semaphore semaphore;
+
+        constexpr int permit_count = 100;
+
+        for (int i = 0; i < permit_count; ++i) {
+            semaphore.release();
+        }
+
+        for (int i = 0; i < permit_count; ++i) {
+            EXPECT_TRUE(semaphore.try_acquire());
+        }
+
+        EXPECT_FALSE(semaphore.try_acquire());
+    }
+
+    TEST(Semaphore, ReleasingAfterExhaustionCreatesNewPermit) {
+        Semaphore semaphore;
+
+        semaphore.release();
+
+        EXPECT_TRUE(semaphore.try_acquire());
+        EXPECT_FALSE(semaphore.try_acquire());
+
+        semaphore.release();
+
+        EXPECT_TRUE(semaphore.try_acquire());
+        EXPECT_FALSE(semaphore.try_acquire());
+    }
+
+}  // namespace corekit::test

@@ -4,5 +4,5 @@ corekit_add_module(task API IMPL
     PUBLIC_INCLUDES     "inc"
     SOURCE_FILES        "src/task.cpp"
     GTEST_FILES         "test/task.cpp"
-    DEPENDENCIES        atomic core stoptoken
+    DEPENDENCIES        "assert;atomic;stoptoken"
 )

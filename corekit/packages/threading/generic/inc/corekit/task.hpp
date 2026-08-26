@@ -25,7 +25,7 @@ namespace corekit {
 
         virtual ~Task() = default;
 
-        Result<void> exec(StopToken token);
+        VoidResult exec(StopToken token) noexcept;
 
         inline bool is_launched() const {
             return get_state() != State::READY;
@@ -39,20 +39,20 @@ namespace corekit {
             return get_state() == State::TERMINATED;
         }
 
-        State get_state() const {
+        inline State get_state() const {
             return m_state.load();
         }
 
        protected:
-        virtual Result<void> on_enter(StopToken token) {
+        virtual VoidResult on_enter(StopToken token) {
             return {};
         }
 
-        virtual Result<void> on_leave(StopToken token) {
+        virtual VoidResult on_leave(StopToken token) {
             return {};
         }
 
-        virtual Result<void> on_run(StopToken token) = 0;
+        virtual VoidResult on_run(StopToken token) = 0;
 
        private:
         Atomic<State> m_state;

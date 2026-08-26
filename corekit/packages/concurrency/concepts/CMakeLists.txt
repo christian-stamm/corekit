@@ -9,6 +9,7 @@ corekit_add_module(atomic API
 corekit_add_module(conditionvariable API
     PUBLIC_INCLUDES  "inc"
     SOURCE_FILES     "src/conditionvariable.cpp"
+    GTEST_FILES      "test/conditionvariable.cpp"
 )
 
 corekit_add_module(mutex API

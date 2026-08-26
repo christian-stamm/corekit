@@ -1,7 +1,5 @@
 #pragma once
 
-#include <expected>
-#include <format>
 #include <source_location>
 #include <string>
 
@@ -21,41 +19,19 @@ namespace corekit {
             TIMEOUT,
         };
 
-        Error(Type            type     = Type::NONE,
-              const Message&  message  = "<NO ERROR>",
-              const Location& location = Location::current())
-            : type(type)
-            , message(message)
-            , location(location) {}
+        explicit Error(Type            type     = Type::NONE,
+                       const Message&  message  = "<NO ERROR>",
+                       const Location& location = Location::current());
 
-        operator bool() const {
-            return type != Type::NONE;
-        }
+        operator bool() const;
 
-        Message trace() const {
-            return std::format(
-                "{} ERROR\n\nFile: {}\nFunc: {}\nLine: {} ({})\nDesc: {}",
-                type_to_string(),
-                location.file_name(),
-                location.function_name(),
-                location.line(),
-                location.column(),
-                message);
-        }
+        Message traceback() const;
+        Message what() const;
 
        private:
-        Message type_to_string() const {
-            switch (type) {
-                case Type::NONE: return "NONE";
-                case Type::RUNTIME: return "RUNTIME";
-                case Type::NOT_IMPLEMENTED: return "NOT_IMPLEMENTED";
-                case Type::INVALID_ARGUMENT: return "INVALID_ARGUMENT";
-                case Type::OUT_OF_RANGE: return "OUT_OF_RANGE";
-                case Type::TIMEOUT: return "TIMEOUT";
-                default: return "UNDEFINED";
-            }
-        }
+        Message type_to_string() const;
 
+       public:
         Type     type;
         Message  message;
         Location location;
@@ -63,32 +39,27 @@ namespace corekit {
 
     class RuntimeError : public Error {
        public:
-        RuntimeError(const Message& message = "")
-            : Error(Error::Type::RUNTIME, message) {}
+        explicit RuntimeError(const Message& message = "");
     };
 
     class NotImplementedError : public Error {
        public:
-        NotImplementedError(const Message& message = "")
-            : Error(Error::Type::NOT_IMPLEMENTED, message) {}
+        explicit NotImplementedError(const Message& message = "");
     };
 
     class InvalidArgumentError : public Error {
        public:
-        InvalidArgumentError(const Message& message = "")
-            : Error(Error::Type::INVALID_ARGUMENT, message) {}
+        explicit InvalidArgumentError(const Message& message = "");
     };
 
     class OutOfRangeError : public Error {
        public:
-        OutOfRangeError(const Message& message = "")
-            : Error(Error::Type::OUT_OF_RANGE, message) {}
+        explicit OutOfRangeError(const Message& message = "");
     };
 
     class TimeoutError : public Error {
        public:
-        TimeoutError(const Message& message = "")
-            : Error(Error::Type::TIMEOUT, message) {}
+        explicit TimeoutError(const Message& message = "");
     };
 
-};  // namespace corekit
+}  // namespace corekit

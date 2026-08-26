@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <memory>
 #include <mutex>
 
@@ -11,7 +12,9 @@ namespace corekit::platform {
        public:
         using Ptr = std::shared_ptr<Semaphore>;
 
-        Semaphore(std::size_t init_count = 0, std::size_t max_count = 1);
+        Semaphore(
+            std::size_t init_count = 0,
+            std::size_t max_count  = std::numeric_limits<std::size_t>::max());
 
         void release();
         void acquire();

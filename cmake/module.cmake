@@ -266,7 +266,7 @@ function(corekit_build_modules)
         elseif(target_type STREQUAL "STATIC")
             target_include_directories(${target_name} PUBLIC ${public_includes})
             target_include_directories(${target_name} PRIVATE ${private_includes})
-            target_link_libraries(${target_name} PRIVATE ${matched_deps})
+            target_link_libraries(${target_name} PUBLIC ${matched_deps})
         endif()
 
         set_target_properties(${target_name} PROPERTIES
