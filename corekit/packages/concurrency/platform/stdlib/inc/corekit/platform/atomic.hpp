@@ -15,4 +15,8 @@ namespace corekit::platform {
         }
     };
 
+    extern template class Atomic<bool>;
+    extern template class Atomic<uint>;
+    extern template class Atomic<int>;
+
 };  // namespace corekit::platform
