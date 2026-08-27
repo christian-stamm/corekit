@@ -5,10 +5,14 @@
 
 namespace corekit::platform {
 
-    void Time::sleep(float seconds) {
+    void Time::sleep(double seconds) {
+        if (seconds <= 0.0) {
+            return;
+        }
+
         using namespace std::chrono;
         using namespace std::this_thread;
-        sleep_for(duration<float>(seconds));
+        sleep_for(duration<double>(seconds));
     }
 
     double Time::uptime() {

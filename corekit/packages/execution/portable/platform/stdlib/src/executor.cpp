@@ -20,11 +20,8 @@ namespace corekit::platform {
         m_stop_source_.request_stop();
 
         if (remaining_tasks) {
-            std::lock_guard lock(m_queue_mutex_);
             m_task_queue_.clear();
         }
-
-        m_condition_.notify_all();
 
         for (auto& worker : m_workers_) {
             if (worker.joinable()) {
@@ -35,49 +32,25 @@ namespace corekit::platform {
 
     VoidResult ThreadPool::enqueue(Task::Ptr task) {
         if (!task) {
-            return VoidResult(RuntimeError("null task"));
+            return RuntimeError("null task");
         }
 
-        {
-            std::lock_guard lock(m_queue_mutex_);
-
-            if (m_stop_source_.stop_requested()) {
-                return RuntimeError("executor stopped");
-            }
-
-            if (max_tasks_ <= m_task_queue_.size()) {
-                return RuntimeError("task queue full");
-            }
-
-            m_task_queue_.push_back(std::move(task));
+        if (m_stop_source_.stop_requested()) {
+            return RuntimeError("executor stopped");
         }
 
-        m_condition_.notify_one();
-
-        return VoidResult();
+        return m_task_queue_.push(std::move(task), false);
     }
 
     void ThreadPool::worker_loop() {
+        Task::Ptr task = nullptr;
+
         while (true) {
-            Task::Ptr task;
+            m_task_queue_.pop(task, true);
 
-            {
-                std::unique_lock lock(m_queue_mutex_);
-
-                m_condition_.wait(lock, [this] {
-                    return m_stop_source_.stop_requested() ||
-                           !m_task_queue_.empty();
-                });
-
-                if (m_stop_source_.stop_requested() && m_task_queue_.empty()) {
-                    return;
-                }
-
-                task = std::move(m_task_queue_.front());
-                m_task_queue_.pop_front();
+            if (task) {
+                task->exec(m_stop_source_.get_token());
             }
-
-            task->exec(m_stop_source_.get_token());
         }
     }
 

@@ -1,10 +1,13 @@
 #pragma once
 
+#include <deque>
 #include <thread>
 #include <vector>
 
 #include "corekit/assert.hpp"
-#include "corekit/queue.hpp"
+#include "corekit/conditionvariable.hpp"
+#include "corekit/mutex.hpp"
+#include "corekit/stoptoken.hpp"
 #include "corekit/task.hpp"
 
 namespace corekit::platform {
@@ -30,7 +33,6 @@ namespace corekit::platform {
        private:
         void worker_loop();
 
-        Queue<Task::Ptr>         m_task_queue_;
         StopSource               m_stop_source_;
         std::vector<std::thread> m_workers_;
     };

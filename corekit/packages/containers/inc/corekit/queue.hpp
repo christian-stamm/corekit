@@ -48,6 +48,12 @@ namespace corekit {
             return item;
         }
 
+        void clear() {
+            std::lock_guard lock(mutex_);
+            std::queue<T>   empty;
+            std::swap(queue_, empty);
+        }
+
        private:
         inline bool is_full() const {
             return capacity_ <= queue_.size();

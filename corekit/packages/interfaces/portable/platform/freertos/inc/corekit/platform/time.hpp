@@ -5,7 +5,7 @@ namespace corekit::platform {
     class Time {
        public:
         static void   sleep(double seconds);
-        static double uptime();
+        static double now();
     };
 
 }  // namespace corekit::platform
