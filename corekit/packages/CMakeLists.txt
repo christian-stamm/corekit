@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/concurrency)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/containers)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/diagnostics)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/essentials)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/execution)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/monitoring)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/interfaces)

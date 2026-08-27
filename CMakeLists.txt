@@ -9,6 +9,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
 
 add_subdirectory(corekit)
+add_subdirectory(demos)
 add_subdirectory(thirdparty)
 
 if(COMMAND corekit_bsp_bootstrap)

@@ -12,3 +12,15 @@ corekit_add_module(assert API IMPL
     GTEST_FILES         "test/assert.cpp"
     DEPENDENCIES        "error"
 )
+
+corekit_add_module(logger API IMPL
+    PUBLIC_INCLUDES     "inc"
+    SOURCE_FILES        "src/logger.cpp"
+    DEPENDENCIES        "serialdevice;streambuffer;mutex"
+)
+
+corekit_add_module(watch API IMPL
+    PUBLIC_INCLUDES     "inc"
+    SOURCE_FILES        "src/watch.cpp"
+    DEPENDENCIES        "time"
+)
