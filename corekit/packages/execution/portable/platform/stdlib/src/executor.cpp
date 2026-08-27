@@ -1,12 +1,13 @@
 #include "corekit/platform/executor.hpp"
 
+#include <iostream>
 #include <utility>
 
 namespace corekit::platform {
 
     ThreadPool::ThreadPool(uint num_workers, uint max_tasks)
         : num_workers_(num_workers)
-        , max_tasks_(max_tasks) {
+        , m_task_queue_(max_tasks) {
         for (size_t i = 0; i < num_workers_; ++i) {
             m_workers_.emplace_back([this] { worker_loop(); });
         }
@@ -16,16 +17,22 @@ namespace corekit::platform {
         cancel();
     }
 
-    void ThreadPool::cancel(bool remaining_tasks) {
-        m_stop_source_.request_stop();
+    void ThreadPool::request_stop(bool discard_pending_tasks) {
+        if (!m_stop_source_.request_stop()) {
+            return;
+        }
 
-        if (remaining_tasks) {
-            std::lock_guard lock(m_queue_mutex_);
+        if (discard_pending_tasks) {
             m_task_queue_.clear();
         }
 
-        m_condition_.notify_all();
+        // Exactly one sentinel per worker.
+        for (std::size_t i = 0; i < m_workers_.size(); ++i) {
+            m_task_queue_.push(nullptr, true);
+        }
+    }
 
+    void ThreadPool::join() {
         for (auto& worker : m_workers_) {
             if (worker.joinable()) {
                 worker.join();
@@ -33,52 +40,45 @@ namespace corekit::platform {
         }
     }
 
+    void ThreadPool::cancel(bool discard_pending_tasks) {
+        request_stop(discard_pending_tasks);
+        join();
+    }
+
     VoidResult ThreadPool::enqueue(Task::Ptr task) {
         if (!task) {
-            return VoidResult(RuntimeError("null task"));
+            return RuntimeError("null task");
         }
 
-        {
-            std::lock_guard lock(m_queue_mutex_);
-
-            if (m_stop_source_.stop_requested()) {
-                return RuntimeError("executor stopped");
-            }
-
-            if (max_tasks_ <= m_task_queue_.size()) {
-                return RuntimeError("task queue full");
-            }
-
-            m_task_queue_.push_back(std::move(task));
+        if (m_stop_source_.stop_requested()) {
+            return RuntimeError("executor stopped");
         }
 
-        m_condition_.notify_one();
-
-        return VoidResult();
+        return m_task_queue_.push(std::move(task), false);
     }
 
     void ThreadPool::worker_loop() {
         while (true) {
-            Task::Ptr task;
+            Task::Ptr task = nullptr;
 
-            {
-                std::unique_lock lock(m_queue_mutex_);
+            m_task_queue_.pop(task, true);
 
-                m_condition_.wait(lock, [this] {
-                    return m_stop_source_.stop_requested() ||
-                           !m_task_queue_.empty();
-                });
-
-                if (m_stop_source_.stop_requested() && m_task_queue_.empty()) {
-                    return;
-                }
-
-                task = std::move(m_task_queue_.front());
-                m_task_queue_.pop_front();
+            if (!task) {
+                break;
             }
 
             task->exec(m_stop_source_.get_token());
         }
+    }
+
+    void Executor::launch() {
+        shutdown_.acquire();
+        join();
+    }
+
+    void Executor::terminate() {
+        request_stop(false);
+        shutdown_.release();
     }
 
 }  // namespace corekit::platform

@@ -1,12 +1,12 @@
 #include "corekit/conditionvariable.hpp"
 
-#include <mutex>
+#include <functional>
 
 #include "corekit/mutex.hpp"
 
 namespace corekit {
 
     static_assert(
-        ConditionVariableLike<ConditionVariable, std::unique_lock<Mutex>>);
+        ConditionVariableLike<ConditionVariable, Mutex, std::function<bool()>>);
 
 };  // namespace corekit

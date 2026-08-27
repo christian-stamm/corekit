@@ -2,9 +2,9 @@
 #include <mutex>
 #include <stack>
 
-#include "corekit/assert.hpp"
 #include "corekit/conditionvariable.hpp"
 #include "corekit/mutex.hpp"
+#include "corekit/result.hpp"
 
 namespace corekit {
 

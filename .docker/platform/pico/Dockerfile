@@ -13,9 +13,11 @@ ENV PICO_ENV_ROOT="/opt/pico"
 ENV PICO_SDK_PATH="$PICO_ENV_ROOT/pico-sdk"
 ENV PICO_OPENOCD_PATH="$PICO_ENV_ROOT/openocd"
 ENV PICO_PICOTOOL_PATH="$PICO_ENV_ROOT/picotool"
+ENV PICO_PIOASM_PATH="$PICO_SDK_PATH/tools/pioasm"
 ENV PICO_DEBUGPROBE_PATH="$PICO_ENV_ROOT/picoprobe"
 ENV PICO_TOOLCHAIN_PATH="$PICO_ENV_ROOT/arm-none-eabi"
 ENV FREERTOS_KERNEL_PATH="$PICO_ENV_ROOT/freertos"
+ENV PIOASM_VERSION_STRING="Pico-ASM v1.0.0"
 
 ENV PATH="${PICO_TOOLCHAIN_PATH}/bin:${PATH}"
 
@@ -40,14 +42,18 @@ ARG ARM_TOOLCHAIN_PREFIX="https://gitlab.arm.com/api/v4/projects/tooling%2Fgnu-t
 ARG ARM_TOOLCHAIN_NAME="arm-gnu-toolchain-${ARM_TOOLCHAIN_VER}-${ARM_BUILD_ARCH}-${ARM_TARGET_ARCH}"
 ARG ARM_TOOLCHAIN_FILE="${ARM_TOOLCHAIN_NAME}.tar.xz"
 ARG ARM_TOOLCHAIN_URL="${ARM_TOOLCHAIN_PREFIX}/${ARM_TOOLCHAIN_VER}/${ARM_TOOLCHAIN_FILE}"
-RUN wget --no-check-certificate $ARM_TOOLCHAIN_URL && tar xvf $ARM_TOOLCHAIN_FILE -C $PICO_TOOLCHAIN_PATH --strip-components=1 
-# COPY ./platform/pico/$ARM_TOOLCHAIN_FILE .
+# RUN wget --no-check-certificate $ARM_TOOLCHAIN_URL && tar xvf $ARM_TOOLCHAIN_FILE -C $PICO_TOOLCHAIN_PATH --strip-components=1 
+COPY ./platform/pico/$ARM_TOOLCHAIN_FILE .
 RUN tar -xJf $ARM_TOOLCHAIN_FILE && cp -r $ARM_TOOLCHAIN_NAME/* $PICO_TOOLCHAIN_PATH && rm $ARM_TOOLCHAIN_FILE
 ENV PATH="${PICO_TOOLCHAIN_PATH}/bin:${PATH}"
 
 # Install SDK
 WORKDIR "$PICO_SDK_PATH"
 RUN git clone --depth=1 --shallow-submodules --recurse-submodules https://github.com/raspberrypi/pico-sdk.git $PICO_SDK_PATH
+
+# Install PioASM
+WORKDIR "$PICO_PIOASM_PATH"
+RUN mkdir -p build && cd build && cmake -DPIOASM_VERSION_STRING="Pico-ASM v1.0.0" ../ && make install
 
 # Install OpenOCD
 WORKDIR "$PICO_OPENOCD_PATH"

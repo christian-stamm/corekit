@@ -1,18 +1,18 @@
 #pragma once
 
-#include <deque>
 #include <thread>
 #include <vector>
 
-#include "corekit/assert.hpp"
-#include "corekit/conditionvariable.hpp"
-#include "corekit/mutex.hpp"
-#include "corekit/stoptoken.hpp"
+#include "corekit/queue.hpp"
+#include "corekit/result.hpp"
+#include "corekit/semaphore.hpp"
 #include "corekit/task.hpp"
 
 namespace corekit::platform {
 
     class ThreadPool {
+        friend class Executor;
+
        public:
         explicit ThreadPool(uint num_workers = 4, uint max_tasks = 10);
         ~ThreadPool();
@@ -24,22 +24,33 @@ namespace corekit::platform {
         ThreadPool& operator=(ThreadPool&&) = delete;
 
         VoidResult enqueue(Task::Ptr task);
+        void       cancel(bool discard_remaining_tasks = false);
 
-        void cancel(bool remaining_tasks = false);
+       protected:
+        void request_stop(bool discard_remaining_tasks = false);
+        void join();
 
         const uint num_workers_;
-        const uint max_tasks_;
 
        private:
         void worker_loop();
 
-        Mutex                    m_queue_mutex_;
         StopSource               m_stop_source_;
-        ConditionVariable        m_condition_;
-        std::deque<Task::Ptr>    m_task_queue_;
+        Queue<Task::Ptr>         m_task_queue_;
         std::vector<std::thread> m_workers_;
     };
 
-    using Executor = ThreadPool;
+    class Executor : public ThreadPool {
+       public:
+        Executor(uint num_workers = 4, uint max_tasks = 10)
+            : ThreadPool(num_workers, max_tasks)
+            , shutdown_(0, 1) {}
+
+        void launch();
+        void terminate();
+
+       private:
+        Semaphore shutdown_;
+    };
 
 }  // namespace corekit::platform

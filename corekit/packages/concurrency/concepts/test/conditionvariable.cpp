@@ -1,6 +1,7 @@
+#include "corekit/conditionvariable.hpp"
+
 #include <gtest/gtest.h>
 
-#include "corekit/conditionvariable.hpp"
 #include "corekit/mutex.hpp"
 
 namespace corekit::test {

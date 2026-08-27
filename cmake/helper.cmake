@@ -14,6 +14,13 @@ function(make_paths_abs ABS_PATHS)
     set(${ABS_PATHS} "${paths}" PARENT_SCOPE)
 endfunction()
 
+function(add_subdirectory_aware SUBDIR)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}/CMakeLists.txt")
+        add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${SUBDIR}")
+    else()
+        message(WARNING "Invalid subdirectory '${SUBDIR}' for '${CMAKE_CURRENT_SOURCE_DIR}'. Skipping.")
+    endif()
+endfunction()
 
 function(resolve_dependencies required_deps available_libs matched_out missing_out)
     set(matched "")
