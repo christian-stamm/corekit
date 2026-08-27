@@ -1,12 +1,25 @@
 #pragma once
+
 #include <memory>
-#include <mutex>
+
+#include "corekit/semaphore.hpp"
 
 namespace corekit::platform {
 
-    class Mutex : public std::mutex {
+    class Mutex : private Semaphore {
+       public:
         using Ptr = std::shared_ptr<Mutex>;
-        using std::mutex::mutex;
+
+        Mutex();
+
+        Mutex(const Mutex&)            = delete;
+        Mutex(Mutex&&)                 = delete;
+        Mutex& operator=(const Mutex&) = delete;
+        Mutex& operator=(Mutex&&)      = delete;
+
+        void lock();
+        void unlock();
+        bool try_lock();
     };
 
-};  // namespace corekit::platform
+}  // namespace corekit::platform

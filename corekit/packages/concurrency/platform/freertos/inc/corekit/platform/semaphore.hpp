@@ -1,10 +1,10 @@
 #pragma once
 
-#include <limits>
-#include <memory>
-#include <mutex>
+#include <FreeRTOS.h>
+#include <semphr.h>
 
-#include "corekit/platform/conditionvariable.hpp"
+#include <cstdint>
+#include <memory>
 
 namespace corekit::platform {
 
@@ -12,23 +12,21 @@ namespace corekit::platform {
        public:
         using Ptr = std::shared_ptr<Semaphore>;
 
-        Semaphore(
-            std::size_t init_count = 0,
-            std::size_t max_count  = std::numeric_limits<std::size_t>::max());
+        Semaphore(uint32_t max_count = 1, uint32_t initial_count = 0);
 
-        void release();
+        Semaphore(const Semaphore&)            = delete;
+        Semaphore(Semaphore&&)                 = delete;
+        Semaphore& operator=(const Semaphore&) = delete;
+        Semaphore& operator=(Semaphore&&)      = delete;
+
+        ~Semaphore();
+
         void acquire();
-
-        [[nodiscard]]
+        void release();
         bool try_acquire();
 
-        const std::size_t max_count_;
-
        private:
-        mutable std::mutex mutex_;
-        ConditionVariable  cv_;
-
-        std::size_t count_;
+        SemaphoreHandle_t semaphore;
     };
 
 }  // namespace corekit::platform

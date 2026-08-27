@@ -1,16 +1,20 @@
 cmake_minimum_required(VERSION 3.25)
+set(COREKIT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+if(EXISTS ${COREKIT_PAL_FILE})
+    include(${COREKIT_PAL_FILE})
+endif()
+
+if(EXISTS ${COREKIT_BSP_FILE})
+    include(${COREKIT_BSP_FILE})
+endif()
+
+if(NOT DEFINED COREKIT_BACKEND)
+    message(FATAL_ERROR "COREKIT_BACKEND is not defined. Please set it to the desired backend.")
+endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
-
-add_subdirectory(corekit)
-add_subdirectory(demos)
-add_subdirectory(thirdparty)
 
 if(COMMAND corekit_bsp_bootstrap)
     corekit_bsp_bootstrap()
@@ -22,10 +26,16 @@ project(corekit
     LANGUAGES C CXX ASM
 )
 
-enable_testing()
-
-if(COMMAND corekit_bsp_configure)
-    corekit_bsp_configure()
+if(COMMAND corekit_bsp_launch)
+    corekit_bsp_launch()
 endif()
+
+enable_testing()
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
+
+add_subdirectory(corekit)
+add_subdirectory(demos)
+add_subdirectory(thirdparty)
 
 corekit_build_modules()

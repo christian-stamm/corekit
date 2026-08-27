@@ -1,22 +1,55 @@
 #pragma once
-#include <atomic>
+#include <FreeRTOS.h>
+#include <task.h>
+
 #include <memory>
 
 namespace corekit::platform {
 
     template <typename T>
-    class Atomic : public std::atomic<T> {
-        using Ptr = std::shared_ptr<Atomic<T>>;
-        using std::atomic<T>::atomic;
-
+    class Atomic {
        public:
-        bool compare_exchange(T& expected, T desired) {
-            return std::atomic<T>::compare_exchange_strong(expected, desired);
+        using Ptr       = std::shared_ptr<Atomic<T>>;
+        using ValueType = T;
+
+        Atomic(T value = T()) : value(value) {}
+
+        Atomic(const Atomic&)            = delete;
+        Atomic(Atomic&&)                 = delete;
+        Atomic& operator=(const Atomic&) = delete;
+        Atomic& operator=(Atomic&&)      = delete;
+
+        const T& load() const {
+            taskENTER_CRITICAL();
+            const T& result = value;
+            taskEXIT_CRITICAL();
+            return result;
         }
+
+        void store(T value) {
+            taskENTER_CRITICAL();
+            this->value = value;
+            taskEXIT_CRITICAL();
+        }
+
+        bool compare_exchange(T& expected, T desired) {
+            taskENTER_CRITICAL();
+
+            if (value == expected) {
+                value = desired;
+                return true;
+            } else {
+                expected = value;
+                return false;
+            }
+
+            taskEXIT_CRITICAL();
+        }
+
+       private:
+        T value;
     };
 
     extern template class Atomic<bool>;
-    extern template class Atomic<uint>;
-    extern template class Atomic<int>;
 
-};  // namespace corekit::platform
+}  // namespace corekit::platform

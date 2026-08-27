@@ -1,6 +1,6 @@
 #include "corekit/platform/stoptoken.hpp"
 
-namespace corekit {
+namespace corekit::platform {
 
     StopToken::StopToken(const StopState::Ptr& state) : m_state(state) {}
 
@@ -29,4 +29,4 @@ namespace corekit {
         return std::move(StopToken(m_state));
     }
 
-}  // namespace corekit
+}  // namespace corekit::platform

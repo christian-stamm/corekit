@@ -1,48 +1,30 @@
 #include "corekit/platform/semaphore.hpp"
 
-#include <cassert>
-
 namespace corekit::platform {
 
-    Semaphore::Semaphore(const std::size_t init_count,
-                         const std::size_t max_count)
-        : count_(init_count)
-        , max_count_(max_count) {
-        assert(max_count_ > 0);
-        assert(count_ <= max_count_);
+    Semaphore::Semaphore(uint32_t max_count, uint32_t initial_count)
+        : semaphore(xSemaphoreCreateCounting(max_count, initial_count)) {}
+
+    Semaphore::~Semaphore() {
+        if (semaphore) {
+            vSemaphoreDelete(semaphore);
+        }
     }
 
     void Semaphore::acquire() {
-        std::unique_lock lock{mutex_};
-
-        cv_.wait(lock, [this] { return count_ > 0; });
-
-        --count_;
-    }
-
-    bool Semaphore::try_acquire() {
-        std::lock_guard lock{mutex_};
-
-        if (count_ == 0)
-            return false;
-
-        --count_;
-        return true;
+        if (semaphore) {
+            xSemaphoreTake(semaphore, portMAX_DELAY);
+        }
     }
 
     void Semaphore::release() {
-        {
-            std::lock_guard lock{mutex_};
-
-            assert(count_ < max_count_);
-
-            if (count_ >= max_count_)
-                return;
-
-            ++count_;
+        if (semaphore) {
+            xSemaphoreGive(semaphore);
         }
+    }
 
-        cv_.notify_one();
+    bool Semaphore::try_acquire() {
+        return semaphore ? (xSemaphoreTake(semaphore, 0) == pdTRUE) : false;
     }
 
 }  // namespace corekit::platform

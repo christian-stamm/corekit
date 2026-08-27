@@ -18,7 +18,7 @@ namespace corekit::platform {
         vTaskDelay(delay);
     }
 
-    double Time::now() {
+    double Time::uptime() {
         const uint64_t value = xTaskGetTickCount();
         return (double)(value) / (double)(configTICK_RATE_HZ);
     }
