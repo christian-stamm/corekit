@@ -25,7 +25,6 @@ namespace corekit::platform {
         void cancel(bool remaining_tasks = false);
 
         const uint num_workers_;
-        const uint max_tasks_;
 
        private:
         void worker_loop();

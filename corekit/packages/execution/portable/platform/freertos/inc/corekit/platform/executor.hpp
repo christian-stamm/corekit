@@ -1,13 +1,12 @@
 #pragma once
 
-#include <deque>
-#include <thread>
+#include <FreeRTOS.h>
+#include <task.h>
+
 #include <vector>
 
 #include "corekit/assert.hpp"
-#include "corekit/conditionvariable.hpp"
-#include "corekit/mutex.hpp"
-#include "corekit/stoptoken.hpp"
+#include "corekit/queue.hpp"
 #include "corekit/task.hpp"
 
 namespace corekit::platform {
@@ -28,15 +27,22 @@ namespace corekit::platform {
         void cancel(bool remaining_tasks = false);
 
         const uint num_workers_;
-        const uint max_tasks_;
 
        private:
         void worker_loop();
 
-        StopSource               m_stop_source_;
-        std::vector<std::thread> m_workers_;
+        Semaphore                 m_worker_count_;
+        Queue<Task::Ptr>          m_task_queue_;
+        StopSource                m_stop_source_;
+        std::vector<TaskHandle_t> m_workers_;
     };
 
-    using Executor = ThreadPool;
+    class Executor : public ThreadPool {
+       public:
+        using ThreadPool::ThreadPool;
+
+        static void launch();
+        static void terminate();
+    };
 
 }  // namespace corekit::platform

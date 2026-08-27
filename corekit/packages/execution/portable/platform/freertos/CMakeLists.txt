@@ -5,3 +5,9 @@ corekit_add_module(stoptoken IMPL
     SOURCE_FILES        "src/stoptoken.cpp"
     DEPENDENCIES        "atomic"
 )
+
+corekit_add_module(executor IMPL
+    PUBLIC_INCLUDES     "inc"
+    SOURCE_FILES        "src/executor.cpp"
+    DEPENDENCIES        "FreeRTOS-Kernel-Heap4;assert;conditionvariable;mutex;queue;stoptoken"
+)
