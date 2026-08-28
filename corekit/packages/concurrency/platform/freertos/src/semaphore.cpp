@@ -2,7 +2,7 @@
 
 namespace corekit::platform {
 
-    Semaphore::Semaphore(uint32_t max_count, uint32_t initial_count)
+    Semaphore::Semaphore(uint32_t initial_count, uint32_t max_count)
         : semaphore(xSemaphoreCreateCounting(max_count, initial_count)) {}
 
     Semaphore::~Semaphore() {

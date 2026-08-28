@@ -9,10 +9,6 @@ if(EXISTS ${COREKIT_BSP_FILE})
     include(${COREKIT_BSP_FILE})
 endif()
 
-if(NOT DEFINED COREKIT_BACKEND)
-    message(FATAL_ERROR "COREKIT_BACKEND is not defined. Please set it to the desired backend.")
-endif()
-
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
 

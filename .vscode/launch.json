@@ -6,7 +6,7 @@
             "type": "cortex-debug",
             "request": "launch",
             "executable": "${command:cmake.launchTargetPath}",
-            "cwd": "${env:PICO_DEBUG_PATH}/tcl",
+            "cwd": "${env:PICO_OPENOCD_PATH}/tcl",
             "servertype": "openocd",
             "gdbPath": "gdb-multiarch",
             "device": "RP2350",
@@ -14,7 +14,7 @@
                 "interface/cmsis-dap.cfg",
                 "target/rp2350.cfg"
             ],
-            "svdPath": "/opt/pico/pico-sdk/src/rp2350/hardware_regs/RP2350.svd",
+            "svdPath": "${env:PICO_SDK_PATH}/src/rp2350/hardware_regs/RP2350.svd",
             "overrideLaunchCommands": [
                 "monitor reset init",
                 "load \"${command:cmake.launchTargetPath}\""
@@ -28,7 +28,7 @@
             "type": "cortex-debug",
             "request": "launch",
             "executable": "${command:cmake.launchTargetPath}",
-            "cwd": "${env:PICO_DEBUG_PATH}/tcl",
+            "cwd": "${env:PICO_OPENOCD_PATH}/tcl",
             "servertype": "openocd",
             "gdbPath": "gdb-multiarch",
             "device": "RP2040",
@@ -36,7 +36,7 @@
                 "interface/cmsis-dap.cfg",
                 "target/rp2040.cfg"
             ],
-            "svdPath": "/opt/pico/pico-sdk/src/rp2040/hardware_regs/RP2040.svd",
+            "svdPath": "${env:PICO_SDK_PATH}/src/rp2040/hardware_regs/RP2040.svd",
             "overrideLaunchCommands": [
                 "monitor reset init",
                 "load \"${command:cmake.launchTargetPath}\""

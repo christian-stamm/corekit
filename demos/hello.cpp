@@ -3,7 +3,7 @@
 #include "corekit/logger.hpp"
 #include "corekit/stoptoken.hpp"
 #include "corekit/task.hpp"
-#include "corekit/time.hpp"
+#include "corekit/uartdevice.hpp"
 
 using namespace corekit;
 
@@ -29,39 +29,21 @@ class WorldTask : public Task {
     Logger logger_{"WorldTask"};
 };
 
-class Spawner : public Task {
-   public:
-    Spawner(Executor& executor) : executor_(executor) {}
-
-    virtual VoidResult on_run(StopToken token) override {
-        for (int i = 0; i < 5; ++i) {
-            HelloTask::Ptr hello_task = std::make_shared<HelloTask>();
-            WorldTask::Ptr world_task = std::make_shared<WorldTask>();
-
-            executor_.enqueue(hello_task);
-            executor_.enqueue(world_task);
-
-            logger_.info() << "Enqueued tasks.";
-            Time::sleep(2);
-        }
-
-        return VoidResult();
-    }
-
-   private:
-    Executor& executor_;
-    Logger    logger_{"Spawner"};
-};
-
 int main() {
     Logger   logger{"Main"};
-    Executor executor(1, 10);
+    Executor executor(2, 5);
 
-    executor.enqueue(std::make_shared<Spawner>(executor));
+    UartDevice::Ptr uart_device = std::make_shared<UartDevice>();
+    HelloTask::Ptr  hello_task  = std::make_shared<HelloTask>();
+    WorldTask::Ptr  world_task  = std::make_shared<WorldTask>();
+
+    Logging::reconfigure(uart_device);
+    uart_device->load();
 
     logger.info() << "Starting executor...";
+    executor.enqueue(hello_task);
+    executor.enqueue(world_task);
     executor.launch();
-    logger.info() << "Executor finished.";
 
     return 0;
 }

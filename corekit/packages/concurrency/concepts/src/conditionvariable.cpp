@@ -1,7 +1,8 @@
 #include "corekit/conditionvariable.hpp"
 
 #include <functional>
-#include <mutex>
+
+#include "corekit/mutex.hpp"
 
 namespace corekit {
 

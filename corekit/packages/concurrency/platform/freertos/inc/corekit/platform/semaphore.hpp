@@ -12,7 +12,7 @@ namespace corekit::platform {
        public:
         using Ptr = std::shared_ptr<Semaphore>;
 
-        Semaphore(uint32_t max_count = 1, uint32_t initial_count = 0);
+        Semaphore(uint32_t initial_count = 0, uint32_t max_count = 1);
 
         Semaphore(const Semaphore&)            = delete;
         Semaphore(Semaphore&&)                 = delete;

@@ -224,7 +224,8 @@ function(corekit_build_modules)
 
             message(
                 WARNING
-                "Module '${module}' must specify both API and IMPL to be built. Skipping target creation."
+                "No implementation found for API module '${module}'.\n"
+                "=> Module '${module}' will not be available for use.\n"
             )
 
             set(can_be_built FALSE)

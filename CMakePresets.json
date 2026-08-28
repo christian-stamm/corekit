@@ -11,8 +11,10 @@
                 "CMAKE_CXX_STANDARD": "23",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
 
+                "COREKIT_TARGET_DEVICE": "bernd",
+
                 "COREKIT_PAL_FILE": "${sourceDir}/cmake/pal/freertos.cmake",
-                "COREKIT_BSP_FILE": "${sourceDir}/cmake/bsp/posix.cmake"
+                "COREKIT_BSP_FILE": "${sourceDir}/cmake/bsp/pico.cmake"
             }
         }
     ]

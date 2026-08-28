@@ -1,2 +1,2 @@
 cmake_minimum_required(VERSION 3.25)
-set(COREKIT_BACKEND "freertos")
+set(BUILD_FREERTOS_MODULES TRUE)

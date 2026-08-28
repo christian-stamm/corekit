@@ -1,7 +1,5 @@
 #include "corekit/platform/executor.hpp"
 
-#include <utility>
-
 namespace corekit::platform {
 
     ThreadPool::ThreadPool(uint num_workers, uint max_tasks)
@@ -34,7 +32,7 @@ namespace corekit::platform {
     ThreadPool::~ThreadPool() {
         cancel();
 
-        for (auto& worker : m_workers_) {
+        for (const TaskHandle_t& worker : m_workers_) {
             m_worker_count_.acquire();
         }
     }
@@ -78,9 +76,7 @@ namespace corekit::platform {
                 break;
             }
 
-            if (task) {
-                task->exec(m_stop_source_.get_token());
-            }
+            task->exec(m_stop_source_.get_token());
         }
 
         m_worker_count_.release();

@@ -1,5 +1,6 @@
 #include "corekit/platform/executor.hpp"
 
+#include <iostream>
 #include <utility>
 
 namespace corekit::platform {
@@ -16,18 +17,32 @@ namespace corekit::platform {
         cancel();
     }
 
-    void ThreadPool::cancel(bool remaining_tasks) {
-        m_stop_source_.request_stop();
+    void ThreadPool::request_stop(bool discard_pending_tasks) {
+        if (!m_stop_source_.request_stop()) {
+            return;
+        }
 
-        if (remaining_tasks) {
+        if (discard_pending_tasks) {
             m_task_queue_.clear();
         }
 
+        // Exactly one sentinel per worker.
+        for (std::size_t i = 0; i < m_workers_.size(); ++i) {
+            m_task_queue_.push(nullptr, true);
+        }
+    }
+
+    void ThreadPool::join() {
         for (auto& worker : m_workers_) {
-            if (worker) {
-                vTaskDelete(worker);
+            if (worker.joinable()) {
+                worker.join();
             }
         }
+    }
+
+    void ThreadPool::cancel(bool discard_pending_tasks) {
+        request_stop(discard_pending_tasks);
+        join();
     }
 
     VoidResult ThreadPool::enqueue(Task::Ptr task) {
@@ -43,15 +58,27 @@ namespace corekit::platform {
     }
 
     void ThreadPool::worker_loop() {
-        Task::Ptr task = nullptr;
-
         while (true) {
+            Task::Ptr task = nullptr;
+
             m_task_queue_.pop(task, true);
 
-            if (task) {
-                task->exec(m_stop_source_.get_token());
+            if (!task) {
+                break;
             }
+
+            task->exec(m_stop_source_.get_token());
         }
+    }
+
+    void Executor::launch() {
+        shutdown_.acquire();
+        join();
+    }
+
+    void Executor::terminate() {
+        request_stop(false);
+        shutdown_.release();
     }
 
 }  // namespace corekit::platform

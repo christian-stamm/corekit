@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.25)
 
 macro(corekit_bsp_bootstrap)
 
-    set(PICO_BOARD "bernd")
+    set(PICO_BOARD ${COREKIT_TARGET_DEVICE})
+    set(BUILD_PICO_MODULES TRUE)
     
     set(rp2040_boards
         pico
@@ -53,7 +54,6 @@ endmacro()
 
 macro(corekit_bsp_launch)
 
-    set(BUILD_PICO_MODULES TRUE)
     pico_sdk_init()
 
     add_subdirectory(${PICO_RTOS_PORTABLE_PATH} ${CMAKE_CURRENT_BINARY_DIR}/freertos)
