@@ -28,7 +28,7 @@ endif()
 add_library(FreeRTOS-Kernel INTERFACE)
 target_sources(FreeRTOS-Kernel INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}/src/port.c
-        ${CMAKE_CURRENT_LIST_DIR}/src/portasm.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/portASM.S
 )
 
 target_include_directories(FreeRTOS-Kernel INTERFACE

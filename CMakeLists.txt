@@ -27,6 +27,7 @@ if(COMMAND corekit_bsp_launch)
 endif()
 
 enable_testing()
+add_compile_options(-Wno-psabi)
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
 

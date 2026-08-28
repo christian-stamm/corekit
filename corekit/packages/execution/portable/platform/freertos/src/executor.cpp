@@ -1,5 +1,7 @@
 #include "corekit/platform/executor.hpp"
 
+#include <format>
+
 namespace corekit::platform {
 
     ThreadPool::ThreadPool(uint num_workers, uint max_tasks)
@@ -8,13 +10,15 @@ namespace corekit::platform {
         , m_worker_count_(num_workers, 0) {
         for (size_t i = 0; i < num_workers_; ++i) {
             TaskHandle_t task_handle = nullptr;
-            BaseType_t   result      = xTaskCreate(
+            std::string  task_name   = std::format("worker_{}", i);
+
+            BaseType_t result = xTaskCreate(
                 [](void* arg) {
                     ThreadPool* self = static_cast<ThreadPool*>(arg);
                     self->worker_loop();
                     vTaskDelete(nullptr);
                 },
-                "worker",
+                task_name.c_str(),
                 configMINIMAL_STACK_SIZE,
                 this,
                 tskIDLE_PRIORITY + 1,

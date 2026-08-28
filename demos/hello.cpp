@@ -1,3 +1,7 @@
+#include <pico/time.h>
+
+#include <corekit/time.hpp>
+
 #include "corekit/assert.hpp"
 #include "corekit/executor.hpp"
 #include "corekit/logger.hpp"
@@ -10,7 +14,11 @@ using namespace corekit;
 class HelloTask : public Task {
    public:
     virtual VoidResult on_run(StopToken token) override {
-        logger_.info() << "Hello from HelloTask!";
+        while (true) {
+            logger_() << xTaskGetTickCount() << " ticks since scheduler start";
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+
         return VoidResult();
     }
 
@@ -21,7 +29,11 @@ class HelloTask : public Task {
 class WorldTask : public Task {
    public:
     virtual VoidResult on_run(StopToken token) override {
-        logger_.info() << "Hello from WorldTask!";
+        while (true) {
+            logger_() << xTaskGetTickCount() << " ticks since scheduler start";
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+
         return VoidResult();
     }
 

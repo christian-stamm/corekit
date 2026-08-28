@@ -4,6 +4,7 @@
 #include <task.h>
 
 #include <cmath>
+#include <iostream>
 
 namespace corekit::platform {
 
@@ -12,10 +13,10 @@ namespace corekit::platform {
             return;
         }
 
-        const double ticks = seconds * static_cast<double>(configTICK_RATE_HZ);
-        const TickType_t delay = static_cast<TickType_t>(std::max(1.0, ticks));
-
-        vTaskDelay(delay);
+        auto before = xTaskGetTickCount();
+        vTaskDelay(pdMS_TO_TICKS(1e3 * seconds));
+        auto after = xTaskGetTickCount();
+        std::cout << "delta ticks = " << (after - before) << std::endl;
     }
 
     double Time::uptime() {
