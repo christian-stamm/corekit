@@ -35,15 +35,16 @@ namespace corekit::platform {
         bool compare_exchange(T& expected, T desired) {
             taskENTER_CRITICAL();
 
+            bool exchanged = false;
             if (value == expected) {
-                value = desired;
-                return true;
+                value     = desired;
+                exchanged = true;
             } else {
                 expected = value;
-                return false;
             }
 
             taskEXIT_CRITICAL();
+            return exchanged;
         }
 
        private:

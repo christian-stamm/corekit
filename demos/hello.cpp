@@ -1,12 +1,12 @@
-#include <pico/time.h>
+#include <pico/stdlib.h>
 
-#include <corekit/time.hpp>
+#include <memory>
 
 #include "corekit/assert.hpp"
 #include "corekit/executor.hpp"
 #include "corekit/logger.hpp"
-#include "corekit/stoptoken.hpp"
 #include "corekit/task.hpp"
+#include "corekit/time.hpp"
 #include "corekit/uartdevice.hpp"
 
 using namespace corekit;
@@ -14,9 +14,9 @@ using namespace corekit;
 class HelloTask : public Task {
    public:
     virtual VoidResult on_run(StopToken token) override {
-        while (true) {
-            logger_() << xTaskGetTickCount() << " ticks since scheduler start";
-            vTaskDelay(pdMS_TO_TICKS(1000));
+        while (!token.stop_requested()) {
+            logger_() << "HELLO";
+            Time::sleep(1);
         }
 
         return VoidResult();
@@ -29,9 +29,9 @@ class HelloTask : public Task {
 class WorldTask : public Task {
    public:
     virtual VoidResult on_run(StopToken token) override {
-        while (true) {
-            logger_() << xTaskGetTickCount() << " ticks since scheduler start";
-            vTaskDelay(pdMS_TO_TICKS(1000));
+        while (!token.stop_requested()) {
+            logger_() << "WORLD";
+            Time::sleep(1);
         }
 
         return VoidResult();
@@ -42,17 +42,16 @@ class WorldTask : public Task {
 };
 
 int main() {
-    Logger   logger{"Main"};
-    Executor executor(2, 5);
+    sleep_ms(100);  // Wait for the UART to be ready
 
-    UartDevice::Ptr uart_device = std::make_shared<UartDevice>();
-    HelloTask::Ptr  hello_task  = std::make_shared<HelloTask>();
-    WorldTask::Ptr  world_task  = std::make_shared<WorldTask>();
+    StreamDevice::Ptr device = std::make_shared<UartDevice>();
+    device->load();
+    Logging::reconfigure(device);
 
-    Logging::reconfigure(uart_device);
-    uart_device->load();
+    Executor       executor(2, 2);
+    HelloTask::Ptr hello_task = std::make_shared<HelloTask>();
+    WorldTask::Ptr world_task = std::make_shared<WorldTask>();
 
-    logger.info() << "Starting executor...";
     executor.enqueue(hello_task);
     executor.enqueue(world_task);
     executor.launch();

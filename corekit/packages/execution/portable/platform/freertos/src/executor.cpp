@@ -87,6 +87,7 @@ namespace corekit::platform {
     }
 
     void Executor::launch() {
+        __asm volatile("msr basepri, %0" ::"r"(0UL) : "memory");
         vTaskStartScheduler();
     }
 

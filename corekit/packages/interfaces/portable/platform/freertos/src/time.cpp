@@ -13,10 +13,7 @@ namespace corekit::platform {
             return;
         }
 
-        auto before = xTaskGetTickCount();
-        vTaskDelay(pdMS_TO_TICKS(1e3 * seconds));
-        auto after = xTaskGetTickCount();
-        std::cout << "delta ticks = " << (after - before) << std::endl;
+        vTaskDelay(std::max<TickType_t>(1, pdMS_TO_TICKS(1e3 * seconds)));
     }
 
     double Time::uptime() {
