@@ -2,9 +2,9 @@
 
 #include <memory>
 
-#include "corekit/assert.hpp"
 #include "corekit/executor.hpp"
 #include "corekit/logger.hpp"
+#include "corekit/piodevice.hpp"
 #include "corekit/task.hpp"
 #include "corekit/time.hpp"
 #include "corekit/uartdevice.hpp"
@@ -42,11 +42,8 @@ class WorldTask : public Task {
 };
 
 int main() {
-    sleep_ms(100);  // Wait for the UART to be ready
-
-    StreamDevice::Ptr device = std::make_shared<UartDevice>();
-    device->load();
-    Logging::reconfigure(device);
+    sleep_ms(10);  // Stabilize
+    Logging::reconfigure(std::make_shared<UartDevice>());
 
     Executor       executor(2, 2);
     HelloTask::Ptr hello_task = std::make_shared<HelloTask>();

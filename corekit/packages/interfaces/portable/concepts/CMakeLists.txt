@@ -17,15 +17,15 @@ corekit_add_module(spidevice API
     DEPENDENCIES        "serialdevice"
 )
 
+corekit_add_module(piodevice API
+    PUBLIC_INCLUDES     "inc"
+    SOURCE_FILES        "src/piodevice.cpp"
+    DEPENDENCIES        "serialdevice"
+)
+
 # corekit_add_module(i2cdevice API
 #     PUBLIC_INCLUDES     "inc"
 #     SOURCE_FILES        "src/i2cdevice.cpp"
-#     DEPENDENCIES        "serialdevice"
-# )
-
-# corekit_add_module(piodevice API
-#     PUBLIC_INCLUDES     "inc"
-#     SOURCE_FILES        "src/piodevice.cpp"
 #     DEPENDENCIES        "serialdevice"
 # )
 

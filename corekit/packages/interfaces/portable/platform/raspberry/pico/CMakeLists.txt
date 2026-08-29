@@ -17,3 +17,9 @@ corekit_add_module(spidevice IMPL
     SOURCE_FILES        "src/spidevice.cpp"
     DEPENDENCIES        "hardware_spi;hardware_gpio;asyncdevice"
 )
+
+corekit_add_module(piodevice IMPL
+    PUBLIC_INCLUDES     "inc"
+    SOURCE_FILES        "src/piodevice.cpp"
+    DEPENDENCIES        "hardware_pio;hardware_gpio;asyncdevice"
+)

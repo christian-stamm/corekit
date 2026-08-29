@@ -18,7 +18,7 @@ namespace corekit {
         if (loaded.compare_exchange(expected, desired)) {
             try {
                 watch.reset(true);
-                return onLoad();
+                return on_load();
             } catch (...) {
                 loaded.store(false);
                 throw;  // Preserve original exception details.
@@ -36,7 +36,7 @@ namespace corekit {
         if (loaded.compare_exchange(expected, desired)) {
             try {
                 watch.stop();
-                return onUnload();
+                return on_unload();
             } catch (...) {
                 loaded.store(true);
                 throw;  // Preserve original exception details.

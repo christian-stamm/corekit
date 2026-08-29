@@ -6,11 +6,18 @@ corekit_add_module(error API IMPL
     GTEST_FILES         "test/error.cpp"
 )
 
+corekit_add_module(result API IMPL
+    PUBLIC_INCLUDES     "inc"
+    SOURCE_FILES        "src/result.cpp"
+    GTEST_FILES         "test/result.cpp"
+    DEPENDENCIES        "error"
+)
+
 corekit_add_module(assert API IMPL
     PUBLIC_INCLUDES     "inc"
     SOURCE_FILES        "src/assert.cpp"
     GTEST_FILES         "test/assert.cpp"
-    DEPENDENCIES        "error"
+    DEPENDENCIES        "error;result"
 )
 
 corekit_add_module(logger API IMPL

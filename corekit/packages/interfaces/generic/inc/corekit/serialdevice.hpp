@@ -19,10 +19,10 @@ namespace corekit {
         using BaseDevice::BaseDevice;
 
         virtual bool write(const T& data) = 0;
-        virtual bool writeBulk(std::span<const T> data);
+        virtual bool write_bulk(std::span<const T> data);
 
         virtual bool read(T& data) = 0;
-        virtual bool readBulk(std::span<T> data);
+        virtual bool read_bulk(std::span<T> data);
 
         virtual bool xfer(const T& txData, T& rxData);
         virtual bool xferBulk(std::span<const T> txData, std::span<T> rxData);

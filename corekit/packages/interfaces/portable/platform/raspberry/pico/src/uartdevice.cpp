@@ -23,14 +23,14 @@ namespace corekit::platform {
         , txPin(txPin)
         , rxPin(rxPin) {}
 
-    bool UartDevice::onLoad() {
+    bool UartDevice::on_load() {
         uart_init(instance, baudRate);
         gpio_set_function(txPin, GPIO_FUNC_UART);
         gpio_set_function(rxPin, GPIO_FUNC_UART);
         return true;
     }
 
-    bool UartDevice::onUnload() {
+    bool UartDevice::on_unload() {
         uart_deinit(instance);
         gpio_set_function(txPin, GPIO_FUNC_SIO);
         gpio_set_function(rxPin, GPIO_FUNC_SIO);
@@ -42,7 +42,7 @@ namespace corekit::platform {
         return true;
     }
 
-    bool UartDevice::writeBulk(std::span<const uint8_t> data) {
+    bool UartDevice::write_bulk(std::span<const uint8_t> data) {
         uart_write_blocking(instance,
                             data.data(),
                             static_cast<size_t>(data.size()));
@@ -58,7 +58,7 @@ namespace corekit::platform {
         return true;
     }
 
-    bool UartDevice::readBulk(std::span<uint8_t> data) {
+    bool UartDevice::read_bulk(std::span<uint8_t> data) {
         uart_read_blocking(instance,
                            data.data(),
                            static_cast<size_t>(data.size()));

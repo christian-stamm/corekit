@@ -131,6 +131,10 @@ namespace corekit {
             return;
         }
 
+        if (!output->isLoaded()) {
+            output->load();
+        }
+
         std::scoped_lock lock(LogStream::mutex);
         stream = std::move(StreamBuffer(output));
         std::cout.rdbuf(&stream);

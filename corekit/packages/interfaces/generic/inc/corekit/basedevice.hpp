@@ -25,11 +25,11 @@ namespace corekit {
         const std::string name;
 
        protected:
-        virtual bool onLoad() {
+        virtual bool on_load() {
             return true;
         };
 
-        virtual bool onUnload() {
+        virtual bool on_unload() {
             return true;
         };
 

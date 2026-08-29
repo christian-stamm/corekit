@@ -7,5 +7,5 @@ corekit_add_module(stoptoken IMPL
 corekit_add_module(executor IMPL
     PUBLIC_INCLUDES     "inc"
     SOURCE_FILES        "src/executor.cpp"
-    DEPENDENCIES        "assert;queue;semaphore;stoptoken"
+    DEPENDENCIES        "queue;semaphore;result;stoptoken"
 )

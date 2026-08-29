@@ -34,7 +34,7 @@ namespace corekit::platform {
         , sckPin(sckPin)
         , csnPin(csnPin) {}
 
-    bool SpiDevice::onLoad() {
+    bool SpiDevice::on_load() {
         gpio_init(txPin);
         gpio_init(rxPin);
         gpio_init(sckPin);
@@ -57,7 +57,7 @@ namespace corekit::platform {
         return true;
     }
 
-    bool SpiDevice::onUnload() {
+    bool SpiDevice::on_unload() {
         spi_deinit(instance);
         gpio_set_function(txPin, GPIO_FUNC_SIO);
         gpio_set_function(rxPin, GPIO_FUNC_SIO);
@@ -76,7 +76,7 @@ namespace corekit::platform {
         return true;
     }
 
-    bool SpiDevice::writeBulk(std::span<const uint8_t> data) {
+    bool SpiDevice::write_bulk(std::span<const uint8_t> data) {
         return spi_write_blocking(instance, data.data(), data.size()) ==
                data.size();
     }
@@ -85,7 +85,7 @@ namespace corekit::platform {
         return spi_read_blocking(instance, 0, &data, 1) == 1;
     }
 
-    bool SpiDevice::readBulk(std::span<uint8_t> data) {
+    bool SpiDevice::read_bulk(std::span<uint8_t> data) {
         return spi_read_blocking(instance, 0, data.data(), data.size()) ==
                data.size();
     }

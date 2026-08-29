@@ -1,7 +1,5 @@
 #include "corekit/task.hpp"
 
-#include "corekit/assert.hpp"
-
 namespace corekit {
 
     Task::Task() : m_state(State::READY) {}

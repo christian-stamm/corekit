@@ -20,14 +20,14 @@ namespace corekit::platform {
         );
 
         virtual bool write(const uint8_t& data) override;
-        virtual bool writeBulk(std::span<const uint8_t> data) override;
+        virtual bool write_bulk(std::span<const uint8_t> data) override;
 
         virtual bool read(uint8_t& data) override;
-        virtual bool readBulk(std::span<uint8_t> data) override;
+        virtual bool read_bulk(std::span<uint8_t> data) override;
 
        protected:
-        virtual bool onLoad() override;
-        virtual bool onUnload() override;
+        virtual bool on_load() override;
+        virtual bool on_unload() override;
 
         uart_inst_t* instance;
         uint         baudRate;
