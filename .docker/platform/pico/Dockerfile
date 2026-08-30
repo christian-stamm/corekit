@@ -13,9 +13,11 @@ ENV PICO_ENV_ROOT="/opt/pico"
 ENV PICO_SDK_PATH="$PICO_ENV_ROOT/pico-sdk"
 ENV PICO_OPENOCD_PATH="$PICO_ENV_ROOT/openocd"
 ENV PICO_PICOTOOL_PATH="$PICO_ENV_ROOT/picotool"
+ENV PICO_PIOASM_PATH="$PICO_SDK_PATH/tools/pioasm"
 ENV PICO_DEBUGPROBE_PATH="$PICO_ENV_ROOT/picoprobe"
 ENV PICO_TOOLCHAIN_PATH="$PICO_ENV_ROOT/arm-none-eabi"
 ENV FREERTOS_KERNEL_PATH="$PICO_ENV_ROOT/freertos"
+ENV PIOASM_VERSION_STRING="Pico-ASM v1.0.0"
 
 ENV PATH="${PICO_TOOLCHAIN_PATH}/bin:${PATH}"
 
@@ -48,6 +50,10 @@ ENV PATH="${PICO_TOOLCHAIN_PATH}/bin:${PATH}"
 # Install SDK
 WORKDIR "$PICO_SDK_PATH"
 RUN git clone --depth=1 --shallow-submodules --recurse-submodules https://github.com/raspberrypi/pico-sdk.git $PICO_SDK_PATH
+
+# Install PioASM
+WORKDIR "$PICO_PIOASM_PATH"
+RUN mkdir -p build && cd build && cmake -DPIOASM_VERSION_STRING="Pico-ASM v1.0.0" ../ && make install
 
 # Install OpenOCD
 WORKDIR "$PICO_OPENOCD_PATH"
