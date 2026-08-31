@@ -6,7 +6,6 @@
 
 namespace corekit {
 
-    template <typename T>
-    using PioDevice = platform::Pio::Node<T>;
+    namespace Pio = platform::Pio;
 
 }  // namespace corekit

@@ -168,7 +168,7 @@ namespace corekit::platform {
             }
 
             pio_sm_unclaim(block, node);
-            return std::make_shared<Node<T>>(block, node);
+            return std::make_shared<Node<T>>(block, (uint)(node));
         }
 
         template <typename T>
@@ -204,8 +204,8 @@ namespace corekit::platform {
             }
 
             if (program->registerNode(block, node)) {
-                const uint       base = state.adress.value_or(0);
-                const NodeConf   ncfg = program->buildNodeConf(block, node);
+                const uint     base = state.adress.value_or(0);
+                const NodeConf ncfg = program->buildNodeConf(block, node, base);
                 const LaunchConf lcfg = program->buildLaunchConf(block, node);
                 const uint       initial_pc = base + lcfg.entrypoint;
 

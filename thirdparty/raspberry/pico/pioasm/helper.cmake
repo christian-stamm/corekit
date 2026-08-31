@@ -1,48 +1,56 @@
 function(pioasm_generate_headers)
-    # Parse function arguments.
-    set(options)
-    set(one_value_args
-    "TARGET"
-    )
-    set(multi_value_args
-    "PROGRAMS"
-    "FLAGS"
-    )
     cmake_parse_arguments(
-    PARSE_ARGV 0
-    PIOASM_GENERATE_HEADERS
-    "${options}"
-    "${one_value_args}"
-    "${multi_value_args}"
+        ARG
+        ""
+        "LIB_NAME;IMPORT_DIR;EXPORT_DIR"
+        "FLAGS"
+        ${ARGN}
     )
 
-    set(generated_target_dir "${CMAKE_CURRENT_BINARY_DIR}/${PIOASM_GENERATE_HEADERS_TARGET}")
-    set(generated_include_dir "${generated_target_dir}")
-    set(all_generated_header_files)
+    file(GLOB_RECURSE programs CONFIGURE_DEPENDS
+        "${ARG_IMPORT_DIR}/*.pio"
+    )
 
-    # Create rules to generate the code for each schema.
-    foreach(program ${PIOASM_GENERATE_HEADERS_PROGRAMS})
-        get_filename_component(filename ${program} NAME_WE)
-        set(generated_include "${generated_include_dir}/${filename}.hpp")
-        
+    set(generated_headers)
+
+    foreach(program IN LISTS programs)
+        get_filename_component(filename "${program}" NAME_WE)
+        set(generated_include "${ARG_EXPORT_DIR}/${filename}.hpp")
+
         add_custom_command(
-            OUTPUT ${generated_include}
-            COMMAND pioasm ${PIOASM_GENERATE_HEADERS_FLAGS} ${program} ${generated_include}
+            OUTPUT "${generated_include}"
+            COMMAND pioasm ${ARG_FLAGS} "${program}" "${generated_include}"
+            DEPENDS "${program}"
             COMMENT "Building ${program}..."
+            VERBATIM
         )
-        
-        list(APPEND all_generated_header_files ${generated_include})       
+
+        list(APPEND generated_headers "${generated_include}")
     endforeach()
 
-    add_library(${PIOASM_GENERATE_HEADERS_TARGET} INTERFACE)
+    message(STATUS "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    message(STATUS "Generated headers: ${generated_headers}")
 
-    target_include_directories(${PIOASM_GENERATE_HEADERS_TARGET} INTERFACE 
-        ${generated_target_dir}
-    )    
+    file(MAKE_DIRECTORY "${ARG_EXPORT_DIR}")
+
+    add_custom_target(
+        ${ARG_LIB_NAME}_generate
+        DEPENDS ${generated_headers}
+    )
+
+    add_library(${ARG_LIB_NAME} INTERFACE)
+
+    target_include_directories(${ARG_LIB_NAME} INTERFACE
+        "${ARG_EXPORT_DIR}"
+    )
+
+    target_link_libraries(${ARG_LIB_NAME} INTERFACE
+        hardware_pio
+    )
     
-    set(generate_target GENERATE_${PIOASM_GENERATE_HEADERS_TARGET})
+    set(generate_target GENERATE_${ARG_LIB_NAME})
     add_custom_target(${generate_target} ALL
-                        DEPENDS ${all_generated_header_files}
-                        COMMENT "Generating pioasm target ${PIOASM_GENERATE_HEADERS_TARGET}")
+                        DEPENDS ${generated_headers}
+                        COMMENT "Generating pioasm target ${ARG_LIB_NAME}")
 
 endfunction()

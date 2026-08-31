@@ -30,7 +30,14 @@ namespace corekit::platform {
             PreloadVal osr        = std::nullopt;
         };
 
+        template <typename T>
+        class Node;
+
         struct Program : public pio_program {
+            friend class Node<uint8_t>;
+            friend class Node<uint16_t>;
+            friend class Node<uint32_t>;
+
             struct State {
                 State() {
                     reset();
@@ -56,15 +63,15 @@ namespace corekit::platform {
             virtual bool isInstalled(PIO block) const final;
             virtual bool modify(PIO block, uint line, Command command) final;
 
-            virtual bool registerNode(PIO block, uint node) final;
-            virtual bool unregisterNode(PIO block, uint node) final;
-
-            virtual NodeConf   buildNodeConf(PIO block, uint node) = 0;
+            virtual NodeConf buildNodeConf(PIO block, uint node, uint base) = 0;
             virtual LaunchConf buildLaunchConf(PIO block, uint node);
 
             virtual const State& getState(PIO block) const final;
 
            private:
+            virtual bool registerNode(PIO block, uint node) final;
+            virtual bool unregisterNode(PIO block, uint node) final;
+
             virtual State& requestState(PIO block) const final;
 
             mutable std::map<PIO, State> states;
@@ -78,7 +85,7 @@ namespace corekit::platform {
             Node(const PIO block, uint node);
             virtual ~Node() override;
 
-            Ptr requestUnused(const PIO block);
+            static Ptr requestUnused(const PIO block);
 
             bool deploy(const Program::Ptr& program);
             bool isRunning() const;

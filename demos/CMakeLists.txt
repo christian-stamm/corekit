@@ -8,4 +8,4 @@ project(demos
 
 add_executable(demo-hello hello.cpp)
 
-target_link_libraries(demo-hello PUBLIC pico_stdlib corekit::executor corekit::uartdevice corekit::piodevice corekit::logger)
+target_link_libraries(demo-hello PUBLIC pio_examples pico_stdlib corekit::executor corekit::uartdevice corekit::piodevice corekit::logger)
