@@ -1,16 +1,11 @@
 cmake_minimum_required(VERSION 3.25)
+
 set(COREKIT_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(EXISTS ${COREKIT_PAL_FILE})
-    include(${COREKIT_PAL_FILE})
-endif()
-
-if(EXISTS ${COREKIT_BSP_FILE})
-    include(${COREKIT_BSP_FILE})
-endif()
-
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
+include("${COREKIT_ROOT}/cmake/helper.cmake")
+include("${COREKIT_ROOT}/cmake/module.cmake")
+include("${COREKIT_ROOT}/cmake/pal/${COREKIT_PAL_FILE}")
+include("${COREKIT_ROOT}/cmake/bsp/${COREKIT_BSP_FILE}")
 
 if(COMMAND corekit_bsp_bootstrap)
     corekit_bsp_bootstrap()
@@ -26,13 +21,7 @@ if(COMMAND corekit_bsp_launch)
     corekit_bsp_launch()
 endif()
 
-enable_testing()
-add_compile_options(-Wno-psabi)
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/helper.cmake")
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/module.cmake")
-
-add_subdirectory(corekit)
-add_subdirectory(demos)
 add_subdirectory(thirdparty)
+add_subdirectory(corekit)
 
 corekit_build_modules()

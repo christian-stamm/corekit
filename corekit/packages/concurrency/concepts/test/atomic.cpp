@@ -71,14 +71,14 @@ namespace corekit::test {
 
     TEST(Atomic, CompareExchangeSucceedsForMatchingValue) {
         Atomic<int>   atomic;
-        constexpr int stored = 42;
+        constexpr int stored  = 42;
 
         constexpr int initial = 42;
         constexpr int desired = 0;
 
         atomic.store(initial);
 
-        int expected = initial;
+        int expected         = initial;
 
         const bool exchanged = atomic.compare_exchange(expected, desired);
 
@@ -94,7 +94,7 @@ namespace corekit::test {
 
         atomic.store(stored_value);
 
-        int expected = wrong_value;
+        int expected         = wrong_value;
 
         const bool exchanged = atomic.compare_exchange(expected, desired);
 
@@ -110,7 +110,7 @@ namespace corekit::test {
 
         atomic.store(stored_value);
 
-        int expected = wrong_value;
+        int expected         = wrong_value;
 
         const bool exchanged = atomic.compare_exchange(expected, desired);
 
@@ -216,8 +216,7 @@ namespace corekit::test {
             int expected = iteration;
             int desired  = iteration + 1;
 
-            ASSERT_TRUE(atomic.compare_exchange(expected, desired))
-                << "Failed at transition " << iteration;
+            ASSERT_TRUE(atomic.compare_exchange(expected, desired)) << "Failed at transition " << iteration;
 
             EXPECT_EQ(atomic.load(), desired);
         }
@@ -225,4 +224,48 @@ namespace corekit::test {
         EXPECT_EQ(atomic.load(), transition_count);
     }
 
-}  // namespace corekit::test
+} // namespace corekit::test
+
+namespace corekit::test {
+
+    TEST(AtomicExtended, ExchangeReturnsPreviousValue) {
+        Atomic<int> atomic{7};
+        EXPECT_EQ(atomic.exchange(11), 7);
+        EXPECT_EQ(atomic.load(), 11);
+    }
+
+    TEST(AtomicExtended, IntegralFetchOperationsMatchStdAtomicSemantics) {
+        Atomic<unsigned int> atomic{0b1010u};
+
+        EXPECT_EQ(atomic.fetch_add(2u), 0b1010u);
+        EXPECT_EQ(atomic.load(), 0b1100u);
+
+        EXPECT_EQ(atomic.fetch_sub(4u), 0b1100u);
+        EXPECT_EQ(atomic.load(), 0b1000u);
+
+        EXPECT_EQ(atomic.fetch_or(0b0011u), 0b1000u);
+        EXPECT_EQ(atomic.load(), 0b1011u);
+
+        EXPECT_EQ(atomic.fetch_and(0b0110u), 0b1011u);
+        EXPECT_EQ(atomic.load(), 0b0010u);
+
+        EXPECT_EQ(atomic.fetch_xor(0b0110u), 0b0010u);
+        EXPECT_EQ(atomic.load(), 0b0100u);
+    }
+
+    TEST(AtomicExtended, ArithmeticAndBitwiseOperatorsReturnNewValue) {
+        Atomic<unsigned int> atomic{4u};
+        EXPECT_EQ((atomic += 3u), 7u);
+        EXPECT_EQ((atomic -= 2u), 5u);
+        EXPECT_EQ((atomic |= 0b1000u), 13u);
+        EXPECT_EQ((atomic &= 0b1100u), 12u);
+        EXPECT_EQ((atomic ^= 0b0101u), 9u);
+        EXPECT_EQ(++atomic, 10u);
+        EXPECT_EQ(atomic++, 10u);
+        EXPECT_EQ(atomic.load(), 11u);
+        EXPECT_EQ(--atomic, 10u);
+        EXPECT_EQ(atomic--, 10u);
+        EXPECT_EQ(atomic.load(), 9u);
+    }
+
+} // namespace corekit::test

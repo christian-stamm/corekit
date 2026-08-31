@@ -1,51 +1,52 @@
 #include "corekit/platform/conditionvariable.hpp"
 
+#include "corekit/check.hpp"
+
 namespace corekit::platform {
 
+    ConditionVariable::ConditionVariable(uint32_t max_waiters)
+        : waiters_(max_waiters) { }
+
+    ConditionVariable::~ConditionVariable() { corecheck(waiters_.empty(), RuntimeError("ConditionVariable destroyed with waiters still present")); }
+
     void ConditionVariable::wait(std::unique_lock<Mutex>& lock) {
-        TaskHandle_t self = xTaskGetCurrentTaskHandle();
+        Semaphore waiter(0, 1);
 
-        {
-            std::lock_guard<Mutex> guard(waiters_mutex_);
-            waiters_.push_back(self);
-        }
+        corecheck(!xPortIsInsideInterrupt());
 
+        // Register ourselves while still holding the caller's mutex.
+        //
+        // Do not block here. Blocking while holding `lock` could deadlock
+        // because another thread may need the same mutex in order to notify.
+        //
+
+        corecheck(waiters_.push(&waiter));
+        //
+        // The waiter is now visible to notify_one()/notify_all().
+        //
+        // If notification happens between unlock() and xSemaphoreTake(),
+        // the binary semaphore remembers the wakeup.
+        //
         lock.unlock();
 
-        // Notification is persistent, unlike vTaskResume().
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        waiter.acquire();
 
         lock.lock();
     }
 
     void ConditionVariable::notify_one() {
-        TaskHandle_t task = nullptr;
+        Semaphore* waiter = nullptr;
 
-        {
-            std::lock_guard<Mutex> guard(waiters_mutex_);
-
-            if (!waiters_.empty()) {
-                task = waiters_.front();
-                waiters_.pop_front();
-            }
-        }
-
-        if (task != nullptr) {
-            xTaskNotifyGive(task);
+        if (waiters_.pop(waiter)) {
+            corecheck(waiter != nullptr);
+            waiter->release();
         }
     }
 
     void ConditionVariable::notify_all() {
-        std::deque<TaskHandle_t> pending;
+        const UBaseType_t count = waiters_.size();
 
-        {
-            std::lock_guard<Mutex> guard(waiters_mutex_);
-            pending.swap(waiters_);
-        }
-
-        for (TaskHandle_t task : pending) {
-            xTaskNotifyGive(task);
-        }
+        for (UBaseType_t i = 0; i < count; ++i) { notify_one(); }
     }
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

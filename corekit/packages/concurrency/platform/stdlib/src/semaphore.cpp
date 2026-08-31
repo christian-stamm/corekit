@@ -4,8 +4,7 @@
 
 namespace corekit::platform {
 
-    Semaphore::Semaphore(const std::size_t init_count,
-                         const std::size_t max_count)
+    Semaphore::Semaphore(const std::size_t init_count, const std::size_t max_count)
         : count_(init_count)
         , max_count_(max_count) {
         assert(max_count_ > 0);
@@ -23,8 +22,7 @@ namespace corekit::platform {
     bool Semaphore::try_acquire() {
         std::lock_guard lock{mutex_};
 
-        if (count_ == 0)
-            return false;
+        if (count_ == 0) { return false; }
 
         --count_;
         return true;
@@ -36,8 +34,7 @@ namespace corekit::platform {
 
             assert(count_ < max_count_);
 
-            if (count_ >= max_count_)
-                return;
+            if (count_ >= max_count_) { return; }
 
             ++count_;
         }
@@ -45,4 +42,4 @@ namespace corekit::platform {
         cv_.notify_one();
     }
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

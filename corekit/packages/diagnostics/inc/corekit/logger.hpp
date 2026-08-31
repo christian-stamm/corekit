@@ -30,52 +30,58 @@ namespace corekit {
     class LogStream
         : public std::iostream
         , private std::scoped_lock<Mutex> {
-        friend class Logging;
+            friend class Logging;
 
-       public:
-        LogStream(const std::string& prefix = "");
-        ~LogStream();
+        public:
 
-       private:
-        static std::string stamp2string();
+            LogStream(const std::string& prefix = "");
+            ~LogStream();
 
-        static Mutex mutex;
+        private:
+
+            static std::string stamp2string();
+
+            static Mutex mutex;
     };
 
     class Logger {
-       public:
-        using Ptr = std::shared_ptr<Logger>;
-        Logger(const std::string& name);
+        public:
 
-        LogStream operator()(const LogLevel& level = LogLevel::DEBUG) const;
+            using Ptr = std::shared_ptr<Logger>;
+            Logger(const std::string& name);
 
-        LogStream info() const;
-        LogStream debug() const;
-        LogStream warn() const;
-        LogStream error() const;
-        LogStream fatal() const;
+            LogStream operator()(const LogLevel& level = LogLevel::DEBUG) const;
 
-        static void clear();
+            LogStream info() const;
+            LogStream debug() const;
+            LogStream warn() const;
+            LogStream error() const;
+            LogStream fatal() const;
 
-        const std::string name;
+            static void clear();
 
-       private:
-        std::string format(const LogLevel& level) const;
+            const std::string name;
 
-        static std::string name2string(const std::string& name);
-        static const char* level2string(const LogLevel& level);
+        private:
+
+            std::string format(const LogLevel& level) const;
+
+            static std::string name2string(const std::string& name);
+            static const char* level2string(const LogLevel& level);
     };
 
     class Logging {
-       public:
-        static void reconfigure(const StreamDevice::Ptr& output);
+        public:
 
-        static void     setLevel(const LogLevel& level);
-        static LogLevel getLevel();
+            static void reconfigure(const StreamDevice::Ptr& output);
 
-       private:
-        static StreamBuffer stream;
-        static LogLevel     level;
+            static void     setLevel(const LogLevel& level);
+            static LogLevel getLevel();
+
+        private:
+
+            static StreamBuffer stream;
+            static LogLevel     level;
     };
 
-};  // namespace corekit
+}; // namespace corekit

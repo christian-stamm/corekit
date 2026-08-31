@@ -14,4 +14,4 @@ namespace corekit {
         { T::sleep(0.0f) } -> std::same_as<void>;
     };
 
-}  // namespace corekit
+} // namespace corekit

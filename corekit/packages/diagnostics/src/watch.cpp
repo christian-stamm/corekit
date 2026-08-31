@@ -15,40 +15,28 @@ namespace corekit {
         t0.reset();
         t1.reset();
 
-        if (trigger) {
-            start();
-        }
+        if (trigger) { start(); }
     }
 
     bool Watch::start() const {
-        if (!t0.has_value() && !t1.has_value()) {
-            t0 = Time::uptime();
-        }
+        if (!t0.has_value() && !t1.has_value()) { t0 = Time::uptime(); }
 
         return t0.has_value();
     }
 
     bool Watch::stop() const {
-        if (t0.has_value() && !t1.has_value()) {
-            t1 = Time::uptime();
-        }
+        if (t0.has_value() && !t1.has_value()) { t1 = Time::uptime(); }
 
         return t1.has_value();
     }
 
     void Watch::block() const {
-        while (!expired()) {
-            Time::sleep(0.9 * remaining());
-        };
+        while (!expired()) { Time::sleep(0.9 * remaining()); };
     }
 
-    bool Watch::expired() const {
-        return remaining() <= 0.0f;
-    }
+    bool Watch::expired() const { return remaining() <= 0.0f; }
 
-    double Watch::remaining() const {
-        return std::max<double>(timeout.value_or(0.0) - elapsed(), 0.0);
-    }
+    double Watch::remaining() const { return std::max<double>(timeout.value_or(0.0) - elapsed(), 0.0); }
 
     double Watch::elapsed() const {
         const double upper = t1.value_or(Time::uptime());
@@ -62,10 +50,6 @@ namespace corekit {
         return dt;
     }
 
-    std::string Watch::represent() const {
-        return std::format("Watch(Elapsed={:.6f}s, Remaining={:.6f}s)",
-                           elapsed(),
-                           remaining());
-    }
+    std::string Watch::represent() const { return std::format("Watch(Elapsed={:.6f}s, Remaining={:.6f}s)", elapsed(), remaining()); }
 
-};  // namespace corekit
+}; // namespace corekit

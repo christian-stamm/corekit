@@ -1,65 +1,71 @@
 #pragma once
 
+#include <iostream>
 #include <source_location>
 #include <string>
 
 namespace corekit {
 
-    using Location = std::source_location;
-
     struct Error {
-        using Message = std::string;
+        public:
 
-        enum class Type {
-            NONE,
-            RUNTIME,
-            NOT_IMPLEMENTED,
-            INVALID_ARGUMENT,
-            OUT_OF_RANGE,
-            TIMEOUT,
-        };
+            struct Location {
+                    Location(const std::source_location& location);
 
-        explicit Error(Type            type     = Type::NONE,
-                       const Message&  message  = "<NO ERROR>",
-                       const Location& location = Location::current());
+                    std::string file;
+                    std::string func;
+                    int         line;
+                    int         column;
+            };
 
-        operator bool() const;
+            explicit Error(uint16_t code = 0, std::string type = "", std::string message = "", std::source_location location = std::source_location::current());
 
-        Message traceback() const;
-        Message what() const;
+            std::string what() const;
 
-       private:
-        Message type_to_string() const;
+            uint16_t    code;
+            std::string type;
+            std::string message;
+            Location    location;
 
-       public:
-        Type     type;
-        Message  message;
-        Location location;
+            friend std::ostream& operator<<(std::ostream& os, const Error& error) {
+                os << error.what();
+                return os;
+            }
     };
 
     class RuntimeError : public Error {
-       public:
-        explicit RuntimeError(const Message& message = "");
+        public:
+
+            constexpr static uint16_t CODE = 1;
+            explicit RuntimeError(std::string message = "", std::source_location location = std::source_location::current());
     };
 
     class NotImplementedError : public Error {
-       public:
-        explicit NotImplementedError(const Message& message = "");
+        public:
+
+            constexpr static uint16_t CODE = 2;
+            explicit NotImplementedError(std::string message = "", std::source_location location = std::source_location::current());
     };
 
     class InvalidArgumentError : public Error {
-       public:
-        explicit InvalidArgumentError(const Message& message = "");
+        public:
+
+            constexpr static uint16_t CODE = 3;
+            explicit InvalidArgumentError(std::string message = "", std::source_location location = std::source_location::current());
     };
 
     class OutOfRangeError : public Error {
-       public:
-        explicit OutOfRangeError(const Message& message = "");
+        public:
+
+            constexpr static uint16_t CODE = 4;
+            explicit OutOfRangeError(std::string message = "", std::source_location location = std::source_location::current());
     };
 
     class TimeoutError : public Error {
-       public:
-        explicit TimeoutError(const Message& message = "");
+        public:
+
+            constexpr static uint16_t CODE = 5;
+            explicit TimeoutError(std::string message = "", std::source_location location = std::source_location::current());
     };
 
-}  // namespace corekit
+} // namespace corekit

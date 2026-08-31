@@ -1,3 +1,4 @@
 #include "corekit/result.hpp"
 
-namespace corekit {}  // namespace corekit
+namespace corekit {
+} // namespace corekit

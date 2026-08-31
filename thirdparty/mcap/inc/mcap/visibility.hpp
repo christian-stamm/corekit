@@ -5,24 +5,24 @@
  */
 #ifndef MCAP_PUBLIC
 #if defined _WIN32 || defined __CYGWIN__
-#  ifdef MCAP_IMPLEMENTATION
-#    ifdef __GNUC__
-#      define MCAP_PUBLIC __attribute__((dllexport))
+#    ifdef MCAP_IMPLEMENTATION
+#        ifdef __GNUC__
+#            define MCAP_PUBLIC __attribute__((dllexport))
+#        else
+#            define MCAP_PUBLIC __declspec(dllexport)
+#        endif
 #    else
-#      define MCAP_PUBLIC __declspec(dllexport)
+#        ifdef __GNUC__
+#            define MCAP_PUBLIC __attribute__((dllimport))
+#        else
+#            define MCAP_PUBLIC __declspec(dllimport)
+#        endif
 #    endif
-#  else
-#    ifdef __GNUC__
-#      define MCAP_PUBLIC __attribute__((dllimport))
-#    else
-#      define MCAP_PUBLIC __declspec(dllimport)
-#    endif
-#  endif
 #else
-#  if __GNUC__ >= 4
-#    define MCAP_PUBLIC __attribute__((visibility("default")))
-#  else
-#    define MCAP_PUBLIC
-#  endif
+#    if __GNUC__ >= 4
+#        define MCAP_PUBLIC __attribute__((visibility("default")))
+#    else
+#        define MCAP_PUBLIC
+#    endif
 #endif
 #endif

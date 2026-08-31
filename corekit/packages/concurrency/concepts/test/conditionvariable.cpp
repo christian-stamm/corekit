@@ -43,9 +43,7 @@ namespace corekit::test {
     TEST(ConditionVariableTest, NotifyOneCanBeCalledRepeatedly) {
         ConditionVariable cv;
 
-        for (int i = 0; i < 1000; ++i) {
-            cv.notify_one();
-        }
+        for (int i = 0; i < 1000; ++i) { cv.notify_one(); }
 
         SUCCEED();
     }
@@ -53,9 +51,7 @@ namespace corekit::test {
     TEST(ConditionVariableTest, NotifyAllCanBeCalledRepeatedly) {
         ConditionVariable cv;
 
-        for (int i = 0; i < 1000; ++i) {
-            cv.notify_all();
-        }
+        for (int i = 0; i < 1000; ++i) { cv.notify_all(); }
 
         SUCCEED();
     }
@@ -73,4 +69,4 @@ namespace corekit::test {
         SUCCEED();
     }
 
-}  // namespace corekit::test
+} // namespace corekit::test

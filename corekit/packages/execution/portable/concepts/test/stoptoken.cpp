@@ -31,7 +31,8 @@ namespace corekit::test {
     TEST(StopSource, SourceCanCreateToken) {
         StopSource source;
 
-        [[maybe_unused]] StopToken token = source.get_token();
+        [[maybe_unused]]
+        StopToken token = source.get_token();
 
         SUCCEED();
     }
@@ -267,15 +268,11 @@ namespace corekit::test {
 
         constexpr int count = 1000;
 
-        for (int i = 0; i < count; ++i) {
-            tokens.push_back(source.get_token());
-        }
+        for (int i = 0; i < count; ++i) { tokens.push_back(source.get_token()); }
 
         source.request_stop();
 
-        for (const auto& token : tokens) {
-            EXPECT_TRUE(token.stop_requested());
-        }
+        for (const auto& token : tokens) { EXPECT_TRUE(token.stop_requested()); }
     }
 
-}  // namespace corekit::test
+} // namespace corekit::test

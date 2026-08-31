@@ -11,46 +11,51 @@
 namespace corekit::platform {
 
     class ThreadPool {
-        friend class Executor;
+            friend class Executor;
 
-       public:
-        explicit ThreadPool(uint num_workers = 4, uint max_tasks = 10);
-        ~ThreadPool();
+        public:
 
-        ThreadPool(const ThreadPool&)            = delete;
-        ThreadPool& operator=(const ThreadPool&) = delete;
+            explicit ThreadPool(uint num_workers = 4, uint max_tasks = 10);
+            ~ThreadPool();
 
-        ThreadPool(ThreadPool&&)            = delete;
-        ThreadPool& operator=(ThreadPool&&) = delete;
+            ThreadPool(const ThreadPool&)            = delete;
+            ThreadPool& operator=(const ThreadPool&) = delete;
 
-        VoidResult enqueue(Task::Ptr task);
-        void       cancel(bool discard_remaining_tasks = false);
+            ThreadPool(ThreadPool&&)                 = delete;
+            ThreadPool& operator=(ThreadPool&&)      = delete;
 
-       protected:
-        void request_stop(bool discard_remaining_tasks = false);
-        void join();
+            VoidResult enqueue(Task::Ptr task);
+            void       cancel(bool discard_remaining_tasks = false);
 
-        const uint num_workers_;
+        protected:
 
-       private:
-        void worker_loop();
+            void request_stop(bool discard_remaining_tasks = false);
+            void join();
 
-        StopSource               m_stop_source_;
-        Queue<Task::Ptr>         m_task_queue_;
-        std::vector<std::thread> m_workers_;
+            const uint num_workers_;
+
+        private:
+
+            void worker_loop();
+
+            StopSource               m_stop_source_;
+            Queue<Task::Ptr>         m_task_queue_;
+            std::vector<std::thread> m_workers_;
     };
 
     class Executor : public ThreadPool {
-       public:
-        Executor(uint num_workers = 4, uint max_tasks = 10)
-            : ThreadPool(num_workers, max_tasks)
-            , shutdown_(0, 1) {}
+        public:
 
-        void launch();
-        void terminate();
+            Executor(uint num_workers = 4, uint max_tasks = 10)
+                : ThreadPool(num_workers, max_tasks)
+                , shutdown_(0, 1) { }
 
-       private:
-        Semaphore shutdown_;
+            void launch();
+            void terminate();
+
+        private:
+
+            Semaphore shutdown_;
     };
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

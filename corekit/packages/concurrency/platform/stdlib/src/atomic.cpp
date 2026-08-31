@@ -6,4 +6,4 @@ namespace corekit::platform {
     template class Atomic<uint>;
     template class Atomic<int>;
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

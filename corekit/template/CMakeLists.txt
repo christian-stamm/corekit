@@ -1,3 +1,3 @@
 cmake_minimum_required(VERSION 3.25)
-add_subdirectory_aware(generic)
-add_subdirectory_aware(portable)
+add_subdirectory(generic)
+add_subdirectory(portable)

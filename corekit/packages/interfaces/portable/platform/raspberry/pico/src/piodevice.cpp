@@ -1,311 +1,262 @@
-#include "corekit/platform/piodevice.hpp"
+#include "corekit/piodevice.hpp"
 
-#include <hardware/gpio.h>
 #include <hardware/pio.h>
 
 #include <cstdint>
+#include <format>
 #include <string>
+
+#include "corekit/check.hpp"
+#include "corekit/gpiodevice.hpp"
 
 bool pio_sm_is_enabled(PIO block, uint sm) {
     check_pio_param(block);
     check_sm_param(sm);
-    return (block->ctrl & bool_to_bit(1 << sm)) != 0;
+    return (block->ctrl & (1u << sm)) != 0;
 }
 
-namespace corekit::platform {
+namespace corekit::Pio {
 
-    namespace Pio {
+    Program::Program(const pio_program_t& program)
+        : pio_program_t(program) { }
 
-        template class Node<uint8_t>;
-        template class Node<uint16_t>;
-        template class Node<uint32_t>;
+    Program::State& Program::requestState(PIO block) const {
+        if (!states.contains(block)) { states[block] = State(); }
 
-        // --------------------------------------------------------------
-        // Program Implementation
-        // --------------------------------------------------------------
+        return states.at(block);
+    }
 
-        Program::Program(const pio_program_t& program)
-            : pio_program_t(program) {}
+    bool Program::isInstalled(PIO block) const {
+        const State& state = requestState(block);
+        return state.adress.has_value();
+    }
 
-        Program::State& Program::requestState(PIO block) const {
-            if (!states.contains(block)) {
-                states[block] = State();
-            }
+    int Program::install(PIO block, uint node) {
+        State& state = requestState(block);
 
-            return states.at(block);
+        if (!isInstalled(block)) {
+            corecheck(pio_can_add_program(block, this), RuntimeError("Cannot install PIO program: not enough space left"));
+
+            state.adress   = pio_add_program(block, this);
+            state.modified = false;
+            state.nodemask = 0;
         }
 
-        const Program::State& Program::getState(PIO block) const {
-            return requestState(block);
-        }
+        state.nodemask |= 1u << node;
 
-        bool Program::isInstalled(PIO block) const {
-            State& state = requestState(block);
-            return state.adress.has_value();
-        }
+        return state.adress.value();
+    }
 
-        bool Program::install(PIO block) {
-            if (!isInstalled(block)) {
-                State& state = requestState(block);
+    void Program::uninstall(PIO block, uint node) {
+        State& state    = requestState(block);
 
-                if (pio_can_add_program(block, this)) {
-                    state.adress   = pio_add_program(block, this);
-                    state.modified = false;
-                    state.nodemask = 0;
-                    return true;
-                }
-            }
+        state.nodemask &= ~(1u << node);
 
-            return false;
-        }
+        if (isInstalled(block)) {
+            const bool is_unused = state.nodemask == 0;
 
-        bool Program::uninstall(PIO block) {
-            if (isInstalled(block)) {
-                State& state = requestState(block);
-
-                if (state.nodemask != 0) {
-                    throw std::runtime_error(
-                        "Cannot uninstall a PIO program that has registered "
-                        "nodes.");
-                }
-
+            if (is_unused) {
                 pio_remove_program(block, this, state.adress.value());
-                state.reset();
-                return true;
-            }
 
-            return false;
+                state.adress.reset();
+                state.modified = false;
+            }
+        }
+    }
+
+    bool Program::modify(PIO block, uint line, Command command) {
+        corecheck(isInstalled(block), RuntimeError("Cannot modify a PIO program that is not installed."));
+
+        State& state    = requestState(block);
+
+        const uint base = state.adress.value();
+
+        corecheck(line < length, OutOfRangeError(std::format("Cannot modify a PIO program line that is out of range: " "line={} length={}", line, length)));
+
+        block->instr_mem[base + line] = command;
+
+        return true;
+    }
+
+    // --------------------------------------------------------------
+    // Node Implementation
+    // --------------------------------------------------------------
+
+    Node::Node(const PIO block, Program::Ptr program)
+        : Node(block, pio_claim_unused_sm(block, true), std::move(program)) { }
+
+    Node::Node(const PIO block, uint node, Program::Ptr program)
+        : AsyncDevice<uint32_t>(std::format("PIO{}-{}", pio_get_index(block), node), {&block->txf[node], pio_get_dreq(block, node, true)}, {&block->rxf[node], pio_get_dreq(block, node, false)})
+        , block(block)
+        , node(node)
+        , program(std::move(program)) { }
+
+    Node::~Node() {
+        pio_sm_set_enabled(block, node, false);
+        pio_sm_restart(block, node);
+
+        pio_sm_unclaim(block, node);
+    }
+
+    uint Node::unique_id() const { return pio_get_index(block) * NUM_PIO_STATE_MACHINES + node; }
+
+    bool Node::is_running() const { return pio_sm_is_enabled(block, node); }
+
+    // --------------------------------------------------------------
+    // Loading
+    // --------------------------------------------------------------
+
+    bool Node::on_load() {
+        corecheck(program != nullptr, RuntimeError("Cannot load a PIO node without a program."));
+
+        const int base = program->install(block, node);
+
+        corecheck(base >= 0, RuntimeError("Failed to install PIO program for node: " + name));
+
+        NodeConf node_cfg = pio_get_default_sm_config();
+
+        corecheck(build_node_conf(node_cfg, base), RuntimeError("Failed to build PIO node configuration."));
+
+        LaunchConf launch_cfg;
+
+        corecheck(build_launch_conf(launch_cfg), RuntimeError("Failed to build PIO launch configuration."));
+
+        const uint initial_pc = base + launch_cfg.entrypoint;
+
+        corecheck(pio_sm_init(block, node, initial_pc, &node_cfg) == PICO_OK, RuntimeError("Failed to initialize PIO state machine."));
+
+        if (configure_pins(launch_cfg.output_pins, true)) {
+            const Gpio::Range& pins = launch_cfg.output_pins.value();
+
+            pio_sm_set_out_pins(block, node, pins.lower(), pins.count());
         }
 
-        bool Program::modify(PIO block, uint line, Command command) {
-            if (!isInstalled(block)) {
-                throw std::runtime_error(
-                    "Cannot modify a PIO program that is not installed.");
-            }
+        if (configure_pins(launch_cfg.input_pins, false)) {
+            const Gpio::Range& pins = launch_cfg.input_pins.value();
 
-            State& state = requestState(block);
-
-            const uint base = state.adress.value_or(0);
-
-            if (length <= line) {
-                throw std::runtime_error(
-                    "Cannot modify a PIO program line that is out of code "
-                    "range.");
-            }
-
-            block->instr_mem[base + line] = command;
-            return true;
+            pio_sm_set_in_pins(block, node, pins.lower());
         }
 
-        bool Program::registerNode(PIO block, uint node) {
-            if (isInstalled(block) == false) {
-                throw std::runtime_error(
-                    "Cannot register a node to a PIO program that is not "
-                    "installed.");
-            }
+        if (configure_pins(launch_cfg.set_pins, true)) {
+            const Gpio::Range& pins = launch_cfg.set_pins.value();
 
-            State&        state = requestState(block);
-            const uint8_t mask  = (1 << node);
-
-            if (state.nodemask & mask) {
-                return false;
-            }
-
-            state.nodemask |= mask;
-            return true;
+            pio_sm_set_set_pins(block, node, pins.lower(), pins.count());
         }
 
-        bool Program::unregisterNode(PIO block, uint node) {
-            if (isInstalled(block) == false) {
-                throw std::runtime_error(
-                    "Cannot unregister a node from a PIO program that is not "
-                    "installed.");
-            }
+        if (configure_pins(launch_cfg.side_pins, true)) {
+            const Gpio::Range& pins = launch_cfg.side_pins.value();
 
-            State&     state = requestState(block);
-            const uint mask  = (1 << node);
-
-            if ((state.nodemask & mask) == 0) {
-                return false;
-            }
-
-            state.nodemask &= ~mask;
-            return true;
+            pio_sm_set_sideset_pins(block, node, pins.lower());
         }
 
-        LaunchConf Program::buildLaunchConf(PIO block, uint node) {
-            return LaunchConf();
+        if (configure_pins(launch_cfg.jump_pin, false)) {
+            const Gpio::Range& pins = launch_cfg.jump_pin.value();
+
+            pio_sm_set_jmp_pin(block, node, pins.lower());
         }
 
-        // --------------------------------------------------------------
-        // Node<T> Implementation
-        // --------------------------------------------------------------
+        corecheck(configure_regs(pio_x, launch_cfg.scratchX), RuntimeError("Failed to preload PIO scratch X register."));
 
-        template <typename T>
-        Node<T>::Node(const PIO block, uint node)
-            : AsyncDevice<T>(
-                  std::format("PIO{}-{}", pio_get_index(block), node),
-                  {&block->txf[node], pio_get_dreq(block, node, true)},  //
-                  {&block->rxf[node], pio_get_dreq(block, node, false)}  //
-                  )
-            , block(block)
-            , node(node) {
-            pio_sm_claim(block, node);
+        corecheck(configure_regs(pio_y, launch_cfg.scratchY), RuntimeError("Failed to preload PIO scratch Y register."));
+
+        corecheck(configure_regs(pio_isr, launch_cfg.isr), RuntimeError("Failed to preload PIO input shift register."));
+
+        corecheck(configure_regs(pio_osr, launch_cfg.osr), RuntimeError("Failed to preload PIO output shift register."));
+
+        corecheck(configure_dmas(), RuntimeError("Failed to configure PIO DMAs."));
+
+        pio_sm_set_enabled(block, node, launch_cfg.autostart);
+
+        return true;
+    }
+
+    bool Node::on_unload() {
+        pio_sm_set_enabled(block, node, false);
+        pio_sm_restart(block, node);
+
+        if (program == nullptr) { return false; }
+
+        program->uninstall(block, node);
+
+        return true;
+    }
+
+    // --------------------------------------------------------------
+    // Configuration
+    // --------------------------------------------------------------
+
+    bool Node::build_launch_conf(LaunchConf& launchConf) { return true; }
+
+    bool Node::build_node_conf(NodeConf& nodeConf, uint base) { return true; }
+
+    bool Node::configure_regs(pio_src_dest reg, const PreloadVal& val) {
+        static const Command pull_cmd = pio_encode_pull(false, false);
+
+        const Command mov_cmd         = pio_encode_mov(reg, pio_osr);
+
+        if (!val.has_value()) { return true; }
+
+        corecheck(!is_running(), RuntimeError("Cannot preload a PIO register while the state machine " "is running."));
+
+        pio_sm_put(block, node, val.value());
+        pio_sm_exec(block, node, pull_cmd);
+        pio_sm_exec(block, node, mov_cmd);
+
+        return true;
+    }
+
+    bool Node::configure_pins(const PinoutCfg& config, bool is_output) {
+        if (!config.has_value()) { return false; }
+
+        const Gpio::Range& pins = config.value();
+
+        for (const Gpio::Pin pin : pins.pins()) { pio_gpio_init(block, pin); }
+
+        uint base = pio_get_gpio_base(block);
+
+        corecheck(base <= pins.lower(), RuntimeError(std::format("Cannot configure PIO pins: GPIO base is too high: " "base={} pin={}", base, pins.lower())));
+
+        corecheck(pins.upper() <= base + 32, RuntimeError(std::format("Cannot configure PIO pins: GPIO base is too low: " "base={} pin={}", base, pins.upper())));
+
+        pio_sm_set_consecutive_pindirs(block, node, pins.lower(), pins.count(), is_output);
+
+        return true;
+    }
+
+    // --------------------------------------------------------------
+    // DMA
+    // --------------------------------------------------------------
+
+    bool Node::configure_dmas() { return true; }
+
+    // --------------------------------------------------------------
+    // IO
+    // --------------------------------------------------------------
+
+    bool Node::write(const uint32_t& data) {
+        pio_sm_put_blocking(block, node, data);
+        return true;
+    }
+
+    bool Node::write_burst(std::span<const uint32_t> data) {
+        for (const uint32_t& value : data) {
+            if (!write(value)) { return false; }
         }
 
-        template <typename T>
-        Node<T>::~Node() {
-            pio_sm_unclaim(block, node);
+        return true;
+    }
+
+    bool Node::read(uint32_t& data) {
+        data = pio_sm_get_blocking(block, node);
+        return true;
+    }
+
+    bool Node::read_burst(std::span<uint32_t> data) {
+        for (uint32_t& value : data) {
+            if (!read(value)) { return false; }
         }
 
-        template <typename T>
-        Node<T>::Ptr Node<T>::requestUnused(PIO block) {
-            const int node = pio_claim_unused_sm(block, false);
+        return true;
+    }
 
-            if (node < 0) {
-                throw std::runtime_error(
-                    "Failed to claim a free PIO state machine.");
-            }
-
-            pio_sm_unclaim(block, node);
-            return std::make_shared<Node<T>>(block, node);
-        }
-
-        template <typename T>
-        bool Node<T>::deploy(const Program::Ptr& program) {
-            if (this->program != program) {
-                this->unload();
-            }
-
-            this->program = program;
-            return this->load();
-        }
-
-        template <typename T>
-        bool Node<T>::isRunning() const {
-            return pio_sm_is_enabled(block, node);
-        }
-
-        template <typename T>
-        bool Node<T>::on_load() {
-            if (!program) {
-                throw std::runtime_error(
-                    "Cannot load a PIO node without a program. Use deploy() to "
-                    "assign a program to the node first.");
-            }
-
-            const Program::State& state = program->getState(block);
-
-            if (state.nodemask == 0) {
-                if (!program->install(block)) {
-                    throw std::runtime_error(
-                        "Failed to install PIO program on PIO.");
-                }
-            }
-
-            if (program->registerNode(block, node)) {
-                const uint       base = state.adress.value_or(0);
-                const NodeConf   ncfg = program->buildNodeConf(block, node);
-                const LaunchConf lcfg = program->buildLaunchConf(block, node);
-                const uint       initial_pc = base + lcfg.entrypoint;
-
-                const uint result = pio_sm_init(block, node, initial_pc, &ncfg);
-
-                if (result != PICO_OK) {
-                    throw std::runtime_error(
-                        "Failed to initialize PIO state machine.");
-                }
-
-                if (lcfg.scratchX.has_value()) {
-                    preloadReg(pio_x, lcfg.scratchX.value());
-                }
-
-                if (lcfg.scratchY.has_value()) {
-                    preloadReg(pio_y, lcfg.scratchY.value());
-                }
-
-                if (lcfg.isr.has_value()) {
-                    preloadReg(pio_isr, lcfg.isr.value());
-                }
-
-                if (lcfg.osr.has_value()) {
-                    preloadReg(pio_osr, lcfg.osr.value());
-                }
-
-                pio_sm_set_enabled(block, node, lcfg.autostart);
-
-                return true;
-            }
-
-            return false;
-        }
-
-        template <typename T>
-        bool Node<T>::on_unload() {
-            pio_sm_set_enabled(block, node, false);
-            pio_sm_restart(block, node);
-
-            if (program == nullptr) {
-                return false;
-            }
-
-            return program->unregisterNode(block, node);
-        }
-
-        template <typename T>
-        void Node<T>::preloadReg(pio_src_dest reg, uint32_t value) {
-            static const Command pullCmd = pio_encode_pull(false, false);
-            static const Command movCmd  = pio_encode_mov(reg, pio_osr);
-
-            if (isRunning()) {
-                throw std::runtime_error(
-                    "Cannot preload a PIO register while the state machine is "
-                    "running.");
-            }
-
-            pio_sm_put(block, node, value);
-            pio_sm_exec(block, node, pullCmd);
-            pio_sm_exec(block, node, movCmd);
-        }
-
-        template <typename T>
-        bool Node<T>::write(const T& data) {
-            while (pio_sm_is_tx_fifo_full(block, node)) {
-                tight_loop_contents();
-            }
-            pio_sm_put(block, node, data);
-            return true;
-        }
-
-        template <typename T>
-        bool Node<T>::write_bulk(std::span<const T> data) {
-            for (const T& value : data) {
-                if (!write(value))
-                    return false;
-            }
-
-            return true;
-        }
-
-        template <typename T>
-        bool Node<T>::read(T& data) {
-            while (pio_sm_is_rx_fifo_empty(block, node)) {
-                tight_loop_contents();
-            }
-
-            data = pio_sm_get(block, node);
-            return true;
-        }
-
-        template <typename T>
-        bool Node<T>::read_bulk(std::span<T> data) {
-            for (T& value : data) {
-                if (!read(value))
-                    return false;
-            }
-
-            return true;
-        }
-
-    }  // namespace Pio
-}  // namespace corekit::platform
+} // namespace corekit::Pio

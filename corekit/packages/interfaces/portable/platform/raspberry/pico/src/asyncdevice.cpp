@@ -1,4 +1,4 @@
-#include "corekit/platform/asyncdevice.hpp"
+#include "corekit/asyncdevice.hpp"
 
 namespace corekit {
 
@@ -6,4 +6,4 @@ namespace corekit {
     template class AsyncDevice<uint16_t>;
     template class AsyncDevice<uint32_t>;
 
-}  // namespace corekit
+} // namespace corekit

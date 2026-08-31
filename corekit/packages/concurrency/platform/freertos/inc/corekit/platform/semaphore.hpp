@@ -5,28 +5,32 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 
 namespace corekit::platform {
 
     class Semaphore {
-       public:
-        using Ptr = std::shared_ptr<Semaphore>;
+        public:
 
-        Semaphore(uint32_t initial_count = 0, uint32_t max_count = 1);
+            using Ptr     = std::shared_ptr<Semaphore>;
+            using Timeout = std::optional<double>; // seconds
 
-        Semaphore(const Semaphore&)            = delete;
-        Semaphore(Semaphore&&)                 = delete;
-        Semaphore& operator=(const Semaphore&) = delete;
-        Semaphore& operator=(Semaphore&&)      = delete;
+            Semaphore(uint32_t initial_count = 0, uint32_t max_count = 1);
+            ~Semaphore();
 
-        ~Semaphore();
+            Semaphore(const Semaphore&)            = delete;
+            Semaphore(Semaphore&&)                 = delete;
+            Semaphore& operator=(const Semaphore&) = delete;
+            Semaphore& operator=(Semaphore&&)      = delete;
 
-        void acquire();
-        void release();
-        bool try_acquire();
+            void acquire();
+            void release();
+            bool try_acquire(Timeout seconds = std::nullopt);
 
-       private:
-        SemaphoreHandle_t semaphore;
+        private:
+
+            StaticSemaphore_t storage_;
+            SemaphoreHandle_t handle_;
     };
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

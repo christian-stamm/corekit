@@ -17,4 +17,4 @@ namespace corekit {
         EXPECT_EQ(result.error().what(), "failed");
     }
 
-}  // namespace corekit
+} // namespace corekit

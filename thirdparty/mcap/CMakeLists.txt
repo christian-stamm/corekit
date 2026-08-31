@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-if(COREKIT_BUILD_MCAP)
+if(${BUILD_GLAD_MODULE})
 
     find_package(LZ4 REQUIRED)
 

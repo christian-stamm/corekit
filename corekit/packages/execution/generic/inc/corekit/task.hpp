@@ -1,61 +1,53 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include "corekit/atomic.hpp"
+#include "corekit/logger.hpp"
 #include "corekit/result.hpp"
 #include "corekit/stoptoken.hpp"
 
 namespace corekit {
 
     class Task {
-       public:
-        enum class State { READY, RUNNING, TERMINATED };
+        public:
 
-        using Ptr  = std::shared_ptr<Task>;
-        using List = std::vector<Ptr>;
+            enum class State { READY, RUNNING, TERMINATED, ERROR };
 
-        Task();
+            using Ptr = std::shared_ptr<Task>;
+            Task(const std::string& name);
 
-        Task(const Task&)            = delete;
-        Task(Task&&)                 = delete;
-        Task& operator=(const Task&) = delete;
-        Task& operator=(Task&&)      = delete;
+            Task(const Task&)            = delete;
+            Task(Task&&)                 = delete;
+            Task& operator=(const Task&) = delete;
+            Task& operator=(Task&&)      = delete;
 
-        virtual ~Task() = default;
+            virtual ~Task()              = default;
 
-        VoidResult exec(StopToken token) noexcept;
+            VoidResult exec(StopToken token) noexcept;
 
-        inline bool is_launched() const {
-            return get_state() != State::READY;
-        }
+            inline bool is_launched() const { return get_state() != State::READY; }
 
-        inline bool is_running() const {
-            return get_state() == State::RUNNING;
-        }
+            inline bool is_running() const { return get_state() == State::RUNNING; }
 
-        inline bool is_completed() const {
-            return get_state() == State::TERMINATED;
-        }
+            inline bool is_completed() const { return get_state() == State::TERMINATED; }
 
-        inline State get_state() const {
-            return m_state.load();
-        }
+            inline State get_state() const { return m_state.load(); }
 
-       protected:
-        virtual VoidResult on_enter(StopToken token) {
-            return {};
-        }
+            const std::string name;
+            const Logger      logger;
 
-        virtual VoidResult on_leave(StopToken token) {
-            return {};
-        }
+        protected:
 
-        virtual VoidResult on_run(StopToken token) = 0;
+            virtual VoidResult on_init(StopToken token) { return {}; }
 
-       private:
-        Atomic<State> m_state;
+            virtual VoidResult on_exit(StopToken token) { return {}; }
+
+            virtual VoidResult on_exec(StopToken token) = 0;
+
+        private:
+
+            Atomic<State> m_state;
     };
 
-}  // namespace corekit
+} // namespace corekit

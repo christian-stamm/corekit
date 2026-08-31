@@ -1,3 +1,3 @@
 cmake_minimum_required(VERSION 3.25)
-add_subdirectory_aware(concepts)
-add_subdirectory_aware(platform)
+add_subdirectory(concepts)
+add_subdirectory(platform)

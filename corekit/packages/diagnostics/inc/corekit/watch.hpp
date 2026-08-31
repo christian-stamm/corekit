@@ -6,25 +6,26 @@
 namespace corekit {
 
     class Watch {
-       public:
-        Watch(const std::optional<double> timeout = std::nullopt,
-              bool                        trigger = true);
+        public:
 
-        void reset(bool trigger = true) const;
-        bool start() const;
-        bool stop() const;
+            Watch(const std::optional<double> timeout = std::nullopt, bool trigger = true);
 
-        void   block() const;
-        bool   expired() const;
-        double remaining() const;
-        double elapsed() const;
-        double tick() const;
+            void reset(bool trigger = true) const;
+            bool start() const;
+            bool stop() const;
 
-        std::string represent() const;
+            void   block() const;
+            bool   expired() const;
+            double remaining() const;
+            double elapsed() const;
+            double tick() const;
 
-       private:
-        mutable std::optional<double> timeout;
-        mutable std::optional<double> t0, t1;
+            std::string represent() const;
+
+        private:
+
+            mutable std::optional<double> timeout;
+            mutable std::optional<double> t0, t1;
     };
 
-}  // namespace corekit
+} // namespace corekit

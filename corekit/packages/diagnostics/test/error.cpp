@@ -116,4 +116,4 @@ namespace corekit::test {
         EXPECT_FALSE(error.traceback().empty());
     }
 
-}  // namespace corekit::test
+} // namespace corekit::test

@@ -13,30 +13,20 @@ namespace corekit::platform {
         }
     }
 
-    ThreadPool::~ThreadPool() {
-        cancel();
-    }
+    ThreadPool::~ThreadPool() { cancel(); }
 
     void ThreadPool::request_stop(bool discard_pending_tasks) {
-        if (!m_stop_source_.request_stop()) {
-            return;
-        }
+        if (!m_stop_source_.request_stop()) { return; }
 
-        if (discard_pending_tasks) {
-            m_task_queue_.clear();
-        }
+        if (discard_pending_tasks) { m_task_queue_.clear(); }
 
         // Exactly one sentinel per worker.
-        for (std::size_t i = 0; i < m_workers_.size(); ++i) {
-            m_task_queue_.push(nullptr, true);
-        }
+        for (std::size_t i = 0; i < m_workers_.size(); ++i) { m_task_queue_.push(nullptr, true); }
     }
 
     void ThreadPool::join() {
         for (auto& worker : m_workers_) {
-            if (worker.joinable()) {
-                worker.join();
-            }
+            if (worker.joinable()) { worker.join(); }
         }
     }
 
@@ -46,13 +36,9 @@ namespace corekit::platform {
     }
 
     VoidResult ThreadPool::enqueue(Task::Ptr task) {
-        if (!task) {
-            return RuntimeError("null task");
-        }
+        if (!task) { return RuntimeError("null task"); }
 
-        if (m_stop_source_.stop_requested()) {
-            return RuntimeError("executor stopped");
-        }
+        if (m_stop_source_.stop_requested()) { return RuntimeError("executor stopped"); }
 
         return m_task_queue_.push(std::move(task), false);
     }
@@ -63,9 +49,7 @@ namespace corekit::platform {
 
             m_task_queue_.pop(task, true);
 
-            if (!task) {
-                break;
-            }
+            if (!task) { break; }
 
             task->exec(m_stop_source_.get_token());
         }
@@ -81,4 +65,4 @@ namespace corekit::platform {
         shutdown_.release();
     }
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

@@ -1,31 +1,29 @@
 #include "corekit/basedevice.hpp"
 
+#include "corekit/check.hpp"
+
 namespace corekit {
 
     BaseDevice::BaseDevice(const std::string& name)
         : name(name)
-        , loaded(false) {}
+        , loaded(false) { }
 
-    BaseDevice::~BaseDevice() {
-        unload();
-    }
+    BaseDevice::~BaseDevice() { unload(); }
 
     bool BaseDevice::load() {
         bool expected = false;
         bool desired  = true;
+
         // Transition from not-loaded -> loaded once.
         // Only the thread that successfully flips the flag runs prepare().
+
         if (loaded.compare_exchange(expected, desired)) {
-            try {
-                watch.reset(true);
-                return on_load();
-            } catch (...) {
-                loaded.store(false);
-                throw;  // Preserve original exception details.
-            }
+            watch.reset(true);
+
+            corecheck(on_load(), RuntimeError("Failed to load device: " + name));
         }
 
-        return false;
+        return is_loaded();
     }
 
     bool BaseDevice::unload() {
@@ -33,35 +31,21 @@ namespace corekit {
         bool desired  = false;
         // Transition from loaded -> not-loaded once.
         // The thread that wins runs cleanup().
-        if (loaded.compare_exchange(expected, desired)) {
-            try {
-                watch.stop();
-                return on_unload();
-            } catch (...) {
-                loaded.store(true);
-                throw;  // Preserve original exception details.
-            }
-        }
+        if (loaded.compare_exchange(expected, desired)) { corecheck(on_unload(), RuntimeError("Failed to unload device: " + name)); }
 
-        return false;
+        return !is_loaded();
     }
 
     bool BaseDevice::reload() {
-        bool success = isLoaded();
+        bool success = is_loaded();
 
-        if (isLoaded()) {
-            success &= unload();
-        }
+        if (is_loaded()) { success &= unload(); }
 
         success &= load();
         return success;
     }
 
-    bool BaseDevice::isLoaded() const {
-        return loaded.load();
-    }
+    bool BaseDevice::is_loaded() const { return loaded.load(); }
 
-    double BaseDevice::uptime() const {
-        return watch.elapsed();
-    }
-};  // namespace corekit
+    double BaseDevice::uptime() const { return watch.elapsed(); }
+}; // namespace corekit

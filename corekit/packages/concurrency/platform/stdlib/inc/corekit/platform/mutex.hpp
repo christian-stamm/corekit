@@ -5,8 +5,10 @@
 namespace corekit::platform {
 
     class Mutex : public std::mutex {
-        using Ptr = std::shared_ptr<Mutex>;
-        using std::mutex::mutex;
+        public:
+
+            using Ptr = std::shared_ptr<Mutex>;
+            using std::mutex::mutex;
     };
 
-};  // namespace corekit::platform
+}; // namespace corekit::platform

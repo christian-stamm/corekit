@@ -1,40 +1,41 @@
 #pragma once
 
-#include <FreeRTOS.h>
-#include <task.h>
-
-#include <deque>
+#include <cstdint>
 #include <memory>
 #include <mutex>
-#include <vector>
 
 #include "corekit/mutex.hpp"
+#include "corekit/queue.hpp"
+#include "corekit/semaphore.hpp"
 
 namespace corekit::platform {
 
     class ConditionVariable {
-       public:
-        ConditionVariable() = default;
+        public:
 
-        ConditionVariable(const ConditionVariable&)            = delete;
-        ConditionVariable(ConditionVariable&&)                 = delete;
-        ConditionVariable& operator=(const ConditionVariable&) = delete;
-        ConditionVariable& operator=(ConditionVariable&&)      = delete;
+            using Ptr = std::shared_ptr<ConditionVariable>;
 
-        template <typename Predicate>
-        void wait(std::unique_lock<Mutex>& lock, Predicate predicate) {
-            while (!predicate()) {
-                wait(lock);
+            explicit ConditionVariable(uint32_t max_waiters);
+            ~ConditionVariable();
+
+            ConditionVariable(const ConditionVariable&)            = delete;
+            ConditionVariable(ConditionVariable&&)                 = delete;
+            ConditionVariable& operator=(const ConditionVariable&) = delete;
+            ConditionVariable& operator=(ConditionVariable&&)      = delete;
+
+            template <typename Predicate>
+            void wait(std::unique_lock<Mutex>& lock, Predicate predicate) {
+                while (!predicate()) { wait(lock); }
             }
-        }
 
-        void wait(std::unique_lock<Mutex>& lock);
-        void notify_one();
-        void notify_all();
+            void wait(std::unique_lock<Mutex>& lock);
 
-       private:
-        Mutex                    waiters_mutex_;
-        std::deque<TaskHandle_t> waiters_;
+            void notify_one();
+            void notify_all();
+
+        private:
+
+            Queue<Semaphore*> waiters_;
     };
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

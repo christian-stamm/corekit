@@ -9,26 +9,26 @@
 namespace corekit::platform {
 
     class Semaphore {
-       public:
-        using Ptr = std::shared_ptr<Semaphore>;
+        public:
 
-        Semaphore(
-            std::size_t init_count = 0,
-            std::size_t max_count  = std::numeric_limits<std::size_t>::max());
+            using Ptr = std::shared_ptr<Semaphore>;
 
-        void release();
-        void acquire();
+            Semaphore(std::size_t init_count = 0, std::size_t max_count = std::numeric_limits<std::size_t>::max());
 
-        [[nodiscard]]
-        bool try_acquire();
+            void release();
+            void acquire();
 
-        const std::size_t max_count_;
+            [[nodiscard]]
+            bool try_acquire();
 
-       private:
-        mutable std::mutex mutex_;
-        ConditionVariable  cv_;
+            const std::size_t max_count_;
 
-        std::size_t count_;
+        private:
+
+            mutable std::mutex mutex_;
+            ConditionVariable  cv_;
+
+            std::size_t count_;
     };
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

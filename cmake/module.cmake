@@ -6,7 +6,7 @@ function(corekit_add_module MODULE_NAME)
         "ARG"                                                                       # prefix
         "API;IMPL"                                                                  # options
         ""                                                                          # one-value arguments
-        "SOURCE_FILES;PUBLIC_INCLUDES;PRIVATE_INCLUDES;DEPENDENCIES;GTEST_FILES"    # multi-value arguments
+        "SOURCE_FILES;PIO_FILES;PUBLIC_INCLUDES;PRIVATE_INCLUDES;DEPENDENCIES;GTEST_FILES"    # multi-value arguments
         ${ARGN}                                                                     # arguments to parse
     )
 
@@ -74,6 +74,12 @@ function(corekit_add_module MODULE_NAME)
     )
 
     get_property(
+        existing_pio_files
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_PIO_FILES"
+    )
+
+    get_property(
         existing_gtest_files
         GLOBAL
         PROPERTY "COREKIT_${MODULE_NAME}_GTEST_FILES"
@@ -100,16 +106,19 @@ function(corekit_add_module MODULE_NAME)
     make_paths_abs(new_public_includes "${ARG_PUBLIC_INCLUDES}")
     make_paths_abs(new_private_includes "${ARG_PRIVATE_INCLUDES}")
     make_paths_abs(new_source_files "${ARG_SOURCE_FILES}")
+    make_paths_abs(new_pio_files "${ARG_PIO_FILES}")
     make_paths_abs(new_gtest_files "${ARG_GTEST_FILES}")
     set(new_dependencies ${ARG_DEPENDENCIES})
 
     list(APPEND new_source_files ${existing_source_files})
+    list(APPEND new_pio_files ${existing_pio_files})
     list(APPEND new_public_includes ${existing_public_includes})
     list(APPEND new_private_includes ${existing_private_includes})
     list(APPEND new_dependencies ${existing_dependencies})
     list(APPEND new_gtest_files ${existing_gtest_files})
 
     list(REMOVE_DUPLICATES new_source_files)
+    list(REMOVE_DUPLICATES new_pio_files)
     list(REMOVE_DUPLICATES new_public_includes)
     list(REMOVE_DUPLICATES new_private_includes)
     list(REMOVE_DUPLICATES new_dependencies)
@@ -119,6 +128,12 @@ function(corekit_add_module MODULE_NAME)
         GLOBAL
         PROPERTY "COREKIT_${MODULE_NAME}_SOURCE_FILES"
         "${new_source_files}"
+    )
+
+    set_property(
+        GLOBAL
+        PROPERTY "COREKIT_${MODULE_NAME}_PIO_FILES"
+        "${new_pio_files}"
     )
 
     set_property(
@@ -177,6 +192,12 @@ function(corekit_build_modules)
             src_files
             GLOBAL
             PROPERTY "COREKIT_${module}_SOURCE_FILES"
+        )
+
+        get_property(
+            pio_files
+            GLOBAL
+            PROPERTY "COREKIT_${module}_PIO_FILES"
         )
 
         get_property(
@@ -260,6 +281,15 @@ function(corekit_build_modules)
         endif()
 
         add_library(${target_name} "${target_type}" ${src_files})
+
+        if(pio_files)
+            if(NOT COMMAND pico_generate_pio_header)
+                message(FATAL_ERROR "Module '${module}' declares PIO_FILES but pico_generate_pio_header is unavailable")
+            endif()
+            foreach(pio_file IN LISTS pio_files)
+                pico_generate_pio_header(${target_name} ${pio_file})
+            endforeach()
+        endif()
 
         if(target_type STREQUAL "INTERFACE")
             target_include_directories(${target_name} INTERFACE ${public_includes} ${private_includes})

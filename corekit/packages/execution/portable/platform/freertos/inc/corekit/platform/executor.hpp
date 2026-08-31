@@ -3,46 +3,72 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
+#include <memory>
 #include <vector>
 
-#include "corekit/queue.hpp"
-#include "corekit/result.hpp"
+#include "corekit/atomic.hpp"
+#include "corekit/semaphore.hpp"
+#include "corekit/stoptoken.hpp"
 #include "corekit/task.hpp"
 
 namespace corekit::platform {
 
-    class ThreadPool {
-       public:
-        explicit ThreadPool(uint num_workers = 4, uint max_tasks = 10);
-        ~ThreadPool();
+    class Thread {
+        public:
 
-        ThreadPool(const ThreadPool&)            = delete;
-        ThreadPool& operator=(const ThreadPool&) = delete;
+            struct LaunchArgs {
+                    uint coremask = 0b1111;
+                    uint priority = 1;
+            };
 
-        ThreadPool(ThreadPool&&)            = delete;
-        ThreadPool& operator=(ThreadPool&&) = delete;
+            using Ptr  = std::shared_ptr<Thread>;
+            using List = std::vector<Ptr>;
 
-        VoidResult enqueue(Task::Ptr task);
+            enum class State { NotStarted, Running, Finished };
 
-        void cancel(bool remaining_tasks = false);
+            Thread(Task::Ptr task, StopToken token);
+            ~Thread();
 
-        const uint num_workers_;
+            Thread(const Thread&)            = delete;
+            Thread& operator=(const Thread&) = delete;
 
-       private:
-        void worker_loop();
+            Thread(Thread&&)                 = delete;
+            Thread& operator=(Thread&&)      = delete;
 
-        Semaphore                 m_worker_count_;
-        Queue<Task::Ptr>          m_task_queue_;
-        StopSource                m_stop_source_;
-        std::vector<TaskHandle_t> m_workers_;
+            bool start(uint coremask = 0b1111, uint priority = 1);
+            void join();
+
+        private:
+
+            Atomic<State> m_state_;
+            Task::Ptr     m_task_;
+            TaskHandle_t  m_handle_;
+            StopToken     m_token_;
+            Semaphore     m_joiner_;
     };
 
-    class Executor : public ThreadPool {
-       public:
-        using ThreadPool::ThreadPool;
+    class Executor {
+        public:
 
-        static void launch();
-        static void terminate();
+            using Ptr   = std::unique_ptr<Executor>;
+
+            ~Executor() = default;
+
+            static const Ptr& get() {
+                static const Ptr executor = Ptr(new Executor());
+                return executor;
+            }
+
+            void launch();
+            void cancel();
+            void enqueue(Task::Ptr task, uint coremask = 0b1111, uint priority = 1);
+
+        private:
+
+            Executor() = default;
+
+            StopSource   m_stopsrc_;
+            Thread::List m_threads_;
     };
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

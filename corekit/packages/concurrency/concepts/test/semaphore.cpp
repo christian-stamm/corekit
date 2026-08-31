@@ -99,13 +99,9 @@ namespace corekit::test {
 
         constexpr int permit_count = 100;
 
-        for (int i = 0; i < permit_count; ++i) {
-            semaphore.release();
-        }
+        for (int i = 0; i < permit_count; ++i) { semaphore.release(); }
 
-        for (int i = 0; i < permit_count; ++i) {
-            EXPECT_TRUE(semaphore.try_acquire());
-        }
+        for (int i = 0; i < permit_count; ++i) { EXPECT_TRUE(semaphore.try_acquire()); }
 
         EXPECT_FALSE(semaphore.try_acquire());
     }
@@ -124,4 +120,4 @@ namespace corekit::test {
         EXPECT_FALSE(semaphore.try_acquire());
     }
 
-}  // namespace corekit::test
+} // namespace corekit::test

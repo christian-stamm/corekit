@@ -62,9 +62,7 @@ namespace corekit::test {
 
         EXPECT_TRUE(acquired);
 
-        if (acquired) {
-            mutex.unlock();
-        }
+        if (acquired) { mutex.unlock(); }
     }
 
     TEST(Mutex, TryLockSucceedsAgainAfterUnlock) {
@@ -81,8 +79,7 @@ namespace corekit::test {
         Mutex mutex;
 
         for (int iteration = 0; iteration < 1'000; ++iteration) {
-            ASSERT_TRUE(mutex.try_lock())
-                << "try_lock failed at iteration " << iteration;
+            ASSERT_TRUE(mutex.try_lock()) << "try_lock failed at iteration " << iteration;
 
             mutex.unlock();
         }
@@ -136,4 +133,4 @@ namespace corekit::test {
         mutex.unlock();
     }
 
-}  // namespace corekit::test
+} // namespace corekit::test

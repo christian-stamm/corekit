@@ -6,9 +6,7 @@
 namespace corekit::platform {
 
     void Time::sleep(double seconds) {
-        if (seconds <= 0.0) {
-            return;
-        }
+        if (seconds <= 0.0) { return; }
 
         using namespace std::chrono;
         using namespace std::this_thread;
@@ -21,4 +19,4 @@ namespace corekit::platform {
         return duration<double>(steady_clock::now() - ref).count();
     }
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

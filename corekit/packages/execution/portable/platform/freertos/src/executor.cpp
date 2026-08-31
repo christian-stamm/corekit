@@ -1,98 +1,76 @@
 #include "corekit/platform/executor.hpp"
 
-#include <format>
+#include "corekit/check.hpp"
 
 namespace corekit::platform {
 
-    ThreadPool::ThreadPool(uint num_workers, uint max_tasks)
-        : num_workers_(num_workers)
-        , m_task_queue_(max_tasks)
-        , m_worker_count_(num_workers, 0) {
-        for (size_t i = 0; i < num_workers_; ++i) {
-            TaskHandle_t task_handle = nullptr;
-            std::string  task_name   = std::format("worker_{}", i);
+    Thread::Thread(Task::Ptr task, StopToken token)
+        : m_state_(State::NotStarted)
+        , m_token_(token)
+        , m_task_(task)
+        , m_handle_(nullptr) { }
 
-            BaseType_t result = xTaskCreate(
-                [](void* arg) {
-                    ThreadPool* self = static_cast<ThreadPool*>(arg);
-                    self->worker_loop();
-                    vTaskDelete(nullptr);
-                },
-                task_name.c_str(),
-                configMINIMAL_STACK_SIZE,
-                this,
-                tskIDLE_PRIORITY + 1,
-                &task_handle);
+    Thread::~Thread() { join(); }
 
-            if (result != pdPASS) {
-                // Handle error
-                continue;
-            }
+    bool Thread::start(uint coremask, uint priority) {
+        auto expected = State::NotStarted;
+        auto desired  = State::Running;
 
-            m_workers_.emplace_back(task_handle);
+        // Synchronize this transition.
+        if (!m_state_.compare_exchange(expected, desired)) { return false; }
+
+        BaseType_t result = xTaskCreate(
+            [](void* arg) {
+                auto* self = static_cast<Thread*>(arg);
+
+                corecheck(self != nullptr && self->m_task_ != nullptr, RuntimeError("Thread::start() task is null"));
+
+                corecheck(self->m_task_->exec(self->m_token_));
+
+                self->m_state_.store(State::Finished);
+                // Last operation touching self.
+                self->m_joiner_.release();
+                vTaskDelete(nullptr);
+            },
+            m_task_->name.c_str(),
+            configMINIMAL_STACK_SIZE,
+            this,
+            tskIDLE_PRIORITY + priority,
+            &m_handle_);
+
+        if (result == pdPASS) {
+            vTaskCoreAffinitySet(m_handle_, coremask);
+            return true;
+        } else {
+            m_handle_ = nullptr;
+            m_state_.store(State::NotStarted);
+            return false;
         }
     }
 
-    ThreadPool::~ThreadPool() {
-        cancel();
+    void Thread::join() {
+        const State state = m_state_.load();
 
-        for (const TaskHandle_t& worker : m_workers_) {
-            m_worker_count_.acquire();
-        }
+        if (state == State::NotStarted) { return; }
+
+        if (state == State::Running) { m_joiner_.acquire(); }
     }
 
-    void ThreadPool::cancel(bool discard_tasks) {
-        if (m_stop_source_.stop_requested()) {
-            return;
-        }
+    void Executor::enqueue(Task::Ptr task, uint coremask, uint priority) {
+        Thread::Ptr thread = std::make_shared<Thread>(task, m_stopsrc_.get_token());
 
-        m_stop_source_.request_stop();
-
-        if (discard_tasks) {
-            m_task_queue_.clear();
-        }
-
-        // Wake each potentially blocked worker.
-        for (size_t i = 0; i < m_workers_.size(); ++i) {
-            m_task_queue_.push(nullptr, true);
-        }
+        m_threads_.push_back(thread);
+        thread->start(coremask, priority);
     }
 
-    VoidResult ThreadPool::enqueue(Task::Ptr task) {
-        if (!task) {
-            return RuntimeError("null task");
-        }
+    void Executor::launch() { vTaskStartScheduler(); }
 
-        if (m_stop_source_.stop_requested()) {
-            return RuntimeError("executor stopped");
-        }
+    void Executor::cancel() {
+        m_stopsrc_.request_stop();
 
-        return m_task_queue_.push(std::move(task), false);
-    }
+        for (const Thread::Ptr& thread : m_threads_) { thread->join(); }
 
-    void ThreadPool::worker_loop() {
-        while (true) {
-            Task::Ptr task;
-
-            m_task_queue_.pop(task, true);
-
-            if (!task) {
-                break;
-            }
-
-            task->exec(m_stop_source_.get_token());
-        }
-
-        m_worker_count_.release();
-    }
-
-    void Executor::launch() {
-        __asm volatile("msr basepri, %0" ::"r"(0UL) : "memory");
-        vTaskStartScheduler();
-    }
-
-    void Executor::terminate() {
         vTaskEndScheduler();
     }
 
-}  // namespace corekit::platform
+} // namespace corekit::platform

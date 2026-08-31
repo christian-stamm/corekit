@@ -7,35 +7,34 @@
 namespace corekit {
 
     class BaseDevice {
-       public:
-        using Ptr = std::shared_ptr<BaseDevice>;
+        public:
 
-        BaseDevice(const std::string& name);
-        BaseDevice(const BaseDevice& other)            = delete;
-        BaseDevice& operator=(const BaseDevice& other) = delete;
+            using Ptr = std::shared_ptr<BaseDevice>;
 
-        virtual ~BaseDevice();
+            BaseDevice(const std::string& name);
+            BaseDevice(const BaseDevice& other)            = delete;
+            BaseDevice& operator=(const BaseDevice& other) = delete;
 
-        bool   load();
-        bool   unload();
-        bool   reload();
-        bool   isLoaded() const;
-        double uptime() const;
+            virtual ~BaseDevice();
 
-        const std::string name;
+            bool   load();
+            bool   unload();
+            bool   reload();
+            bool   is_loaded() const;
+            double uptime() const;
 
-       protected:
-        virtual bool on_load() {
-            return true;
-        };
+            const std::string name;
 
-        virtual bool on_unload() {
-            return true;
-        };
+        protected:
 
-       private:
-        Atomic<bool> loaded;
-        Watch        watch;
+            virtual bool on_load() { return true; }
+
+            virtual bool on_unload() { return true; }
+
+        private:
+
+            Atomic<bool> loaded;
+            Watch        watch;
     };
 
-};  // namespace corekit
+}; // namespace corekit

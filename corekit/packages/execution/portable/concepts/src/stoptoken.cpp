@@ -5,4 +5,4 @@ namespace corekit {
     static_assert(StopTokenLike<StopToken>);
     static_assert(StopSourceLike<StopSource>);
 
-}  // namespace corekit
+} // namespace corekit

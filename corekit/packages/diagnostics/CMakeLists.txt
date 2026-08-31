@@ -13,11 +13,10 @@ corekit_add_module(result API IMPL
     DEPENDENCIES        "error"
 )
 
-corekit_add_module(assert API IMPL
+corekit_add_module(check API IMPL
     PUBLIC_INCLUDES     "inc"
-    SOURCE_FILES        "src/assert.cpp"
-    GTEST_FILES         "test/assert.cpp"
-    DEPENDENCIES        "error;result"
+    SOURCE_FILES        "src/check.cpp"
+    DEPENDENCIES        "error"
 )
 
 corekit_add_module(logger API IMPL

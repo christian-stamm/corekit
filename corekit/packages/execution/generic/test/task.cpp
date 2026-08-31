@@ -17,29 +17,30 @@ namespace corekit {
         // ---------------------------------------------------------------------
 
         class SuccessfulTask final : public Task {
-           public:
-            const std::vector<Callback>& callbacks() const {
-                return m_callbacks;
-            }
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                m_callbacks.push_back(Callback::ENTER);
-                return {};
-            }
+                const std::vector<Callback>& callbacks() const { return m_callbacks; }
 
-            VoidResult on_run(StopToken) override {
-                m_callbacks.push_back(Callback::RUN);
-                return {};
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                m_callbacks.push_back(Callback::LEAVE);
-                return {};
-            }
+                VoidResult on_enter(StopToken) override {
+                    m_callbacks.push_back(Callback::ENTER);
+                    return {};
+                }
 
-           private:
-            std::vector<Callback> m_callbacks;
+                VoidResult on_run(StopToken) override {
+                    m_callbacks.push_back(Callback::RUN);
+                    return {};
+                }
+
+                VoidResult on_leave(StopToken) override {
+                    m_callbacks.push_back(Callback::LEAVE);
+                    return {};
+                }
+
+            private:
+
+                std::vector<Callback> m_callbacks;
         };
 
         // ---------------------------------------------------------------------
@@ -47,26 +48,28 @@ namespace corekit {
         // ---------------------------------------------------------------------
 
         class StateObservingTask final : public Task {
-           public:
-            State enter_state = State::READY;
-            State run_state   = State::READY;
-            State leave_state = State::READY;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                enter_state = get_state();
-                return {};
-            }
+                State enter_state = State::READY;
+                State run_state   = State::READY;
+                State leave_state = State::READY;
 
-            VoidResult on_run(StopToken) override {
-                run_state = get_state();
-                return {};
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                leave_state = get_state();
-                return {};
-            }
+                VoidResult on_enter(StopToken) override {
+                    enter_state = get_state();
+                    return {};
+                }
+
+                VoidResult on_run(StopToken) override {
+                    run_state = get_state();
+                    return {};
+                }
+
+                VoidResult on_leave(StopToken) override {
+                    leave_state = get_state();
+                    return {};
+                }
         };
 
         // ---------------------------------------------------------------------
@@ -74,26 +77,28 @@ namespace corekit {
         // ---------------------------------------------------------------------
 
         class StopTokenTask final : public Task {
-           public:
-            bool enter_stop_requested = false;
-            bool run_stop_requested   = false;
-            bool leave_stop_requested = false;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken token) override {
-                enter_stop_requested = token.stop_requested();
-                return {};
-            }
+                bool enter_stop_requested = false;
+                bool run_stop_requested   = false;
+                bool leave_stop_requested = false;
 
-            VoidResult on_run(StopToken token) override {
-                run_stop_requested = token.stop_requested();
-                return {};
-            }
+            protected:
 
-            VoidResult on_leave(StopToken token) override {
-                leave_stop_requested = token.stop_requested();
-                return {};
-            }
+                VoidResult on_enter(StopToken token) override {
+                    enter_stop_requested = token.stop_requested();
+                    return {};
+                }
+
+                VoidResult on_run(StopToken token) override {
+                    run_stop_requested = token.stop_requested();
+                    return {};
+                }
+
+                VoidResult on_leave(StopToken token) override {
+                    leave_stop_requested = token.stop_requested();
+                    return {};
+                }
         };
 
         // ---------------------------------------------------------------------
@@ -101,70 +106,74 @@ namespace corekit {
         // ---------------------------------------------------------------------
 
         class EnterFailingTask final : public Task {
-           public:
-            bool run_called   = false;
-            bool leave_called = false;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                return RuntimeError("on_enter failed");
-            }
+                bool run_called   = false;
+                bool leave_called = false;
 
-            VoidResult on_run(StopToken) override {
-                run_called = true;
-                return {};
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                leave_called = true;
-                return {};
-            }
+                VoidResult on_enter(StopToken) override { return RuntimeError("on_enter failed"); }
+
+                VoidResult on_run(StopToken) override {
+                    run_called = true;
+                    return {};
+                }
+
+                VoidResult on_leave(StopToken) override {
+                    leave_called = true;
+                    return {};
+                }
         };
 
         class RunFailingTask final : public Task {
-           public:
-            bool enter_called = false;
-            bool run_called   = false;
-            bool leave_called = false;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                enter_called = true;
-                return {};
-            }
+                bool enter_called = false;
+                bool run_called   = false;
+                bool leave_called = false;
 
-            VoidResult on_run(StopToken) override {
-                run_called = true;
-                return RuntimeError("on_run failed");
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                leave_called = true;
-                return {};
-            }
+                VoidResult on_enter(StopToken) override {
+                    enter_called = true;
+                    return {};
+                }
+
+                VoidResult on_run(StopToken) override {
+                    run_called = true;
+                    return RuntimeError("on_run failed");
+                }
+
+                VoidResult on_leave(StopToken) override {
+                    leave_called = true;
+                    return {};
+                }
         };
 
         class LeaveFailingTask final : public Task {
-           public:
-            bool enter_called = false;
-            bool run_called   = false;
-            bool leave_called = false;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                enter_called = true;
-                return {};
-            }
+                bool enter_called = false;
+                bool run_called   = false;
+                bool leave_called = false;
 
-            VoidResult on_run(StopToken) override {
-                run_called = true;
-                return {};
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                leave_called = true;
-                return RuntimeError("on_leave failed");
-            }
+                VoidResult on_enter(StopToken) override {
+                    enter_called = true;
+                    return {};
+                }
+
+                VoidResult on_run(StopToken) override {
+                    run_called = true;
+                    return {};
+                }
+
+                VoidResult on_leave(StopToken) override {
+                    leave_called = true;
+                    return RuntimeError("on_leave failed");
+                }
         };
 
         // ---------------------------------------------------------------------
@@ -172,68 +181,70 @@ namespace corekit {
         // ---------------------------------------------------------------------
 
         class EnterThrowingTask final : public Task {
-           public:
-            bool run_called   = false;
-            bool leave_called = false;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                throw std::runtime_error("on_enter threw");
-            }
+                bool run_called   = false;
+                bool leave_called = false;
 
-            VoidResult on_run(StopToken) override {
-                run_called = true;
-                return {};
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                leave_called = true;
-                return {};
-            }
+                VoidResult on_enter(StopToken) override { throw std::runtime_error("on_enter threw"); }
+
+                VoidResult on_run(StopToken) override {
+                    run_called = true;
+                    return {};
+                }
+
+                VoidResult on_leave(StopToken) override {
+                    leave_called = true;
+                    return {};
+                }
         };
 
         class RunThrowingTask final : public Task {
-           public:
-            bool enter_called = false;
-            bool leave_called = false;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                enter_called = true;
-                return {};
-            }
+                bool enter_called = false;
+                bool leave_called = false;
 
-            VoidResult on_run(StopToken) override {
-                throw std::runtime_error("on_run threw");
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                leave_called = true;
-                return {};
-            }
+                VoidResult on_enter(StopToken) override {
+                    enter_called = true;
+                    return {};
+                }
+
+                VoidResult on_run(StopToken) override { throw std::runtime_error("on_run threw"); }
+
+                VoidResult on_leave(StopToken) override {
+                    leave_called = true;
+                    return {};
+                }
         };
 
         class LeaveThrowingTask final : public Task {
-           public:
-            bool enter_called = false;
-            bool run_called   = false;
-            bool leave_called = false;
+            public:
 
-           protected:
-            VoidResult on_enter(StopToken) override {
-                enter_called = true;
-                return {};
-            }
+                bool enter_called = false;
+                bool run_called   = false;
+                bool leave_called = false;
 
-            VoidResult on_run(StopToken) override {
-                run_called = true;
-                return {};
-            }
+            protected:
 
-            VoidResult on_leave(StopToken) override {
-                leave_called = true;
-                throw std::runtime_error("on_leave threw");
-            }
+                VoidResult on_enter(StopToken) override {
+                    enter_called = true;
+                    return {};
+                }
+
+                VoidResult on_run(StopToken) override {
+                    run_called = true;
+                    return {};
+                }
+
+                VoidResult on_leave(StopToken) override {
+                    leave_called = true;
+                    throw std::runtime_error("on_leave threw");
+                }
         };
 
         // ---------------------------------------------------------------------
@@ -241,48 +252,49 @@ namespace corekit {
         // ---------------------------------------------------------------------
 
         class BlockingTask final : public Task {
-           public:
-            void wait_until_running() {
-                std::unique_lock lock(m_mutex);
+            public:
 
-                m_condition.wait(lock, [this] { return m_running; });
-            }
+                void wait_until_running() {
+                    std::unique_lock lock(m_mutex);
 
-            void release() {
-                {
-                    std::lock_guard lock(m_mutex);
-                    m_released = true;
+                    m_condition.wait(lock, [this] { return m_running; });
                 }
 
-                m_condition.notify_all();
-            }
+                void release() {
+                    {
+                        std::lock_guard lock(m_mutex);
+                        m_released = true;
+                    }
 
-            int run_count() const {
-                return m_run_count.load();
-            }
+                    m_condition.notify_all();
+                }
 
-           protected:
-            VoidResult on_run(StopToken) override {
-                ++m_run_count;
+                int run_count() const { return m_run_count.load(); }
 
-                std::unique_lock lock(m_mutex);
-                m_running = true;
-                m_condition.notify_all();
+            protected:
 
-                m_condition.wait(lock, [this] { return m_released; });
+                VoidResult on_run(StopToken) override {
+                    ++m_run_count;
 
-                return {};
-            }
+                    std::unique_lock lock(m_mutex);
+                    m_running = true;
+                    m_condition.notify_all();
 
-           private:
-            std::atomic<int>        m_run_count{0};
-            std::mutex              m_mutex;
-            std::condition_variable m_condition;
-            bool                    m_running  = false;
-            bool                    m_released = false;
+                    m_condition.wait(lock, [this] { return m_released; });
+
+                    return {};
+                }
+
+            private:
+
+                std::atomic<int>        m_run_count{0};
+                std::mutex              m_mutex;
+                std::condition_variable m_condition;
+                bool                    m_running  = false;
+                bool                    m_released = false;
         };
 
-    }  // namespace
+    } // namespace
 
     // -------------------------------------------------------------------------
     // Construction
@@ -482,8 +494,7 @@ namespace corekit {
 
         VoidResult first_result;
 
-        std::thread first_thread(
-            [&] { first_result = task.exec(stop_source.get_token()); });
+        std::thread first_thread([&] { first_result = task.exec(stop_source.get_token()); });
 
         task.wait_until_running();
 
@@ -507,4 +518,4 @@ namespace corekit {
         EXPECT_EQ(task.get_state(), Task::State::TERMINATED);
     }
 
-}  // namespace corekit
+} // namespace corekit

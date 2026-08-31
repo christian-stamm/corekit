@@ -6,12 +6,11 @@ namespace corekit {
 
     using Mutex = platform::Mutex;
 
-    template <typename T>
-    concept MutexLike =  //
-        requires(T m) {
-            { m.lock() } -> std::convertible_to<void>;
-            { m.unlock() } -> std::convertible_to<void>;
-            { m.try_lock() } -> std::convertible_to<bool>;
-        };
+    template <typename Mtx = Mutex>
+    concept MutexLike = requires(Mtx m) {
+        { m.lock() } -> std::convertible_to<void>;
+        { m.unlock() } -> std::convertible_to<void>;
+        { m.try_lock() } -> std::convertible_to<bool>;
+    };
 
-};  // namespace corekit
+}; // namespace corekit
