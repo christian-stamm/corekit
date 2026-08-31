@@ -27,8 +27,7 @@ function(pioasm_generate_headers)
         
         add_custom_command(
             OUTPUT ${generated_include}
-            COMMAND $<TARGET_FILE:pioasm> ${PIOASM_GENERATE_HEADERS_FLAGS} ${program} ${generated_include}
-            DEPENDS pioasm ${program}
+            COMMAND pioasm ${PIOASM_GENERATE_HEADERS_FLAGS} ${program} ${generated_include}
             COMMENT "Building ${program}..."
         )
         
