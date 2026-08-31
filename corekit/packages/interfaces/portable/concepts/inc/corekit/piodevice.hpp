@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "corekit/platform/piodevice.hpp"
 
 namespace corekit {

@@ -270,10 +270,7 @@ namespace corekit::platform {
 
         template <typename T>
         bool Node<T>::write(const T& data) {
-            while (pio_sm_is_tx_fifo_full(block, node)) {
-                tight_loop_contents();
-            }
-            pio_sm_put(block, node, data);
+            pio_sm_put_blocking(block, node, data);
             return true;
         }
 
@@ -289,11 +286,7 @@ namespace corekit::platform {
 
         template <typename T>
         bool Node<T>::read(T& data) {
-            while (pio_sm_is_rx_fifo_empty(block, node)) {
-                tight_loop_contents();
-            }
-
-            data = pio_sm_get(block, node);
+            data = pio_sm_get_blocking(block, node);
             return true;
         }
 
