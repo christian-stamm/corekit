@@ -6,13 +6,13 @@
 
 #include "corekit/platform/asyncdevice.hpp"
 
-namespace corekit::platform {
+namespace corekit::platform::uart {
 
-    class UartDevice : public AsyncDevice<uint8_t> {
+    class Device : public AsyncDevice<uint8_t> {
        public:
-        using Ptr = std::shared_ptr<UartDevice>;
+        using Ptr = std::shared_ptr<Device>;
 
-        UartDevice(                                               //
+        Device(                                                   //
             uart_inst_t* instance = uart_default,                 //
             uint         baudRate = PICO_DEFAULT_UART_BAUD_RATE,  //
             uint         txPin    = PICO_DEFAULT_UART_TX_PIN,     //
@@ -35,4 +35,4 @@ namespace corekit::platform {
         uint         rxPin;
     };
 
-};  // namespace corekit::platform
+};  // namespace corekit::platform::uart

@@ -4,6 +4,6 @@
 
 namespace corekit {
 
-    using SpiDevice = platform::SpiDevice;
+    namespace Spi = platform::spi;
 
 }  // namespace corekit

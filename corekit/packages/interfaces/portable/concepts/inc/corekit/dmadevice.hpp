@@ -4,7 +4,6 @@
 
 namespace corekit {
 
-    using DmaDevice = platform::DmaDevice;
-    namespace Dma   = platform::Dma;
+    namespace Dma = platform::dma;
 
 }  // namespace corekit

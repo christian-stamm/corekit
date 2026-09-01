@@ -4,6 +4,6 @@
 
 namespace corekit {
 
-    namespace Pio = platform::Pio;
+    namespace Pio = platform::pio;
 
 }  // namespace corekit

@@ -4,6 +4,6 @@
 
 namespace corekit {
 
-    using UartDevice = platform::UartDevice;
+    namespace Uart = platform::uart;
 
 }  // namespace corekit

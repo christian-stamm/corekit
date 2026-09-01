@@ -72,8 +72,8 @@ class PioTask : public Task {
 
 class DmaTask : public Task {
    public:
-    DmaTask() : dma_device_(DmaDevice::requestUnused()) {
-        DmaDevice::enableIRQ();
+    DmaTask() : dma_device_(Dma::Device::requestUnused()) {
+        Dma::Device::enableIRQ();
 
         aligned_src_ptr_ = new uint32_t(0);
         aligned_dst_ptr_ = static_cast<uint32_t*>(
@@ -121,7 +121,7 @@ class DmaTask : public Task {
 
    private:
     Logger             logger_{"DmaTask"};
-    DmaDevice::Ptr     dma_device_;
+    Dma::Device::Ptr   dma_device_;
     Dma::Transfer::Ptr dma_transfer_;
 
     uint32_t* aligned_src_ptr_ = nullptr;
@@ -130,7 +130,7 @@ class DmaTask : public Task {
 
 int main() {
     sleep_ms(10);  // Stabilize
-    Logging::reconfigure(std::make_shared<UartDevice>());
+    Logging::reconfigure(std::make_shared<Uart::Device>());
 
     Executor     executor(2, 2);
     DmaTask::Ptr dmaTask = std::make_shared<DmaTask>();

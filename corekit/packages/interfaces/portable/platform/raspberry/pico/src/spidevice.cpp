@@ -5,21 +5,21 @@
 
 #include <format>
 
-namespace corekit::platform {
+namespace corekit::platform::spi {
 
-    SpiDevice::SpiDevice(spi_inst_t*        instance,  //
-                         const bool         slave,     //
-                         const float        freq,      //
-                         const spi_cpol_t&  cpol,      //
-                         const spi_cpha_t&  cpha,      //
-                         const spi_order_t& order,     //
-                         const uint         txPin,     //
-                         const uint         rxPin,     //
-                         const uint         sckPin,    //
-                         const uint         csnPin     //
-                         )
+    Device::Device(spi_inst_t*        instance,  //
+                   const bool         slave,     //
+                   const float        freq,      //
+                   const spi_cpol_t&  cpol,      //
+                   const spi_cpha_t&  cpha,      //
+                   const spi_order_t& order,     //
+                   const uint         txPin,     //
+                   const uint         rxPin,     //
+                   const uint         sckPin,    //
+                   const uint         csnPin     //
+                   )
         : AsyncDevice(
-              std::format("SpiDevice{}", spi_get_index(instance)),        //
+              std::format("Device{}", spi_get_index(instance)),           //
               {&spi_get_hw(instance)->dr, spi_get_dreq(instance, true)},  //
               {&spi_get_hw(instance)->dr, spi_get_dreq(instance, false)}  //
               )
@@ -34,7 +34,7 @@ namespace corekit::platform {
         , sckPin(sckPin)
         , csnPin(csnPin) {}
 
-    bool SpiDevice::on_load() {
+    bool Device::on_load() {
         gpio_init(txPin);
         gpio_init(rxPin);
         gpio_init(sckPin);
@@ -57,7 +57,7 @@ namespace corekit::platform {
         return true;
     }
 
-    bool SpiDevice::on_unload() {
+    bool Device::on_unload() {
         spi_deinit(instance);
         gpio_set_function(txPin, GPIO_FUNC_SIO);
         gpio_set_function(rxPin, GPIO_FUNC_SIO);
@@ -66,36 +66,36 @@ namespace corekit::platform {
         return true;
     }
 
-    void SpiDevice::loopback(bool enabled) {
+    void Device::loopback(bool enabled) {
         auto fn = enabled ? hw_set_bits : hw_clear_bits;
         fn(&spi_get_hw(instance)->cr1, SPI_SSPCR1_LBM_BITS);
     }
 
-    bool SpiDevice::write(const uint8_t& data) {
+    bool Device::write(const uint8_t& data) {
         spi_write_blocking(instance, &data, 1);
         return true;
     }
 
-    bool SpiDevice::write_bulk(std::span<const uint8_t> data) {
+    bool Device::write_bulk(std::span<const uint8_t> data) {
         return spi_write_blocking(instance, data.data(), data.size()) ==
                data.size();
     }
 
-    bool SpiDevice::read(uint8_t& data) {
+    bool Device::read(uint8_t& data) {
         return spi_read_blocking(instance, 0, &data, 1) == 1;
     }
 
-    bool SpiDevice::read_bulk(std::span<uint8_t> data) {
+    bool Device::read_bulk(std::span<uint8_t> data) {
         return spi_read_blocking(instance, 0, data.data(), data.size()) ==
                data.size();
     }
 
-    bool SpiDevice::xfer(const uint8_t& txData, uint8_t& rxData) {
+    bool Device::xfer(const uint8_t& txData, uint8_t& rxData) {
         return spi_write_read_blocking(instance, &txData, &rxData, 1) == 1;
     }
 
-    bool SpiDevice::xferBulk(std::span<const uint8_t> txData,
-                             std::span<uint8_t>       rxData) {
+    bool Device::xferBulk(std::span<const uint8_t> txData,
+                          std::span<uint8_t>       rxData) {
         const uint num_cycles = std::min(txData.size(), rxData.size());
 
         return spi_write_read_blocking(instance,
@@ -104,4 +104,4 @@ namespace corekit::platform {
                                        num_cycles) == num_cycles;
     }
 
-}  // namespace corekit::platform
+}  // namespace corekit::platform::spi

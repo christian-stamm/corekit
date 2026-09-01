@@ -6,22 +6,22 @@
 
 #include "corekit/platform/asyncdevice.hpp"
 
-namespace corekit::platform {
+namespace corekit::platform::spi {
 
-    class SpiDevice : public AsyncDevice<uint8_t> {
+    class Device : public AsyncDevice<uint8_t> {
        public:
-        using Ptr = std::shared_ptr<SpiDevice>;
+        using Ptr = std::shared_ptr<Device>;
 
-        SpiDevice(spi_inst_t*        instance = spi_default,               //
-                  const bool         slave    = true,                      //
-                  const float        freq     = 1e6,                       //
-                  const spi_cpol_t&  cpol     = SPI_CPOL_0,                //
-                  const spi_cpha_t&  cpha     = SPI_CPHA_1,                //
-                  const spi_order_t& order    = SPI_MSB_FIRST,             //
-                  const uint         txPin    = PICO_DEFAULT_SPI_TX_PIN,   //
-                  const uint         rxPin    = PICO_DEFAULT_SPI_RX_PIN,   //
-                  const uint         sckPin   = PICO_DEFAULT_SPI_SCK_PIN,  //
-                  const uint         csnPin   = PICO_DEFAULT_SPI_CSN_PIN   //
+        Device(spi_inst_t*        instance = spi_default,               //
+               const bool         slave    = true,                      //
+               const float        freq     = 1e6,                       //
+               const spi_cpol_t&  cpol     = SPI_CPOL_0,                //
+               const spi_cpha_t&  cpha     = SPI_CPHA_1,                //
+               const spi_order_t& order    = SPI_MSB_FIRST,             //
+               const uint         txPin    = PICO_DEFAULT_SPI_TX_PIN,   //
+               const uint         rxPin    = PICO_DEFAULT_SPI_RX_PIN,   //
+               const uint         sckPin   = PICO_DEFAULT_SPI_SCK_PIN,  //
+               const uint         csnPin   = PICO_DEFAULT_SPI_CSN_PIN   //
         );
 
         void loopback(bool enabled);
@@ -52,4 +52,4 @@ namespace corekit::platform {
         uint        csnPin;
     };
 
-};  // namespace corekit::platform
+};  // namespace corekit::platform::spi

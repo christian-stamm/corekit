@@ -4,7 +4,7 @@
 
 namespace corekit {
 
-    static_assert(std::is_base_of_v<SerialDevice<uint32_t>, DmaDevice>,
+    static_assert(std::is_base_of_v<SerialDevice<uint32_t>, Dma::Device>,
                   "DmaDevice must be a subclass of SerialDevice");
 
 }  // namespace corekit

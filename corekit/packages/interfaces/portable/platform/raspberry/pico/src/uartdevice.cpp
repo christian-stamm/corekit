@@ -5,9 +5,9 @@
 
 #include <format>
 
-namespace corekit::platform {
+namespace corekit::platform::uart {
 
-    UartDevice::UartDevice(     //
+    Device::Device(             //
         uart_inst_t* instance,  //
         uint         baudRate,  //
         uint         txPin,     //
@@ -23,33 +23,33 @@ namespace corekit::platform {
         , txPin(txPin)
         , rxPin(rxPin) {}
 
-    bool UartDevice::on_load() {
+    bool Device::on_load() {
         uart_init(instance, baudRate);
         gpio_set_function(txPin, GPIO_FUNC_UART);
         gpio_set_function(rxPin, GPIO_FUNC_UART);
         return true;
     }
 
-    bool UartDevice::on_unload() {
+    bool Device::on_unload() {
         uart_deinit(instance);
         gpio_set_function(txPin, GPIO_FUNC_SIO);
         gpio_set_function(rxPin, GPIO_FUNC_SIO);
         return true;
     }
 
-    bool UartDevice::write(const uint8_t& data) {
+    bool Device::write(const uint8_t& data) {
         uart_putc(instance, static_cast<char>(data));
         return true;
     }
 
-    bool UartDevice::write_bulk(std::span<const uint8_t> data) {
+    bool Device::write_bulk(std::span<const uint8_t> data) {
         uart_write_blocking(instance,
                             data.data(),
                             static_cast<size_t>(data.size()));
         return true;
     }
 
-    bool UartDevice::read(uint8_t& data) {
+    bool Device::read(uint8_t& data) {
         int c = uart_getc(instance);
         if (c == PICO_ERROR_TIMEOUT) {
             return false;
@@ -58,7 +58,7 @@ namespace corekit::platform {
         return true;
     }
 
-    bool UartDevice::read_bulk(std::span<uint8_t> data) {
+    bool Device::read_bulk(std::span<uint8_t> data) {
         uart_read_blocking(instance,
                            data.data(),
                            static_cast<size_t>(data.size()));
@@ -66,4 +66,4 @@ namespace corekit::platform {
         return true;
     }
 
-}  // namespace corekit::platform
+}  // namespace corekit::platform::uart
