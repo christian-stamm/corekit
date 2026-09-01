@@ -1,19 +1,12 @@
+#include "corekit/platform/dmadevice.hpp"
+
 #include <hardware/dma.h>
-#include <hardware/platform_defs.h>
-#include <hardware/regs/dreq.h>
-#include <pico/time.h>
-#include <pico/types.h>
 
 #include <cmath>
 #include <cstdint>
 #include <format>
-#include <map>
 #include <memory>
-#include <stdexcept>
-
-#include "device/device.hpp"
-#include "device/dma.hpp"
-#include "math.hpp"
+#include <vector>
 
 constexpr uint IRQ_INDEX = 0;
 constexpr uint IRQ_NUM   = DMA_IRQ_NUM(IRQ_INDEX);
@@ -21,208 +14,168 @@ constexpr uint IRQ_NUM   = DMA_IRQ_NUM(IRQ_INDEX);
 constexpr uint MIN_RING_BITS = 1;
 constexpr uint MAX_RING_BITS = 15;
 
-__isr void event();
+__isr void shared_irq_callback();
 
-std::array<DMA::Handle, NUM_DMA_CHANNELS> handles;
+namespace corekit::platform {
 
-DMA::DMA(uint channel, bool highPrio)
-    : Device<uint32_t>(
-          std::format("DMA{}", channel),                                     //
-          {&dma_channel_hw_addr(channel)->al2_write_addr_trig, DREQ_FORCE},  //
-          {&dma_channel_hw_addr(channel)->al3_read_addr_trig, DREQ_FORCE}    //
-          )
-    , channel(channel)
-    , config(dma_channel_get_default_config(channel))
-    , wrapBytes(0)
-    , wrapWrite(false) {
-    dma_channel_claim(channel);
-    channel_config_set_high_priority(&config, highPrio);
-}
+    std::vector<Dma::Handle> handles(NUM_DMA_CHANNELS, nullptr);
 
-DMA::~DMA() {
-    dma_channel_unclaim(channel);
-}
+    // -----------------------------------------------------------------
+    // Transfer
+    // -----------------------------------------------------------------
 
-void DMA::prepare() {
-    // Nothing to do
-}
+    Dma::Transfer::Transfer(uint                 channel,
+                            uint                 dreq,
+                            const volatile void* originAddr,
+                            const volatile void* targetAddr,
+                            AddrUpdt             originUpdate,
+                            AddrUpdt             targetUpdate,
+                            uint32_t             length,
+                            XferSize             blockSize,
+                            Wrapping             wrapping,
+                            bool                 byteswap,
+                            bool                 sniff,
+                            int                  chain,
+                            Dma::Handle&&        handle)
+        : originAddr(const_cast<volatile void*>(originAddr))
+        , targetAddr(const_cast<volatile void*>(targetAddr))  //
+    {
+        config   = dma_channel_get_default_config(channel);
+        encoding = dma_encode_transfer_count(length);
 
-void DMA::cleanup() {
-    kill();
-    dma_channel_cleanup(channel);
-}
+        if (wrapping != Wrapping::None) {
+            size_t wrapBytes = length * (1 << blockSize);
+            size_t ringSize  = std::log2(wrapBytes);
 
-DMA::Ptr DMA::requestUnused() {
-    for (uint channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
-        if (!dma_channel_is_claimed(channel)) {
-            return std::make_shared<DMA>(channel);
+            const bool overflow  = MAX_RING_BITS < ringSize;
+            const bool underflow = MIN_RING_BITS > ringSize;
+            const bool isPow2    = (wrapBytes & (wrapBytes - 1)) == 0;
+
+            const bool           wrapWrite = wrapping == Wrapping::Write;
+            const volatile void* ptr = wrapWrite ? targetAddr : originAddr;
+
+            const bool isAligned =
+                (reinterpret_cast<uintptr_t>(ptr) % wrapBytes) == 0;
+
+            if (!overflow && !underflow && isPow2 && isAligned) {
+                channel_config_set_ring(&config, wrapWrite, ringSize);
+            }
+
+            encoding = dma_encode_transfer_count_with_self_trigger(length);
+        }
+
+        if (0 <= chain) {
+            channel_config_set_chain_to(&config, chain);
+        }
+
+        handles[channel] = std::move(handle);
+
+        channel_config_set_dreq(&config, dreq);
+        channel_config_set_transfer_data_size(&config, blockSize);
+        channel_config_set_read_increment(&config, originUpdate);
+        channel_config_set_write_increment(&config, targetUpdate);
+        channel_config_set_sniff_enable(&config, sniff);
+        channel_config_set_irq_quiet(&config, false);
+        channel_config_set_bswap(&config, byteswap);
+        channel_config_set_enable(&config, true);
+    }
+
+    // -----------------------------------------------------------------
+    // DmaDevice
+    // -----------------------------------------------------------------
+
+    DmaDevice::DmaDevice(uint channel)
+        : AsyncDevice<uint32_t>(
+              std::format("DMA{}", channel),
+              {&dma_channel_hw_addr(channel)->al2_write_addr_trig, DREQ_FORCE},
+              {&dma_channel_hw_addr(channel)->al3_read_addr_trig, DREQ_FORCE})
+        , channel(channel) {
+        dma_channel_claim(channel);
+        dma_irqn_set_channel_enabled(IRQ_INDEX, channel, true);
+    }
+
+    DmaDevice::~DmaDevice() {
+        dma_channel_cleanup(channel);
+        dma_channel_unclaim(channel);
+    }
+
+    bool DmaDevice::on_load() {
+        return true;
+    }
+
+    bool DmaDevice::on_unload() {
+        kill();
+        return true;
+    }
+
+    DmaDevice::Ptr DmaDevice::requestUnused() {
+        for (uint channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
+            if (!dma_channel_is_claimed(channel)) {
+                return std::make_shared<DmaDevice>(channel);
+            }
+        }
+
+        throw std::runtime_error("No unused Dma channels available.");
+    }
+
+    bool DmaDevice::busy() const {
+        return dma_channel_is_busy(channel);
+    }
+
+    void DmaDevice::kill() const {
+        if (busy()) {
+            dma_channel_abort(channel);
         }
     }
 
-    throw std::runtime_error("No unused Dma channels available.");
-}
+    // void DMA::setMode(Mode mode, uint dreq, bool reversed, bool byteswap)
+    // {
+    //     AddrUpdt writeUpdate = DMA_ADDRESS_UPDATE_NONE;
+    //     AddrUpdt readUpdate  = DMA_ADDRESS_UPDATE_NONE;
 
-bool DMA::busy() const {
-    return dma_channel_is_busy(channel);
-}
+    //     if (mode == MEM2DEV || mode == MEM2MEM) {
+    //         readUpdate = reversed ? DMA_ADDRESS_UPDATE_DECREMENT
+    //                               : DMA_ADDRESS_UPDATE_INCREMENT;
+    //     }
 
-void DMA::kill() const {
-    if (busy()) {
-        dma_channel_abort(channel);
-    }
-}
+    //     if (mode == DEV2MEM || mode == MEM2MEM) {
+    //         writeUpdate = reversed ? DMA_ADDRESS_UPDATE_DECREMENT
+    //                                : DMA_ADDRESS_UPDATE_INCREMENT;
+    //     }
 
-void DMA::block() const {
-    dma_channel_wait_for_finish_blocking(channel);
-}
+    // }
 
-void DMA::setMode(Mode mode, uint dreq, bool reversed, bool byteswap) {
-    AddrUpdt writeUpdate = DMA_ADDRESS_UPDATE_NONE;
-    AddrUpdt readUpdate  = DMA_ADDRESS_UPDATE_NONE;
-
-    if (mode == MEM2DEV || mode == MEM2MEM) {
-        readUpdate = reversed ? DMA_ADDRESS_UPDATE_DECREMENT
-                              : DMA_ADDRESS_UPDATE_INCREMENT;
-    }
-
-    if (mode == DEV2MEM || mode == MEM2MEM) {
-        writeUpdate = reversed ? DMA_ADDRESS_UPDATE_DECREMENT
-                               : DMA_ADDRESS_UPDATE_INCREMENT;
-    }
-
-    channel_config_set_dreq(&config, dreq);
-    channel_config_set_bswap(&config, byteswap);
-    channel_config_set_read_address_update_type(&config, readUpdate);
-    channel_config_set_write_address_update_type(&config, writeUpdate);
-}
-
-void DMA::setIRQ(Handle handle, bool quiet) {
-    handles[channel] = handle;
-    channel_config_set_irq_quiet(&config, quiet);
-    dma_irqn_set_channel_enabled(IRQ_INDEX, channel, handle != nullptr);
-}
-
-void DMA::wrapping(bool wrapWrite, uint wrapBytes) {
-    size_t ringSize = 0;
-
-    if (0 < wrapBytes) {
-        ringSize = std::log2(wrapBytes);
-
-        const bool overflow  = MAX_RING_BITS < ringSize;
-        const bool underflow = MIN_RING_BITS > ringSize;
-
-        if (overflow || underflow || !math::isPow2(wrapBytes)) {
-            throw std::runtime_error(
-                "Ringbuffer size must be a power of two between 2^1 and 2^15.");
-        }
-    }
-
-    this->wrapBytes = wrapBytes;
-    this->wrapWrite = wrapWrite;
-    channel_config_set_ring(&config, wrapWrite, ringSize);
-}
-
-void DMA::chaining(uint channel) {
-    channel_config_set_chain_to(&config, channel);
-}
-
-void DMA::sniffing(bool enabled) {
-    channel_config_set_sniff_enable(&config, enabled);
-}
-
-template <typename T>
-void DMA::configure(const Transfer& task, bool verify) {
-    const XferSize blockSize = static_cast<XferSize>(std::log2(sizeof(T)));
-    const bool     doWrap    = 0 < wrapBytes;
-
-    if (verify) {
-        if (task.length == 0) {
-            throw std::runtime_error(
-                "Transfer length must be greater than zero.");
+    bool DmaDevice::process(Dma::Transfer::Ptr task) {
+        if (busy() || !task) {
+            return false;
         }
 
-        if (!task.origin || !task.target) {
-            throw std::runtime_error(
-                "Transfer source and destination must be specified.");
-        }
+        dma_channel_set_transfer_count(channel, task->encoding, false);
+        dma_channel_set_read_addr(channel, task->originAddr, false);
+        dma_channel_set_write_addr(channel, task->targetAddr, false);
+        dma_channel_set_config(channel, &task->config, true);
 
-        if (task.repeat && !doWrap) {
-            throw std::runtime_error(
-                "Cannot use repeating transfers without ringbuffers "
-                "(Wrapping).");
-        }
+        return true;
     }
 
-    encoding = dma_encode_transfer_count(task.length);
-
-    if (doWrap) {
-        const bool isAligned =
-            Memory::isAligned(wrapWrite ? task.target : task.origin, wrapBytes);
-
-        if (!isAligned) {
-            throw std::runtime_error("Ringbuffer address is not aligned.");
-        }
-
-        if (task.repeat) {
-            encoding = dma_encode_transfer_count_with_self_trigger(encoding);
-        }
-    } else if (task.repeat) {
-        throw std::runtime_error(
-            "Cannot use repeating transfers without ringbuffers.");
+    void DmaDevice::enableIRQ() {
+        irq_set_exclusive_handler(IRQ_NUM, shared_irq_callback);
+        irq_set_enabled(IRQ_NUM, true);
     }
 
-    channel_config_set_transfer_data_size(&config, blockSize);
-    channel_config_set_enable(&config, true);
-
-    dma_channel_set_read_addr(channel,
-                              const_cast<volatile void*>(task.origin),
-                              false);
-    dma_channel_set_write_addr(channel,
-                               const_cast<volatile void*>(task.target),
-                               false);
-    dma_channel_set_transfer_count(channel, encoding, false);
-    dma_channel_set_config(channel, &config, false);
-}
-
-template <typename T>
-void DMA::process(const Transfer& task,
-                  bool            doConfigure,
-                  bool            doWait,
-                  bool            doKill) {
-    if (doKill) {
-        this->kill();
+    void DmaDevice::disableIRQ() {
+        irq_set_enabled(IRQ_NUM, false);
+        irq_remove_handler(IRQ_NUM, shared_irq_callback);
     }
 
-    if (busy()) {
-        throw std::runtime_error(
-            "Cannot start a new transfer on a busy channel.");
-    }
+};  // namespace corekit::platform
 
-    if (doConfigure) {
-        this->configure<T>(task);
-    }
+void shared_irq_callback() {
+    using namespace corekit::platform;
 
-    dma_channel_start(channel);
-
-    if (doWait) {
-        this->block();
-    }
-}
-
-void DMA::enableIRQ() {
-    irq_set_exclusive_handler(IRQ_NUM, event);
-    irq_set_enabled(IRQ_NUM, true);
-}
-
-void DMA::disableIRQ() {
-    irq_set_enabled(IRQ_NUM, false);
-    irq_remove_handler(IRQ_NUM, event);
-}
-
-void event() {
     for (uint channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
         if (dma_irqn_get_channel_status(IRQ_INDEX, channel)) {
-            const DMA::Handle handle = handles[channel];
+            const Dma::Handle handle = handles[channel];
 
             if (handle) {
                 handle();
@@ -232,7 +185,3 @@ void event() {
         }
     }
 }
-
-template void DMA::process<uint8_t>(const Transfer&, bool, bool, bool);
-template void DMA::process<uint16_t>(const Transfer&, bool, bool, bool);
-template void DMA::process<uint32_t>(const Transfer&, bool, bool, bool);

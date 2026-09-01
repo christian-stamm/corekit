@@ -342,6 +342,12 @@ void vPortEnableInterrupts(void) {
 }
 /*-----------------------------------------------------------*/
 
+bool xPortIsInsideInterrupt(void) {
+    return pdFALSE;
+}
+
+/*-----------------------------------------------------------*/
+
 UBaseType_t xPortSetInterruptMask(void) {
     /* Interrupts are always disabled inside ISRs (signals
      * handlers). */

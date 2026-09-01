@@ -10,62 +10,83 @@
 
 #include "corekit/platform/asyncdevice.hpp"
 
-template <typename T>
-class DmaDevice : public corekit::AsyncDevice<T> {
-   public:
-    using Ptr      = std::shared_ptr<DmaDevice>;
-    using Config   = dma_channel_config;
-    using Handle   = std::function<void()>;
-    using XferSize = dma_channel_transfer_size;
-    using AddrUpdt = dma_address_update_type_t;
+namespace corekit::platform {
 
-    enum Mode { DEV2DEV, MEM2DEV, DEV2MEM, MEM2MEM };
+    // Forward declaration
+    class DmaDevice;
 
-    struct Transfer {
-        CtrlBlock origin;
-        CtrlBlock target;
-        uint32_t  length;
+    namespace Dma {
+        using Config   = dma_channel_config;
+        using Handle   = std::function<void()>;
+        using XferSize = dma_channel_transfer_size;
+        using AddrUpdt = dma_address_update_type_t;
+
+        enum class Wrapping { None = 0, Read = 1, Write = 2 };
+
+        struct Transfer {
+            friend class corekit::platform::DmaDevice;
+
+           public:
+            using Ptr = std::shared_ptr<Transfer>;
+
+            Transfer(uint                 channel,
+                     uint                 dreq,
+                     const volatile void* originAddr,
+                     const volatile void* targetAddr,
+                     AddrUpdt             originUpdate,
+                     AddrUpdt             targetUpdate,
+                     uint32_t             length,
+                     XferSize             blockSize,
+                     Wrapping             wrapping = Wrapping::None,
+                     bool                 byteswap = false,
+                     bool                 sniff    = false,
+                     int                  chain    = -1,
+                     Dma::Handle&&        handle   = nullptr);
+
+           protected:
+            volatile void* originAddr;
+            volatile void* targetAddr;
+            uint32_t       encoding;
+            Config         config;
+        };
+
+    }  // namespace Dma
+
+    class DmaDevice : public AsyncDevice<uint32_t> {
+       public:
+        using Ptr = std::shared_ptr<DmaDevice>;
+
+        DmaDevice(uint channel);
+        virtual ~DmaDevice() override;
+
+        static Ptr requestUnused();
+
+        static void enableIRQ();
+        static void disableIRQ();
+
+        bool process(Dma::Transfer::Ptr task);
+        void chaining(uint channel);
+        void sniffing(bool enabled);
+
+        bool busy() const;
+        void kill() const;
+
+        const uint channel;
+
+        virtual bool write(const uint32_t& value) override {
+            return false;
+        }
+
+        virtual bool read(uint32_t& value) override {
+            return false;
+        }
+
+       protected:
+        virtual bool on_load() override;
+        virtual bool on_unload() override;
+
+       private:
+        void setIRQ(Dma::Handle handle = nullptr, bool quiet = false);
     };
 
-    DMA(uint channel, bool highPrio = false);
-    virtual ~DMA() override;
-
-    static Ptr requestUnused();
-
-    static void enableIRQ();
-    static void disableIRQ();
-
-    template <typename T>
-    void configure(const Transfer& task, bool verify = true);
-
-    template <typename T>
-    void process(const Transfer& task,
-                 bool            configure,
-                 bool            wait = false,
-                 bool            kill = false);
-
-    void setMode(Mode mode     = MEM2MEM,
-                 uint dreq     = DREQ_FORCE,
-                 bool reversed = false,
-                 bool byteswap = false);
-
-    void setIRQ(Handle handle = nullptr, bool quiet = false);
-    void wrapping(bool wrapWrite = false, uint wrapBytes = 0);
-    void chaining(uint channel);
-    void sniffing(bool enabled);
-    bool busy() const;
-    void kill() const;
-    void block() const;
-
-    const uint channel;
-
-   protected:
-    virtual bool onLoad() override;
-    virtual bool onUnload() override;
-
-   private:
-    Config   config;
-    uint     wrapBytes;
-    bool     wrapWrite;
-    uint32_t encoding;
-};
+}  // namespace corekit::platform

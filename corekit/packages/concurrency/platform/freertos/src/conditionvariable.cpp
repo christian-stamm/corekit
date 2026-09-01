@@ -2,49 +2,73 @@
 
 namespace corekit::platform {
 
-    void ConditionVariable::wait(std::unique_lock<Mutex>& lock) {
-        TaskHandle_t self = xTaskGetCurrentTaskHandle();
+    ConditionVariable::ConditionVariable(uint32_t max_waiters)
+        : waiters_(xQueueCreate(max_waiters, sizeof(Waiter*))) {
+        configASSERT(waiters_ != nullptr);
+    }
 
-        {
-            std::lock_guard<Mutex> guard(waiters_mutex_);
-            waiters_.push_back(self);
+    ConditionVariable::~ConditionVariable() {
+        if (waiters_) {
+            configASSERT(uxQueueMessagesWaiting(waiters_) == 0);
+            vQueueDelete(waiters_);
         }
+    }
 
+    void ConditionVariable::wait(std::unique_lock<Mutex>& lock) {
+        Waiter waiter{};
+
+        waiter.semaphore = xSemaphoreCreateBinaryStatic(&waiter.storage);
+
+        configASSERT(waiter.semaphore != nullptr);
+
+        Waiter* waiter_ptr = &waiter;
+
+        //
+        // Register ourselves while still holding the caller's mutex.
+        //
+        // Do not block here. Blocking while holding `lock` could deadlock
+        // because another thread may need the same mutex in order to notify.
+        //
+        const BaseType_t queued = xQueueSend(waiters_, &waiter_ptr, 0);
+
+        configASSERT(queued == pdTRUE);
+
+        //
+        // The waiter is now visible to notify_one()/notify_all().
+        //
+        // If notification happens between unlock() and xSemaphoreTake(),
+        // the binary semaphore remembers the wakeup.
+        //
         lock.unlock();
 
-        // Notification is persistent, unlike vTaskResume().
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        xSemaphoreTake(waiter.semaphore, portMAX_DELAY);
 
         lock.lock();
     }
 
     void ConditionVariable::notify_one() {
-        TaskHandle_t task = nullptr;
+        Waiter* waiter = nullptr;
 
-        {
-            std::lock_guard<Mutex> guard(waiters_mutex_);
+        if (xQueueReceive(waiters_, &waiter, 0) == pdTRUE) {
+            configASSERT(waiter != nullptr);
 
-            if (!waiters_.empty()) {
-                task = waiters_.front();
-                waiters_.pop_front();
-            }
-        }
-
-        if (task != nullptr) {
-            xTaskNotifyGive(task);
+            xSemaphoreGive(waiter->semaphore);
         }
     }
 
     void ConditionVariable::notify_all() {
-        std::deque<TaskHandle_t> pending;
+        const UBaseType_t count = uxQueueMessagesWaiting(waiters_);
 
-        {
-            std::lock_guard<Mutex> guard(waiters_mutex_);
-            pending.swap(waiters_);
-        }
+        for (UBaseType_t i = 0; i < count; ++i) {
+            Waiter* waiter = nullptr;
 
-        for (TaskHandle_t task : pending) {
-            xTaskNotifyGive(task);
+            if (xQueueReceive(waiters_, &waiter, 0) != pdTRUE) {
+                break;
+            }
+
+            configASSERT(waiter != nullptr);
+
+            xSemaphoreGive(waiter->semaphore);
         }
     }
 

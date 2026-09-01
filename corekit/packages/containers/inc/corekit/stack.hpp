@@ -8,10 +8,15 @@
 
 namespace corekit {
 
+    constexpr size_t MAX_STACK_WAITER = 10;
+
     template <typename T>
     class Stack {
        public:
-        explicit Stack(size_t capacity) : capacity_(capacity) {}
+        explicit Stack(size_t capacity)
+            : capacity_(capacity)
+            , producer_(MAX_STACK_WAITER)
+            , consumer_(MAX_STACK_WAITER) {}
 
         VoidResult push(T item, bool wait = true) {
             {

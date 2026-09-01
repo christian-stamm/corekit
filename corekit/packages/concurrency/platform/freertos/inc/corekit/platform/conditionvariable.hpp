@@ -1,20 +1,23 @@
 #pragma once
 
 #include <FreeRTOS.h>
-#include <task.h>
+#include <queue.h>
+#include <semphr.h>
 
-#include <deque>
+#include <cstdint>
 #include <memory>
 #include <mutex>
-#include <vector>
 
-#include "corekit/mutex.hpp"
+#include "corekit/platform/mutex.hpp"
 
 namespace corekit::platform {
 
     class ConditionVariable {
        public:
-        ConditionVariable() = default;
+        using Ptr = std::shared_ptr<ConditionVariable>;
+
+        explicit ConditionVariable(uint32_t max_waiters);
+        ~ConditionVariable();
 
         ConditionVariable(const ConditionVariable&)            = delete;
         ConditionVariable(ConditionVariable&&)                 = delete;
@@ -29,12 +32,17 @@ namespace corekit::platform {
         }
 
         void wait(std::unique_lock<Mutex>& lock);
+
         void notify_one();
         void notify_all();
 
        private:
-        Mutex                    waiters_mutex_;
-        std::deque<TaskHandle_t> waiters_;
+        struct Waiter {
+            StaticSemaphore_t storage;
+            SemaphoreHandle_t semaphore;
+        };
+
+        QueueHandle_t waiters_;
     };
 
 }  // namespace corekit::platform

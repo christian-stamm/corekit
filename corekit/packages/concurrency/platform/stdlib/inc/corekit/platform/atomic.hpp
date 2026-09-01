@@ -4,13 +4,15 @@
 
 namespace corekit::platform {
 
+    using uint = unsigned int;
+
     template <typename T>
     class Atomic : public std::atomic<T> {
+       public:
         using Ptr = std::shared_ptr<Atomic<T>>;
         using std::atomic<T>::atomic;
 
-       public:
-        bool compare_exchange(T& expected, T desired) {
+        inline bool compare_exchange(T& expected, T desired) {
             return std::atomic<T>::compare_exchange_strong(expected, desired);
         }
     };

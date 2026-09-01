@@ -7,6 +7,7 @@
 
 #include "corekit/queue.hpp"
 #include "corekit/result.hpp"
+#include "corekit/semaphore.hpp"
 #include "corekit/task.hpp"
 
 namespace corekit::platform {

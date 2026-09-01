@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+
 #include "corekit/platform/time.hpp"
 
 namespace corekit {

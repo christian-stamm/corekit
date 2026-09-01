@@ -23,14 +23,15 @@ corekit_add_module(piodevice API
     DEPENDENCIES        "serialdevice"
 )
 
+corekit_add_module(dmadevice API
+    PUBLIC_INCLUDES     "inc"
+    SOURCE_FILES        "src/dmadevice.cpp"
+    DEPENDENCIES        "serialdevice"
+)
+
 # corekit_add_module(i2cdevice API
 #     PUBLIC_INCLUDES     "inc"
 #     SOURCE_FILES        "src/i2cdevice.cpp"
 #     DEPENDENCIES        "serialdevice"
 # )
 
-# corekit_add_module(dmacontroller API
-#     PUBLIC_INCLUDES     "inc"
-#     SOURCE_FILES        "src/dmacontroller.cpp"
-#     DEPENDENCIES        "serialdevice"
-# )
