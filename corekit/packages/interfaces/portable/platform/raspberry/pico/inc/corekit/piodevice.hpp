@@ -8,11 +8,11 @@
 #include <memory>
 #include <optional>
 
-#include "corekit/platform/asyncdevice.hpp"
+#include "corekit/asyncdevice.hpp"
 
 extern bool pio_sm_is_enabled(PIO block, uint sm);
 
-namespace corekit::platform::pio {
+namespace corekit::Pio {
 
     using Command  = uint16_t;
     using NodeConf = pio_sm_config;
@@ -110,4 +110,4 @@ namespace corekit::platform::pio {
     extern template class Node<uint16_t>;
     extern template class Node<uint32_t>;
 
-}  // namespace corekit::platform::pio
+}  // namespace corekit::Pio

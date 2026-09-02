@@ -1,6 +1,5 @@
-#include "corekit/platform/piodevice.hpp"
+#include "corekit/piodevice.hpp"
 
-#include <hardware/gpio.h>
 #include <hardware/pio.h>
 
 #include <cstdint>
@@ -12,7 +11,7 @@ bool pio_sm_is_enabled(PIO block, uint sm) {
     return (block->ctrl & bool_to_bit(1 << sm)) != 0;
 }
 
-namespace corekit::platform::pio {
+namespace corekit::Pio {
 
     template class Node<uint8_t>;
     template class Node<uint16_t>;
@@ -297,4 +296,4 @@ namespace corekit::platform::pio {
         return true;
     }
 
-}  // namespace corekit::platform::pio
+}  // namespace corekit::Pio

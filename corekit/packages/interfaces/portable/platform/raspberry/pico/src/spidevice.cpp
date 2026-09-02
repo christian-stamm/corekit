@@ -1,11 +1,12 @@
-#include "corekit/platform/spidevice.hpp"
+#include "corekit/spidevice.hpp"
 
-#include <hardware/gpio.h>
 #include <hardware/spi.h>
 
 #include <format>
 
-namespace corekit::platform::spi {
+#include "corekit/gpiodevice.hpp"
+
+namespace corekit::Spi {
 
     Device::Device(spi_inst_t*        instance,  //
                    const bool         slave,     //
@@ -35,20 +36,30 @@ namespace corekit::platform::spi {
         , csnPin(csnPin) {}
 
     bool Device::on_load() {
-        gpio_init(txPin);
-        gpio_init(rxPin);
-        gpio_init(sckPin);
-        gpio_init(csnPin);
-
-        gpio_set_dir(txPin, slave ? false : true);
-        gpio_set_dir(rxPin, slave ? true : false);
-        gpio_set_dir(sckPin, slave ? false : true);
-        gpio_set_dir(csnPin, slave ? false : true);
-
-        gpio_set_function(txPin, GPIO_FUNC_SPI);
-        gpio_set_function(rxPin, GPIO_FUNC_SPI);
-        gpio_set_function(sckPin, GPIO_FUNC_SPI);
-        gpio_set_function(csnPin, GPIO_FUNC_SPI);
+        Gpio::configure(txPin,
+                        false,
+                        false,
+                        slave ? GPIO_IN : GPIO_OUT,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SPI);
+        Gpio::configure(rxPin,
+                        false,
+                        false,
+                        slave ? GPIO_OUT : GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SPI);
+        Gpio::configure(sckPin,
+                        false,
+                        false,
+                        slave ? GPIO_IN : GPIO_OUT,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SPI);
+        Gpio::configure(csnPin,
+                        false,
+                        false,
+                        slave ? GPIO_IN : GPIO_OUT,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SPI);
 
         spi_init(instance, freq);
         spi_set_slave(instance, slave);
@@ -59,10 +70,30 @@ namespace corekit::platform::spi {
 
     bool Device::on_unload() {
         spi_deinit(instance);
-        gpio_set_function(txPin, GPIO_FUNC_SIO);
-        gpio_set_function(rxPin, GPIO_FUNC_SIO);
-        gpio_set_function(sckPin, GPIO_FUNC_SIO);
-        gpio_set_function(csnPin, GPIO_FUNC_SIO);
+        Gpio::configure(txPin,
+                        false,
+                        false,
+                        GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SIO);
+        Gpio::configure(rxPin,
+                        false,
+                        false,
+                        GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SIO);
+        Gpio::configure(sckPin,
+                        false,
+                        false,
+                        GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SIO);
+        Gpio::configure(csnPin,
+                        false,
+                        false,
+                        GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SIO);
         return true;
     }
 
@@ -104,4 +135,4 @@ namespace corekit::platform::spi {
                                        num_cycles) == num_cycles;
     }
 
-}  // namespace corekit::platform::spi
+}  // namespace corekit::Spi

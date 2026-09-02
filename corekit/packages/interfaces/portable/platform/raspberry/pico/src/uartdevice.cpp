@@ -1,11 +1,12 @@
-#include "corekit/platform/uartdevice.hpp"
+#include "corekit/uartdevice.hpp"
 
-#include <hardware/gpio.h>
 #include <hardware/uart.h>
 
 #include <format>
 
-namespace corekit::platform::uart {
+#include "corekit/gpiodevice.hpp"
+
+namespace corekit::Uart {
 
     Device::Device(             //
         uart_inst_t* instance,  //
@@ -25,15 +26,35 @@ namespace corekit::platform::uart {
 
     bool Device::on_load() {
         uart_init(instance, baudRate);
-        gpio_set_function(txPin, GPIO_FUNC_UART);
-        gpio_set_function(rxPin, GPIO_FUNC_UART);
+        Gpio::configure(txPin,
+                        false,
+                        false,
+                        GPIO_OUT,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_UART);
+        Gpio::configure(rxPin,
+                        false,
+                        false,
+                        GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_UART);
         return true;
     }
 
     bool Device::on_unload() {
         uart_deinit(instance);
-        gpio_set_function(txPin, GPIO_FUNC_SIO);
-        gpio_set_function(rxPin, GPIO_FUNC_SIO);
+        Gpio::configure(txPin,
+                        false,
+                        false,
+                        GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SIO);
+        Gpio::configure(rxPin,
+                        false,
+                        false,
+                        GPIO_IN,
+                        GPIO_OVERRIDE_NORMAL,
+                        GPIO_FUNC_SIO);
         return true;
     }
 
@@ -66,4 +87,4 @@ namespace corekit::platform::uart {
         return true;
     }
 
-}  // namespace corekit::platform::uart
+}  // namespace corekit::Uart

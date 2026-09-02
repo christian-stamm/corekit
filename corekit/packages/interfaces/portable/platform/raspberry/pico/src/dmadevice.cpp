@@ -1,4 +1,4 @@
-#include "corekit/platform/dmadevice.hpp"
+#include "corekit/dmadevice.hpp"
 
 #include <hardware/dma.h>
 
@@ -16,7 +16,7 @@ constexpr uint MAX_RING_BITS = 15;
 
 __isr void shared_irq_callback();
 
-namespace corekit::platform::dma {
+namespace corekit::Dma {
 
     std::vector<Handle> handles(NUM_DMA_CHANNELS, nullptr);
 
@@ -95,7 +95,7 @@ namespace corekit::platform::dma {
                                     bool               sniff,
                                     int                chain,
                                     Handle&&           handle) {
-        XferSize       blockSize = static_cast<XferSize>(sizeof(T));
+        XferSize       blockSize = static_cast<XferSize>(sizeof(T) >> 1);
         volatile void* srcAddr   = reinterpret_cast<volatile void*>(
             const_cast<T*>(reverse ? &src.back() : &src.front()));
 
@@ -126,7 +126,7 @@ namespace corekit::platform::dma {
                                     bool             sniff,
                                     int              chain,
                                     Handle&&         handle) {
-        XferSize       blockSize = static_cast<XferSize>(sizeof(T));
+        XferSize       blockSize = static_cast<XferSize>(sizeof(T) >> 1);
         volatile void* dstAddr   = reinterpret_cast<volatile void*>(
             reverse ? &dst.back() : &dst.front());
 
@@ -151,25 +151,10 @@ namespace corekit::platform::dma {
     Transfer::Ptr Transfer::mem2mem(uint               chn,
                                     std::span<const T> src,
                                     std::span<T>       dst,
-                                    Wrapping           wrapping,
+                                    bool               reverse,
                                     bool               byteswap,
-                                    bool               sniff,
-                                    int                chain,
                                     Handle&&           handle) {
-        XferSize blockSize = static_cast<XferSize>(sizeof(T));
-        return nullptr;
-    }
-
-    template <typename T>
-    Transfer::Ptr Transfer::dev2dev(uint             chn,
-                                    const CtrlBlock& src,
-                                    const CtrlBlock& dst,
-                                    bool             repeat,
-                                    bool             byteswap,
-                                    bool             sniff,
-                                    int              chain,
-                                    Handle&&         handle) {
-        XferSize blockSize = static_cast<XferSize>(sizeof(T));
+        XferSize blockSize = static_cast<XferSize>(sizeof(T) >> 1);
         return nullptr;
     }
 
@@ -324,10 +309,8 @@ namespace corekit::platform::dma {
         uint,
         std::span<const uint8_t>,
         std::span<uint8_t>,
-        Wrapping,
         bool,
         bool,
-        int,
         Handle&&  //
     );
 
@@ -335,10 +318,8 @@ namespace corekit::platform::dma {
         uint,
         std::span<const uint16_t>,
         std::span<uint16_t>,
-        Wrapping,
         bool,
         bool,
-        int,
         Handle&&  //
     );
 
@@ -346,50 +327,15 @@ namespace corekit::platform::dma {
         uint,
         std::span<const uint32_t>,
         std::span<uint32_t>,
-        Wrapping,
         bool,
         bool,
-        int,
         Handle&&  //
     );
 
-    template Transfer::Ptr Transfer::dev2dev<uint8_t>(  //
-        uint,
-        const CtrlBlock&,
-        const CtrlBlock&,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::dev2dev<uint16_t>(  //
-        uint,
-        const CtrlBlock&,
-        const CtrlBlock&,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::dev2dev<uint32_t>(  //
-        uint,
-        const CtrlBlock&,
-        const CtrlBlock&,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-};  // namespace corekit::platform::dma
+};  // namespace corekit::Dma
 
 void shared_irq_callback() {
-    using namespace corekit::platform::dma;
+    using namespace corekit::Dma;
 
     for (uint channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
         if (dma_irqn_get_channel_status(IRQ_INDEX, channel)) {

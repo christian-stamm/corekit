@@ -4,9 +4,9 @@
 #include <memory>
 #include <span>
 
-#include "corekit/platform/asyncdevice.hpp"
+#include "corekit/asyncdevice.hpp"
 
-namespace corekit::platform::uart {
+namespace corekit::Uart {
 
     class Device : public AsyncDevice<uint8_t> {
        public:
@@ -35,4 +35,4 @@ namespace corekit::platform::uart {
         uint         rxPin;
     };
 
-};  // namespace corekit::platform::uart
+};  // namespace corekit::Uart

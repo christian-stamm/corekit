@@ -8,9 +8,9 @@
 #include <functional>
 #include <memory>
 
-#include "corekit/platform/asyncdevice.hpp"
+#include "corekit/asyncdevice.hpp"
 
-namespace corekit::platform::dma {
+namespace corekit::Dma {
 
     using Config   = dma_channel_config;
     using Handle   = std::function<void()>;
@@ -67,22 +67,9 @@ namespace corekit::platform::dma {
         static Ptr mem2mem(uint               chn,
                            std::span<const T> src,
                            std::span<T>       dst,
-                           Wrapping           wrapping = Wrapping::None,
                            bool               reverse  = false,
                            bool               byteswap = false,
-                           bool               sniff    = false,
-                           int                chain    = -1,
                            Handle&&           handle   = nullptr);
-
-        template <typename T>
-        static Ptr dev2dev(uint             chn,
-                           const CtrlBlock& src,
-                           const CtrlBlock& dst,
-                           bool             repeat   = false,
-                           bool             byteswap = false,
-                           bool             sniff    = false,
-                           int              chain    = -1,
-                           Handle&&         handle   = nullptr);
 
        protected:
         volatile void* originAddr;
@@ -129,4 +116,4 @@ namespace corekit::platform::dma {
         void setIRQ(Handle handle = nullptr, bool quiet = false);
     };
 
-}  // namespace corekit::platform::dma
+}  // namespace corekit::Dma

@@ -4,9 +4,9 @@
 #include <memory>
 #include <span>
 
-#include "corekit/platform/asyncdevice.hpp"
+#include "corekit/asyncdevice.hpp"
 
-namespace corekit::platform::spi {
+namespace corekit::Spi {
 
     class Device : public AsyncDevice<uint8_t> {
        public:
@@ -52,4 +52,4 @@ namespace corekit::platform::spi {
         uint        csnPin;
     };
 
-};  // namespace corekit::platform::spi
+};  // namespace corekit::Spi

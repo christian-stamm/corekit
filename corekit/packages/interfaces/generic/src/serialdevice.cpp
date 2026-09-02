@@ -52,5 +52,6 @@ namespace corekit {
     template class SerialDevice<uint8_t>;
     template class SerialDevice<uint16_t>;
     template class SerialDevice<uint32_t>;
+    template class SerialDevice<uint64_t>;
 
 };  // namespace corekit
