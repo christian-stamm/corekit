@@ -85,7 +85,7 @@ services:
 
     volumes:
       # Workspace
-      - ..:/workspace:cached
+      - ../..:/workspace:cached
       # X11 socket
       - /tmp/.X11-unix:/tmp/.X11-unix
       # # Wayland socket

@@ -28,9 +28,6 @@ function(pioasm_generate_headers)
         list(APPEND generated_headers "${generated_include}")
     endforeach()
 
-    message(STATUS "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    message(STATUS "Generated headers: ${generated_headers}")
-
     file(MAKE_DIRECTORY "${ARG_EXPORT_DIR}")
 
     add_custom_target(
