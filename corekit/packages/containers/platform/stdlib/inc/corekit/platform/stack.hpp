@@ -6,17 +6,12 @@
 #include "corekit/mutex.hpp"
 #include "corekit/result.hpp"
 
-namespace corekit {
-
-    constexpr size_t MAX_STACK_WAITER = 10;
+namespace corekit::platform {
 
     template <typename T>
     class Stack {
        public:
-        explicit Stack(size_t capacity)
-            : capacity_(capacity)
-            , producer_(MAX_STACK_WAITER)
-            , consumer_(MAX_STACK_WAITER) {}
+        explicit Stack(size_t capacity) : capacity_(capacity) {}
 
         VoidResult push(T item, bool wait = true) {
             {
@@ -73,4 +68,4 @@ namespace corekit {
     extern template class Stack<int>;
     extern template class Stack<uint>;
 
-}  // namespace corekit
+}  // namespace corekit::platform

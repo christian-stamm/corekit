@@ -8,15 +8,10 @@
 
 namespace corekit {
 
-    constexpr size_t MAX_QUEUE_WAITER = 10;
-
     template <typename T>
     class Queue {
        public:
-        explicit Queue(size_t capacity)
-            : capacity_(capacity)
-            , producer_(MAX_QUEUE_WAITER)
-            , consumer_(MAX_QUEUE_WAITER) {}
+        explicit Queue(size_t capacity) : capacity_(capacity) {}
 
         VoidResult push(T item, bool wait = true) {
             {

@@ -1,13 +1,3 @@
 cmake_minimum_required(VERSION 3.25)
-
-corekit_add_module(queue API IMPL
-    PUBLIC_INCLUDES     "inc"
-    SOURCE_FILES        "src/queue.cpp"
-    DEPENDENCIES        "conditionvariable;mutex;result"
-)
-
-corekit_add_module(stack API IMPL
-    PUBLIC_INCLUDES     "inc"
-    SOURCE_FILES        "src/stack.cpp"
-    DEPENDENCIES        "conditionvariable;mutex;result"
-)
+add_subdirectory_aware(concepts)
+add_subdirectory_aware(platform)
