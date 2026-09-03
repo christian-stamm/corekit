@@ -14,7 +14,7 @@
 namespace corekit::Dma {
 
     using Config   = dma_channel_config;
-    using Handle   = std::function<void()>;
+    using Handle   = std::function<void(int)>;
     using XferSize = dma_channel_transfer_size;
     using AddrUpdt = dma_address_update_type_t;
 

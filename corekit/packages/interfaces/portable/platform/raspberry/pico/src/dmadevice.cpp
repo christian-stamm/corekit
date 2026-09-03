@@ -164,7 +164,7 @@ void shared_irq_callback() {
             const Handle handle = handles[channel];
 
             if (handle) {
-                handle();
+                handle(channel);
             }
 
             dma_irqn_acknowledge_channel(IRQ_INDEX, channel);

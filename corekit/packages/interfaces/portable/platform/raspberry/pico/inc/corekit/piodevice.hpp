@@ -91,7 +91,17 @@ namespace corekit::Pio {
         Node(const PIO block, uint node);
         virtual ~Node() override;
 
-        static Ptr request_unused(const PIO block);
+        template <typename T = Node>
+        static std::shared_ptr<T> request_unused(const PIO block) {
+            const int node = pio_claim_unused_sm(block, false);
+
+            if (node < 0) {
+                return nullptr;
+            }
+
+            pio_sm_unclaim(block, node);
+            return std::make_shared<T>(block, (uint)(node));
+        }
 
         bool deploy(const Program::Ptr& program);
         bool isRunning() const;

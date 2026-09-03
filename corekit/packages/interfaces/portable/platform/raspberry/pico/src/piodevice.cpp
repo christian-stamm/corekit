@@ -160,18 +160,6 @@ namespace corekit::Pio {
         pio_sm_unclaim(block, node);
     }
 
-    Node::Ptr Node::request_unused(PIO block) {
-        const int node = pio_claim_unused_sm(block, false);
-
-        if (node < 0) {
-            throw std::runtime_error(
-                "Failed to claim a free PIO state machine.");
-        }
-
-        pio_sm_unclaim(block, node);
-        return std::make_shared<Node>(block, (uint)(node));
-    }
-
     uint Node::unique_id() const {
         return pio_get_index(block) * NUM_PIO_STATE_MACHINES + node;
     }
