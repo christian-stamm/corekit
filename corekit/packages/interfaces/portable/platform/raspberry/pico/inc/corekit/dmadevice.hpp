@@ -22,7 +22,8 @@ namespace corekit::Dma {
         friend class Device;
 
        public:
-        using Ptr = std::shared_ptr<Transfer>;
+        using Ptr  = std::shared_ptr<Transfer>;
+        using List = std::vector<Ptr>;
 
         Transfer(uint                 channel,
                  const volatile void* originAddr = nullptr,

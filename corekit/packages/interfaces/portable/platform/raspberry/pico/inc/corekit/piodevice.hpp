@@ -7,6 +7,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <vector>
 
 #include "corekit/asyncdevice.hpp"
 #include "corekit/result.hpp"
@@ -84,7 +85,8 @@ namespace corekit::Pio {
         friend class Program;
 
        public:
-        using Ptr = std::shared_ptr<Node>;
+        using Ptr  = std::shared_ptr<Node>;
+        using List = std::vector<Ptr>;
 
         Node(const PIO block, uint node);
         virtual ~Node() override;
