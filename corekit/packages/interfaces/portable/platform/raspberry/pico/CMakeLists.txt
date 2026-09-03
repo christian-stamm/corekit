@@ -9,7 +9,7 @@ corekit_add_module(asyncdevice API IMPL
 corekit_add_module(gpiodevice API IMPL
     PUBLIC_INCLUDES     "inc"
     SOURCE_FILES        "src/gpiodevice.cpp"
-    DEPENDENCIES        "hardware_gpio"
+    DEPENDENCIES        "core;hardware_gpio"
 )
 
 corekit_add_module(uartdevice API IMPL

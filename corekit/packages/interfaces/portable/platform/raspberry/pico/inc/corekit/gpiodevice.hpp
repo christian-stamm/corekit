@@ -3,11 +3,31 @@
 
 #include <cstdint>
 #include <functional>
+#include <set>
 
 namespace corekit::Gpio {
 
     static constexpr uint64_t UNMASKED = 0xFFFFFFFFFFFFFFFF;
     using Handle = std::function<void(uint, gpio_irq_level)>;
+
+    using Pin = uint8_t;
+    using Set = std::set<Pin>;
+
+    struct Range {
+        Range(Pin base = 0, uint length = 0);
+
+        Pin operator[](int index) const;
+
+        Pin lower() const;
+        Pin upper() const;
+
+        uint64_t mask() const;
+        Range    slice(int shift, int length) const;
+        Set      pins() const;
+
+        const Pin  base;
+        const uint length;
+    };
 
     static void enableIRQ();
     static void disableIRQ();

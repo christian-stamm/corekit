@@ -41,36 +41,6 @@ namespace corekit::Dma {
 
         ~Transfer();
 
-        template <typename T>
-        static Ptr mem2dev(uint               chn,
-                           std::span<const T> src,
-                           const CtrlBlock&   dst,
-                           bool               repeat   = false,
-                           bool               reverse  = false,
-                           bool               byteswap = false,
-                           bool               sniff    = false,
-                           int                chain    = -1,
-                           Handle&&           handle   = nullptr);
-
-        template <typename T>
-        static Ptr dev2mem(uint             chn,
-                           const CtrlBlock& src,
-                           std::span<T>     dst,
-                           bool             repeat   = false,
-                           bool             reverse  = false,
-                           bool             byteswap = false,
-                           bool             sniff    = false,
-                           int              chain    = -1,
-                           Handle&&         handle   = nullptr);
-
-        template <typename T>
-        static Ptr mem2mem(uint               chn,
-                           std::span<const T> src,
-                           std::span<T>       dst,
-                           bool               reverse  = false,
-                           bool               byteswap = false,
-                           Handle&&           handle   = nullptr);
-
        protected:
         volatile void* originAddr;
         volatile void* targetAddr;
@@ -86,7 +56,7 @@ namespace corekit::Dma {
         Device(uint channel);
         virtual ~Device() override;
 
-        static Ptr requestUnused();
+        static Ptr request_unused();
 
         static void enableIRQ();
         static void disableIRQ();

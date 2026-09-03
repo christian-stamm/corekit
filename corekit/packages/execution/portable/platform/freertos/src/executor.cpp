@@ -7,7 +7,7 @@ namespace corekit::platform {
     ThreadPool::ThreadPool(uint num_workers, uint max_tasks)
         : num_workers_(num_workers)
         , m_task_queue_(max_tasks)
-        , m_worker_count_(num_workers, 0) {
+        , m_worker_count_(0, num_workers) {
         for (size_t i = 0; i < num_workers_; ++i) {
             TaskHandle_t task_handle = nullptr;
             std::string  task_name   = std::format("worker_{}", i);
@@ -87,7 +87,6 @@ namespace corekit::platform {
     }
 
     void Executor::launch() {
-        __asm volatile("msr basepri, %0" ::"r"(0UL) : "memory");
         vTaskStartScheduler();
     }
 

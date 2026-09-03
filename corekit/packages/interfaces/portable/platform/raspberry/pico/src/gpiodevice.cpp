@@ -7,6 +7,8 @@
 #include <format>
 #include <map>
 
+#include "corekit/math.hpp"
+
 namespace corekit::Gpio {
 
     std::map<uint, Handle> callbacks;
@@ -21,6 +23,45 @@ namespace corekit::Gpio {
         }
 
         gpio_acknowledge_irq(gpio, events);
+    }
+
+    Range::Range(Pin base, uint length) : base(base), length(length) {}
+
+    Pin Range::operator[](int index) const {
+        using namespace corekit::math;
+        return base + wrap(index, length);
+    }
+
+    Pin Range::lower() const {
+        return base;
+    }
+
+    Pin Range::upper() const {
+        return base + length - 1;
+    }
+
+    uint64_t Range::mask() const {
+        return ((1ull << length) - 1) << base;
+    }
+
+    Range Range::slice(int shift, int length) const {
+        Pin base = (*this)[shift];
+
+        if (static_cast<int>(this->base + this->length) < (base + length)) {
+            throw std::runtime_error("Subrange exceeds PinRange bounds");
+        }
+
+        return Range(base, length);
+    }
+
+    Set Range::pins() const {
+        Set set;
+
+        for (uint i = 0; i < length; ++i) {
+            set.insert((*this)[i]);
+        }
+
+        return set;
     }
 
     void enableIRQ() {

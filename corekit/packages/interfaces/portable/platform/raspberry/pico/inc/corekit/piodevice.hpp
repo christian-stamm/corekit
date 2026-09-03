@@ -9,6 +9,7 @@
 #include <optional>
 
 #include "corekit/asyncdevice.hpp"
+#include "corekit/result.hpp"
 
 extern bool pio_sm_is_enabled(PIO block, uint sm);
 
@@ -29,13 +30,10 @@ namespace corekit::Pio {
         PreloadVal osr        = std::nullopt;
     };
 
-    template <typename T>
     class Node;
 
     struct Program : public pio_program {
-        friend class Node<uint8_t>;
-        friend class Node<uint16_t>;
-        friend class Node<uint32_t>;
+        friend class Node;
 
         struct State {
             State() {
@@ -54,7 +52,8 @@ namespace corekit::Pio {
         };
 
        public:
-        using Ptr = std::shared_ptr<Program>;
+        using Ptr    = std::shared_ptr<Program>;
+        using Target = std::shared_ptr<Node>;
         Program(const pio_program_t& program);
 
         virtual bool install(PIO block) final;
@@ -62,8 +61,11 @@ namespace corekit::Pio {
         virtual bool isInstalled(PIO block) const final;
         virtual bool modify(PIO block, uint line, Command command) final;
 
-        virtual NodeConf   buildNodeConf(PIO block, uint node, uint base) = 0;
+        virtual NodeConf   buildNodeConf(PIO block, uint node, uint base);
         virtual LaunchConf buildLaunchConf(PIO block, uint node);
+
+        virtual VoidResult configurePins(Target instance);
+        virtual VoidResult configureDmas(Target instance);
 
         virtual const State& getState(PIO block) const final;
 
@@ -76,23 +78,27 @@ namespace corekit::Pio {
         mutable std::map<PIO, State> states;
     };
 
-    template <typename T>
-    class Node : public AsyncDevice<T> {
+    class Node
+        : public AsyncDevice<uint32_t>
+        , public std::enable_shared_from_this<Node> {
+        friend class Program;
+
        public:
         using Ptr = std::shared_ptr<Node>;
 
         Node(const PIO block, uint node);
         virtual ~Node() override;
 
-        static Ptr requestUnused(const PIO block);
+        static Ptr request_unused(const PIO block);
 
         bool deploy(const Program::Ptr& program);
         bool isRunning() const;
+        uint unique_id() const;
 
-        virtual bool write(const T& data) override;
-        virtual bool write_bulk(std::span<const T> data) override;
-        virtual bool read(T& data) override;
-        virtual bool read_bulk(std::span<T> data) override;
+        virtual bool write(const uint32_t& data) override;
+        virtual bool write_bulk(std::span<const uint32_t> data) override;
+        virtual bool read(uint32_t& data) override;
+        virtual bool read_bulk(std::span<uint32_t> data) override;
 
         const PIO  block;
         const uint node;
@@ -105,9 +111,5 @@ namespace corekit::Pio {
 
         Program::Ptr program;
     };
-
-    extern template class Node<uint8_t>;
-    extern template class Node<uint16_t>;
-    extern template class Node<uint32_t>;
 
 }  // namespace corekit::Pio

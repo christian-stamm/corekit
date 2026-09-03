@@ -18,14 +18,14 @@ namespace corekit {
         using Ptr = std::shared_ptr<AsyncDevice>;
 
         AsyncDevice(const std::string& name,
-                    const CtrlBlock&   reader,
-                    const CtrlBlock&   writer)
+                    const CtrlBlock&   writer,
+                    const CtrlBlock&   reader)
             : SerialDevice<T>(name)
-            , reader(reader)
-            , writer(writer){};
+            , writer(writer)
+            , reader(reader){};
 
-        const CtrlBlock reader;
         const CtrlBlock writer;
+        const CtrlBlock reader;
     };
 
     extern template class AsyncDevice<uint8_t>;

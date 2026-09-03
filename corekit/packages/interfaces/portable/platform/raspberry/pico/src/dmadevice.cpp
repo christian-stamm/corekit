@@ -85,79 +85,6 @@ namespace corekit::Dma {
         handles[channel] = nullptr;
     }
 
-    template <typename T>
-    Transfer::Ptr Transfer::mem2dev(uint               chn,
-                                    std::span<const T> src,
-                                    const CtrlBlock&   dst,
-                                    bool               repeat,
-                                    bool               reverse,
-                                    bool               byteswap,
-                                    bool               sniff,
-                                    int                chain,
-                                    Handle&&           handle) {
-        XferSize       blockSize = static_cast<XferSize>(sizeof(T) >> 1);
-        volatile void* srcAddr   = reinterpret_cast<volatile void*>(
-            const_cast<T*>(reverse ? &src.back() : &src.front()));
-
-        return std::make_shared<Transfer>(
-            chn,
-            dst.dreq,
-            srcAddr,
-            dst.addr,
-            reverse ? DMA_ADDRESS_UPDATE_DECREMENT
-                    : DMA_ADDRESS_UPDATE_INCREMENT,
-            DMA_ADDRESS_UPDATE_NONE,
-            src.size(),
-            blockSize,
-            repeat ? Wrapping::Read : Wrapping::None,
-            byteswap,
-            sniff,
-            chain,
-            std::move(handle));
-    }
-
-    template <typename T>
-    Transfer::Ptr Transfer::dev2mem(uint             chn,
-                                    const CtrlBlock& src,
-                                    std::span<T>     dst,
-                                    bool             repeat,
-                                    bool             reverse,
-                                    bool             byteswap,
-                                    bool             sniff,
-                                    int              chain,
-                                    Handle&&         handle) {
-        XferSize       blockSize = static_cast<XferSize>(sizeof(T) >> 1);
-        volatile void* dstAddr   = reinterpret_cast<volatile void*>(
-            reverse ? &dst.back() : &dst.front());
-
-        return std::make_shared<Transfer>(
-            chn,
-            src.dreq,
-            src.addr,
-            dstAddr,
-            DMA_ADDRESS_UPDATE_NONE,
-            reverse ? DMA_ADDRESS_UPDATE_DECREMENT
-                    : DMA_ADDRESS_UPDATE_INCREMENT,
-            dst.size(),
-            blockSize,
-            repeat ? Wrapping::Write : Wrapping::None,
-            byteswap,
-            sniff,
-            chain,
-            std::move(handle));
-    }
-
-    template <typename T>
-    Transfer::Ptr Transfer::mem2mem(uint               chn,
-                                    std::span<const T> src,
-                                    std::span<T>       dst,
-                                    bool               reverse,
-                                    bool               byteswap,
-                                    Handle&&           handle) {
-        XferSize blockSize = static_cast<XferSize>(sizeof(T) >> 1);
-        return nullptr;
-    }
-
     // -----------------------------------------------------------------
     // Device
     // -----------------------------------------------------------------
@@ -186,7 +113,7 @@ namespace corekit::Dma {
         return true;
     }
 
-    Device::Ptr Device::requestUnused() {
+    Device::Ptr Device::request_unused() {
         for (uint channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
             if (!dma_channel_is_claimed(channel)) {
                 return std::make_shared<Device>(channel);
@@ -232,105 +159,6 @@ namespace corekit::Dma {
         irq_set_enabled(IRQ_NUM, false);
         irq_remove_handler(IRQ_NUM, shared_irq_callback);
     }
-
-    template Transfer::Ptr Transfer::mem2dev<uint8_t>(  //
-        uint,
-        std::span<const uint8_t>,
-        const CtrlBlock&,
-        bool,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::mem2dev<uint16_t>(  //
-        uint,
-        std::span<const uint16_t>,
-        const CtrlBlock&,
-        bool,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::mem2dev<uint32_t>(  //
-        uint,
-        std::span<const uint32_t>,
-        const CtrlBlock&,
-        bool,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::dev2mem<uint8_t>(  //
-        uint,
-        const CtrlBlock&,
-        std::span<uint8_t>,
-        bool,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::dev2mem<uint16_t>(  //
-        uint,
-        const CtrlBlock&,
-        std::span<uint16_t>,
-        bool,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::dev2mem<uint32_t>(  //
-        uint,
-        const CtrlBlock&,
-        std::span<uint32_t>,
-        bool,
-        bool,
-        bool,
-        bool,
-        int,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::mem2mem<uint8_t>(  //
-        uint,
-        std::span<const uint8_t>,
-        std::span<uint8_t>,
-        bool,
-        bool,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::mem2mem<uint16_t>(  //
-        uint,
-        std::span<const uint16_t>,
-        std::span<uint16_t>,
-        bool,
-        bool,
-        Handle&&  //
-    );
-
-    template Transfer::Ptr Transfer::mem2mem<uint32_t>(  //
-        uint,
-        std::span<const uint32_t>,
-        std::span<uint32_t>,
-        bool,
-        bool,
-        Handle&&  //
-    );
 
 };  // namespace corekit::Dma
 

@@ -13,10 +13,6 @@ bool pio_sm_is_enabled(PIO block, uint sm) {
 
 namespace corekit::Pio {
 
-    template class Node<uint8_t>;
-    template class Node<uint16_t>;
-    template class Node<uint32_t>;
-
     // --------------------------------------------------------------
     // Program Implementation
     // --------------------------------------------------------------
@@ -133,13 +129,24 @@ namespace corekit::Pio {
         return LaunchConf();
     }
 
+    NodeConf Program::buildNodeConf(PIO block, uint node, uint base) {
+        return pio_get_default_sm_config();
+    }
+
+    VoidResult Program::configurePins(Program::Target instance) {
+        return VoidResult();
+    }
+
+    VoidResult Program::configureDmas(Program::Target instance) {
+        return VoidResult();
+    }
+
     // --------------------------------------------------------------
     // Node<T> Implementation
     // --------------------------------------------------------------
 
-    template <typename T>
-    Node<T>::Node(const PIO block, uint node)
-        : AsyncDevice<T>(
+    Node::Node(const PIO block, uint node)
+        : AsyncDevice<uint32_t>(
               std::format("PIO{}-{}", pio_get_index(block), node),
               {&block->txf[node], pio_get_dreq(block, node, true)},  //
               {&block->rxf[node], pio_get_dreq(block, node, false)}  //
@@ -149,13 +156,11 @@ namespace corekit::Pio {
         pio_sm_claim(block, node);
     }
 
-    template <typename T>
-    Node<T>::~Node() {
+    Node::~Node() {
         pio_sm_unclaim(block, node);
     }
 
-    template <typename T>
-    Node<T>::Ptr Node<T>::requestUnused(PIO block) {
+    Node::Ptr Node::request_unused(PIO block) {
         const int node = pio_claim_unused_sm(block, false);
 
         if (node < 0) {
@@ -164,11 +169,14 @@ namespace corekit::Pio {
         }
 
         pio_sm_unclaim(block, node);
-        return std::make_shared<Node<T>>(block, (uint)(node));
+        return std::make_shared<Node>(block, (uint)(node));
     }
 
-    template <typename T>
-    bool Node<T>::deploy(const Program::Ptr& program) {
+    uint Node::unique_id() const {
+        return pio_get_index(block) * NUM_PIO_STATE_MACHINES + node;
+    }
+
+    bool Node::deploy(const Program::Ptr& program) {
         if (this->program != program) {
             this->unload();
         }
@@ -177,13 +185,11 @@ namespace corekit::Pio {
         return this->load();
     }
 
-    template <typename T>
-    bool Node<T>::isRunning() const {
+    bool Node::isRunning() const {
         return pio_sm_is_enabled(block, node);
     }
 
-    template <typename T>
-    bool Node<T>::on_load() {
+    bool Node::on_load() {
         if (!program) {
             throw std::runtime_error(
                 "Cannot load a PIO node without a program. Use deploy() to "
@@ -203,9 +209,13 @@ namespace corekit::Pio {
             const uint       base = state.adress.value_or(0);
             const NodeConf   ncfg = program->buildNodeConf(block, node, base);
             const LaunchConf lcfg = program->buildLaunchConf(block, node);
-            const uint       initial_pc = base + lcfg.entrypoint;
 
-            const uint result = pio_sm_init(block, node, initial_pc, &ncfg);
+            if (!program->configurePins(shared_from_this())) {
+                return false;
+            }
+
+            const uint initial_pc = base + lcfg.entrypoint;
+            const uint result     = pio_sm_init(block, node, initial_pc, &ncfg);
 
             if (result != PICO_OK) {
                 throw std::runtime_error(
@@ -228,6 +238,10 @@ namespace corekit::Pio {
                 preloadReg(pio_osr, lcfg.osr.value());
             }
 
+            if (!program->configureDmas(shared_from_this())) {
+                return false;
+            }
+
             pio_sm_set_enabled(block, node, lcfg.autostart);
 
             return true;
@@ -236,8 +250,7 @@ namespace corekit::Pio {
         return false;
     }
 
-    template <typename T>
-    bool Node<T>::on_unload() {
+    bool Node::on_unload() {
         pio_sm_set_enabled(block, node, false);
         pio_sm_restart(block, node);
 
@@ -248,8 +261,7 @@ namespace corekit::Pio {
         return program->unregisterNode(block, node);
     }
 
-    template <typename T>
-    void Node<T>::preloadReg(pio_src_dest reg, uint32_t value) {
+    void Node::preloadReg(pio_src_dest reg, uint32_t value) {
         static const Command pullCmd = pio_encode_pull(false, false);
         static const Command movCmd  = pio_encode_mov(reg, pio_osr);
 
@@ -264,15 +276,13 @@ namespace corekit::Pio {
         pio_sm_exec(block, node, movCmd);
     }
 
-    template <typename T>
-    bool Node<T>::write(const T& data) {
+    bool Node::write(const uint32_t& data) {
         pio_sm_put_blocking(block, node, data);
         return true;
     }
 
-    template <typename T>
-    bool Node<T>::write_bulk(std::span<const T> data) {
-        for (const T& value : data) {
+    bool Node::write_bulk(std::span<const uint32_t> data) {
+        for (const uint32_t& value : data) {
             if (!write(value))
                 return false;
         }
@@ -280,15 +290,13 @@ namespace corekit::Pio {
         return true;
     }
 
-    template <typename T>
-    bool Node<T>::read(T& data) {
+    bool Node::read(uint32_t& data) {
         data = pio_sm_get_blocking(block, node);
         return true;
     }
 
-    template <typename T>
-    bool Node<T>::read_bulk(std::span<T> data) {
-        for (T& value : data) {
+    bool Node::read_bulk(std::span<uint32_t> data) {
+        for (uint32_t& value : data) {
             if (!read(value))
                 return false;
         }

@@ -15,7 +15,7 @@ function(pioasm_generate_headers)
 
     foreach(program IN LISTS programs)
         get_filename_component(filename "${program}" NAME_WE)
-        set(generated_include "${ARG_EXPORT_DIR}/${filename}.hpp")
+        set(generated_include "${ARG_EXPORT_DIR}/pioasm/${filename}.hpp")
 
         add_custom_command(
             OUTPUT "${generated_include}"
@@ -28,7 +28,7 @@ function(pioasm_generate_headers)
         list(APPEND generated_headers "${generated_include}")
     endforeach()
 
-    file(MAKE_DIRECTORY "${ARG_EXPORT_DIR}")
+    file(MAKE_DIRECTORY "${ARG_EXPORT_DIR}/pioasm")
 
     add_custom_target(
         ${ARG_LIB_NAME}_generate

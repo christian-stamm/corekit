@@ -25,6 +25,7 @@ RUN apt-get update && \
         libtool \
         locales \
         ninja-build \
+        nlohmann-json3-dev \
         pkg-config \
         python3 \
         python3-pip \
