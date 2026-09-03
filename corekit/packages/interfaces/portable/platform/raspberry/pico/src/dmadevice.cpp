@@ -5,8 +5,11 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
+#include <iostream>
 #include <memory>
 #include <vector>
+
+#include "corekit/math.hpp"
 
 constexpr uint IRQ_INDEX = 0;
 constexpr uint IRQ_NUM   = DMA_IRQ_NUM(IRQ_INDEX);
@@ -25,44 +28,35 @@ namespace corekit::Dma {
     // -----------------------------------------------------------------
 
     Transfer::Transfer(uint                 channel,
-                       uint                 dreq,
                        const volatile void* originAddr,
-                       const volatile void* targetAddr,
                        AddrUpdt             originUpdate,
+                       const volatile void* targetAddr,
                        AddrUpdt             targetUpdate,
-                       uint32_t             length,
+                       uint32_t             burst_length,
+                       int32_t              wrap_length,
                        XferSize             blockSize,
-                       Wrapping             wrapping,
+                       uint                 dreq,
                        bool                 byteswap,
                        bool                 sniff,
                        int                  chain,
                        Handle&&             handle)
         : originAddr(const_cast<volatile void*>(originAddr))
         , targetAddr(const_cast<volatile void*>(targetAddr))
-        , channel(channel)  //
+        , encoding(dma_encode_transfer_count(burst_length))
+        , channel(channel)
+        , config(dma_channel_get_default_config(channel))  //
     {
-        config   = dma_channel_get_default_config(channel);
-        encoding = dma_encode_transfer_count(length);
-
-        if (wrapping != Wrapping::None) {
-            size_t wrapBytes = length * (1 << blockSize);
+        if (wrap_length != 0) {
+            size_t wrapBytes = std::abs(wrap_length) * (1 << blockSize);
             size_t ringSize  = std::log2(wrapBytes);
 
             const bool overflow  = MAX_RING_BITS < ringSize;
             const bool underflow = MIN_RING_BITS > ringSize;
-            const bool isPow2    = (wrapBytes & (wrapBytes - 1)) == 0;
+            const bool isPow2    = math::isPow2(wrapBytes);
 
-            const bool           wrapWrite = wrapping == Wrapping::Write;
-            const volatile void* ptr = wrapWrite ? targetAddr : originAddr;
-
-            const bool isAligned =
-                (reinterpret_cast<uintptr_t>(ptr) % wrapBytes) == 0;
-
-            if (!overflow && !underflow && isPow2 && isAligned) {
-                channel_config_set_ring(&config, wrapWrite, ringSize);
+            if (!overflow && !underflow && isPow2) {
+                channel_config_set_ring(&config, 0 < wrap_length, ringSize);
             }
-
-            encoding = dma_encode_transfer_count_with_self_trigger(length);
         }
 
         if (0 <= chain) {

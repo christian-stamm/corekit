@@ -33,5 +33,5 @@ corekit_add_module(piodevice API IMPL
 corekit_add_module(dmadevice API IMPL
     PUBLIC_INCLUDES     "inc"
     SOURCE_FILES        "src/dmadevice.cpp"
-    DEPENDENCIES        "hardware_dma;asyncdevice"
+    DEPENDENCIES        "hardware_dma;asyncdevice;core"
 )

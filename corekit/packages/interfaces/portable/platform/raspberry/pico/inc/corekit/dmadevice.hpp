@@ -2,6 +2,7 @@
 
 #include <hardware/dma.h>
 #include <hardware/irq.h>
+#include <hardware/regs/dreq.h>
 #include <pico/types.h>
 
 #include <cstdint>
@@ -17,8 +18,6 @@ namespace corekit::Dma {
     using XferSize = dma_channel_transfer_size;
     using AddrUpdt = dma_address_update_type_t;
 
-    enum class Wrapping { None = 0, Read = 1, Write = 2 };
-
     struct Transfer {
         friend class Device;
 
@@ -26,18 +25,19 @@ namespace corekit::Dma {
         using Ptr = std::shared_ptr<Transfer>;
 
         Transfer(uint                 channel,
-                 uint                 dreq,
-                 const volatile void* originAddr,
-                 const volatile void* targetAddr,
-                 AddrUpdt             originUpdate,
-                 AddrUpdt             targetUpdate,
-                 uint32_t             length,
-                 XferSize             blockSize,
-                 Wrapping             wrapping = Wrapping::None,
-                 bool                 byteswap = false,
-                 bool                 sniff    = false,
-                 int                  chain    = -1,
-                 Handle&&             handle   = nullptr);
+                 const volatile void* originAddr = nullptr,
+                 AddrUpdt originUpdate = AddrUpdt::DMA_ADDRESS_UPDATE_NONE,
+                 const volatile void* targetAddr = nullptr,
+                 AddrUpdt targetUpdate = AddrUpdt::DMA_ADDRESS_UPDATE_NONE,
+                 uint32_t burst_length = 0,
+                 int32_t  wrap_length  = 0,
+                 // wrap_length < 0 for read // 0 < wrap_length for write
+                 XferSize blockSize = Dma::XferSize::DMA_SIZE_32,
+                 uint     dreq      = DREQ_FORCE,
+                 bool     byteswap  = false,
+                 bool     sniff     = false,
+                 int      chain     = -1,
+                 Handle&& handle    = nullptr);
 
         ~Transfer();
 
