@@ -109,7 +109,8 @@ namespace corekit::Pio {
 
         void preloadReg(pio_src_dest reg, uint32_t value);
 
-        Program::Ptr program;
+        Program::Ptr               program;
+        std::set<Dma::Device::Ptr> resources;
     };
 
 }  // namespace corekit::Pio
