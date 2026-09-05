@@ -2,6 +2,6 @@
 
 namespace corekit {
 
-    static_assert(AtomicLike<Atomic<bool>, bool>);
+    static_assert(AtomicLike<bool>);
 
 };  // namespace corekit

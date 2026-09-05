@@ -6,7 +6,6 @@
 
 namespace corekit {
 
-    static_assert(
-        ConditionVariableLike<ConditionVariable, Mutex, std::function<bool()>>);
+    static_assert(ConditionVariableLike<std::function<bool()>>);
 
 };  // namespace corekit

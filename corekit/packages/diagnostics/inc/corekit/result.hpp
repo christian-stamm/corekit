@@ -1,7 +1,7 @@
 #pragma once
 
 #include <expected>
-#include <optional>
+#include <type_traits>
 
 #include "corekit/error.hpp"
 
@@ -9,21 +9,26 @@ namespace corekit {
 
     template <typename T>
     struct Result : public std::expected<T, Error> {
-        Result(const T& value = T()) : std::expected<T, Error>(value) {}
+        using Base = std::expected<T, Error>;
 
-        Result(const Error& error)
-            : std::expected<T, Error>(std::unexpected(error)) {}
-    };
+        Result()
+            requires std::is_void_v<T>
+            : Base(std::in_place) {}
 
-    template <>
-    struct Result<void> : public std::expected<void, Error> {
-        Result() : std::expected<void, Error>(std::in_place) {}
+        template <typename U>
+            requires(!std::is_void_v<T> && std::constructible_from<T, const U&>)
+        Result(const U& value) : Base(std::in_place, value) {}
 
-        Result(const Error& error)
-            : std::expected<void, Error>(std::unexpected(error)) {}
+        template <typename U>
+            requires(!std::is_void_v<T> && std::constructible_from<T, U &&>)
+        Result(U&& value) : Base(std::forward<U>(value)) {}
+
+        Result(const Error& error) : Base(std::unexpected(error)) {
+            Error::stack.push(error);
+        }
     };
 
     using VoidResult = Result<void>;
     using BoolResult = Result<bool>;
 
-};  // namespace corekit
+}  // namespace corekit

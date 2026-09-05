@@ -2,7 +2,10 @@
 
 namespace corekit {
 
-    Task::Task() : m_state(State::READY) {}
+    Task::Task(const std::string& name = "task")
+        : name(name)
+        , logger(name)
+        , m_state(State::READY) {}
 
     VoidResult Task::exec(StopToken token) noexcept {
         State expected = State::READY;
@@ -11,26 +14,23 @@ namespace corekit {
             return RuntimeError("Task is already running or completed");
         }
 
-        VoidResult result;
+        if (!on_enter(token)) {
+            m_state.store(State::ERROR);
+            return RuntimeError("Task on_enter failed");
+        }
 
-        try {
-            if (result) {
-                result = on_enter(token);
+        if (!on_run(token)) {
+            m_state.store(State::ERROR);
+            return RuntimeError("Task on_run failed");
+        }
 
-                if (result) {
-                    result = on_run(token);
-
-                    if (result) {
-                        result = on_leave(token);
-                    }
-                }
-            }
-        } catch (const std::exception& e) {
-            result = RuntimeError(e.what());
+        if (!on_leave(token)) {
+            m_state.store(State::ERROR);
+            return RuntimeError("Task on_leave failed");
         }
 
         m_state.store(State::TERMINATED);
-        return result;
+        return VoidResult();
     }
 
 }  // namespace corekit

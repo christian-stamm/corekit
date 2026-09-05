@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <memory>
 #include <span>
-#include <utility>
 
 #include "corekit/math.hpp"
 
@@ -16,7 +15,9 @@ namespace corekit {
         using Ptr = std::shared_ptr<Memory>;
 
         Memory(size_t size, bool aligned = true)
-            : Memory(mem_alloc(size, aligned), size) {}
+            : Memory(mem_alloc(size, aligned), size) {
+            std::fill(this->begin(), this->end(), 0x00);
+        }
 
         Memory(const Memory&)            = delete;
         Memory& operator=(const Memory&) = delete;
@@ -55,36 +56,6 @@ namespace corekit {
         }
 
         T* base;
-    };
-
-    template <typename T>
-    class DoubleBuffer {
-       public:
-        using Ptr = std::shared_ptr<DoubleBuffer<T>>;
-
-        DoubleBuffer(size_t size, bool aligned = false)
-            : buffer_ping(Memory<T>::request(size, aligned))
-            , buffer_pong(Memory<T>::request(size, aligned)) {}
-
-        static Ptr request(size_t size, bool aligned = false) {
-            return std::make_shared<DoubleBuffer<T>>(size, aligned);
-        }
-
-        Memory<T>::Ptr read() const {
-            return buffer_ping;
-        }
-
-        Memory<T>::Ptr write() const {
-            return buffer_pong;
-        }
-
-        void flip() {
-            std::swap(buffer_ping, buffer_pong);
-        }
-
-       private:
-        Memory<T>::Ptr buffer_ping;
-        Memory<T>::Ptr buffer_pong;
     };
 
 }  // namespace corekit

@@ -2,6 +2,6 @@
 
 namespace corekit {
 
-    static_assert(MutexLike<Mutex>);
+    static_assert(MutexLike<>);
 
 };  // namespace corekit

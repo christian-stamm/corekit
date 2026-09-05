@@ -2,6 +2,6 @@
 
 namespace corekit {
 
-    static_assert(SemaphoreLike<Semaphore>);
+    static_assert(SemaphoreLike<>);
 
 };  // namespace corekit

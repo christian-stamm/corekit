@@ -1,9 +1,9 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 
 #include "corekit/atomic.hpp"
+#include "corekit/logger.hpp"
 #include "corekit/result.hpp"
 #include "corekit/stoptoken.hpp"
 
@@ -11,12 +11,10 @@ namespace corekit {
 
     class Task {
        public:
-        enum class State { READY, RUNNING, TERMINATED };
+        enum class State { READY, RUNNING, TERMINATED, ERROR };
 
-        using Ptr  = std::shared_ptr<Task>;
-        using List = std::vector<Ptr>;
-
-        Task();
+        using Ptr = std::shared_ptr<Task>;
+        Task(const std::string& name);
 
         Task(const Task&)            = delete;
         Task(Task&&)                 = delete;
@@ -42,6 +40,9 @@ namespace corekit {
         inline State get_state() const {
             return m_state.load();
         }
+
+        const std::string name;
+        const Logger      logger;
 
        protected:
         virtual VoidResult on_enter(StopToken token) {

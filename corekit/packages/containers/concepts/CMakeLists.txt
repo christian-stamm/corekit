@@ -12,7 +12,12 @@ corekit_add_module(stack API
     DEPENDENCIES        "result"
 )
 
-corekit_add_module(ringbuffer API
+corekit_add_module(ringbuffer API IMPL
     PUBLIC_INCLUDES     "inc"
-    SOURCE_FILES        "src/ringbuffer.cpp"
+    DEPENDENCIES        "mutex;result"
+)
+
+corekit_add_module(doublebuffer API IMPL
+    PUBLIC_INCLUDES     "inc"
+    DEPENDENCIES        "mutex;result"
 )
