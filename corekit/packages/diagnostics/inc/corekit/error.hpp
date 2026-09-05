@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <iostream>
 #include <mutex>
 #include <source_location>
 #include <string>
@@ -49,6 +50,18 @@ namespace corekit {
             bool empty() const {
                 std::lock_guard lock(m_mutex);
                 return m_stack.empty();
+            }
+
+            void clear() {
+                std::lock_guard lock(m_mutex);
+                m_stack.clear();
+            }
+
+            void dump(std::ostream& os) const {
+                std::lock_guard lock(m_mutex);
+                for (const auto& error : m_stack) {
+                    os << error.what() << std::endl;
+                }
             }
 
            private:

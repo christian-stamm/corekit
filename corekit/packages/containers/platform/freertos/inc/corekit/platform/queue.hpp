@@ -13,7 +13,7 @@ namespace corekit::platform {
        protected:
         struct Opset {
             virtual inline BaseType_t send(QueueHandle_t q,
-                                           T             item,
+                                           const T&      item,
                                            TickType_t    wait = portMAX_DELAY) {
                 return xQueueSendToBack(q, &item, wait);
             }
@@ -29,7 +29,7 @@ namespace corekit::platform {
 
         struct IsrSet : public Opset {
             virtual inline BaseType_t send(QueueHandle_t q,
-                                           T             item,
+                                           const T&      item,
                                            TickType_t) override {
                 return xQueueSendToBackFromISR(q, &item, nullptr);
             }
@@ -49,13 +49,13 @@ namespace corekit::platform {
             , core_set_(cset)
             , isr_set_(iset) {}
 
-        VoidResult push(T item, bool wait = true) {
+        bool push(const T item, bool wait = true) {
             return push(xPortIsInsideInterrupt() ? isr_set_ : core_set_,
                         item,
                         wait ? portMAX_DELAY : 0);
         }
 
-        Result<T> pop(T& item, bool wait = true) {
+        bool pop(T& item, bool wait = true) {
             return pop(xPortIsInsideInterrupt() ? isr_set_ : core_set_,
                        item,
                        wait ? portMAX_DELAY : 0);
@@ -78,24 +78,24 @@ namespace corekit::platform {
         }
 
        private:
-        VoidResult push(Opset& op, T item, bool wait = true) {
+        bool push(Opset& op, const T& item, bool wait = true) {
             BaseType_t result = op.send(queue_, item, wait);
 
             if (result != pdTRUE) {
-                return RuntimeError("Queue is full!");
+                return false;
             }
 
-            return VoidResult();
+            return true;
         }
 
-        Result<T> pop(Opset& op, T& item, bool wait = true) {
+        bool pop(Opset& op, T& item, bool wait = true) {
             BaseType_t result = op.receive(queue_, item, wait);
 
             if (result != pdTRUE) {
-                return RuntimeError("Queue is empty!");
+                return false;
             }
 
-            return item;
+            return true;
         }
 
         Opset         core_set_;

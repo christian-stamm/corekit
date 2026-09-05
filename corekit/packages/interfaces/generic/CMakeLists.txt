@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.25)
 corekit_add_module(basedevice API IMPL
     PUBLIC_INCLUDES      "inc"
     SOURCE_FILES         "src/basedevice.cpp"
-    DEPENDENCIES         "atomic;watch"
+    DEPENDENCIES         "atomic;check;watch"
 )
 
 corekit_add_module(serialdevice API IMPL

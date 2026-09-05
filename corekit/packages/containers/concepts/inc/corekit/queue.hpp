@@ -12,8 +12,8 @@ namespace corekit {
 
     template <typename Queue, typename Item>
     concept QueueLike = requires(Queue q, Item i) {
-        { q.push(i, false) } -> std::convertible_to<VoidResult>;
-        { q.pop(i, false) } -> std::convertible_to<Result<Item>>;
+        { q.push(i, false) } -> std::convertible_to<bool>;
+        { q.pop(i, false) } -> std::convertible_to<bool>;
     };
 
 }  // namespace corekit

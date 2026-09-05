@@ -5,6 +5,8 @@
 #include <functional>
 #include <set>
 
+#include "corekit/result.hpp"
+
 namespace corekit::Gpio {
 
     static constexpr uint64_t UNMASKED = 0xFFFFFFFFFFFFFFFF;
@@ -21,19 +23,24 @@ namespace corekit::Gpio {
         Pin lower() const;
         Pin upper() const;
 
+        size_t count() const {
+            return length;
+        }
+
         uint64_t mask() const;
         Range    slice(int shift, int length) const;
         Set      pins() const;
 
-        const Pin  base;
-        const uint length;
+       private:
+        Pin  base;
+        uint length;
     };
 
     static void enableIRQ();
     static void disableIRQ();
     static void setHandle(uint pin, gpio_irq_level event, Handle&& callback);
 
-    extern void configure(
+    extern VoidResult configure(
         uint                pin,
         bool                pullUp   = false,                   //
         bool                pullDown = false,                   //

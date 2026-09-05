@@ -107,7 +107,7 @@ namespace corekit::Spi {
         return true;
     }
 
-    bool Device::write_bulk(std::span<const uint8_t> data) {
+    bool Device::write_burst(std::span<const uint8_t> data) {
         return spi_write_blocking(instance, data.data(), data.size()) ==
                data.size();
     }
@@ -116,7 +116,7 @@ namespace corekit::Spi {
         return spi_read_blocking(instance, 0, &data, 1) == 1;
     }
 
-    bool Device::read_bulk(std::span<uint8_t> data) {
+    bool Device::read_burst(std::span<uint8_t> data) {
         return spi_read_blocking(instance, 0, data.data(), data.size()) ==
                data.size();
     }

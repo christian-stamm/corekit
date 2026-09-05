@@ -1,6 +1,7 @@
 #pragma once
 
 #include "corekit/platform/stack.hpp"
+#include "corekit/queue.hpp"
 
 namespace corekit {
 
@@ -8,9 +9,6 @@ namespace corekit {
     using Stack = platform::Stack<T>;
 
     template <typename Stack, typename Item>
-    concept StackLike = requires(Stack s, Item i) {
-        { s.push(i, false) } -> std::convertible_to<VoidResult>;
-        { s.pop(i, false) } -> std::convertible_to<Result<Item>>;
-    };
+    concept StackLike = QueueLike<Stack, Item>;
 
 }  // namespace corekit

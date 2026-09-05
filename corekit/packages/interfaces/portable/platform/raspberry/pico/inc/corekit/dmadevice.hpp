@@ -37,8 +37,7 @@ namespace corekit::Dma {
                  uint     dreq      = DREQ_FORCE,
                  bool     byteswap  = false,
                  bool     sniff     = false,
-                 int      chain     = -1,
-                 Handle&& handle    = nullptr);
+                 int      chain     = -1);
 
         ~Transfer();
 
@@ -52,15 +51,18 @@ namespace corekit::Dma {
 
     class Device : public AsyncDevice<uint32_t> {
        public:
-        using Ptr = std::shared_ptr<Device>;
+        using Ptr  = std::shared_ptr<Device>;
+        using List = std::vector<Ptr>;
 
         Device(uint channel);
         virtual ~Device() override;
 
         static Ptr request_unused();
 
-        static void enableIRQ();
-        static void disableIRQ();
+        static void enableIRQs();
+        static void disableIRQs();
+
+        void setChannelIRQ(Handle handle = nullptr);
 
         bool process(Transfer::Ptr task);
         void chaining(uint channel);

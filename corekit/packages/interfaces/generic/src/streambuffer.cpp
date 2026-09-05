@@ -36,7 +36,7 @@ namespace corekit {
 
     std::streamsize StreamBuffer::xsputn(const char* s, std::streamsize count) {
         if (0 < count && device != nullptr) {
-            if (device->write_bulk(std::span<const uint8_t>(
+            if (device->write_burst(std::span<const uint8_t>(
                     reinterpret_cast<const uint8_t*>(s),
                     static_cast<std::size_t>(count)))) {
                 return count;
@@ -55,7 +55,7 @@ namespace corekit {
 
         auto buffer = std::span<uint8_t>(ptr, size);
 
-        return device->read_bulk(buffer) ? count : 0;
+        return device->read_burst(buffer) ? count : 0;
     }
 
 }  // namespace corekit

@@ -19,7 +19,7 @@ namespace corekit {
         bool   load();
         bool   unload();
         bool   reload();
-        bool   isLoaded() const;
+        bool   is_loaded() const;
         double uptime() const;
 
         const std::string name;

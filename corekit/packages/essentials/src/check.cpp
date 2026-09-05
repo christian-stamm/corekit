@@ -6,13 +6,12 @@
 namespace corekit {
 
     const Logger syslog("CORE");
-    const Mutex  syslock;
 
     bool corecheck(bool condition, const Error& error) {
         // Perform a core check to ensure that the system is in a valid state.
 #ifndef NDEBUG
         if (!condition) {
-            syslog() << error.what();
+            syslog.error() << error.what();
             return false;
         }
 #endif
@@ -21,25 +20,15 @@ namespace corekit {
 
     bool corecheck() {
         // Perform a core check to ensure that the system is in a valid state.
-#ifndef NDEBUG
+        // #ifndef NDEBUG
 
         if (!Error::stack.empty()) {
-            std::lock_guard lock(syslock);
-
-            while (!Error::stack.empty()) {
-                const Error* error = Error::stack.top();
-
-                if (error) {
-                    syslog() << "Core check failed: " << error->what();
-                }
-
-                Error::stack.pop();
-            }
-
+            LogStream log = syslog.error();
+            Error::stack.dump(log);
             return false;
         }
 
-#endif
+        // #endif
 
         return true;
     }

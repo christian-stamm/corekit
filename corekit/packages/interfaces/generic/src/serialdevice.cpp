@@ -4,7 +4,7 @@
 namespace corekit {
 
     template <typename T>
-    bool SerialDevice<T>::write_bulk(std::span<const T> data) {
+    bool SerialDevice<T>::write_burst(std::span<const T> data) {
         for (const T& item : data) {
             if (!write(item)) {
                 return false;
@@ -15,7 +15,7 @@ namespace corekit {
     }
 
     template <typename T>
-    bool SerialDevice<T>::read_bulk(std::span<T> data) {
+    bool SerialDevice<T>::read_burst(std::span<T> data) {
         for (T& item : data) {
             if (!read(item)) {
                 return false;

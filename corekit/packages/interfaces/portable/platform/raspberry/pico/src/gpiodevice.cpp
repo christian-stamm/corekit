@@ -7,6 +7,7 @@
 #include <format>
 #include <map>
 
+#include "corekit/error.hpp"
 #include "corekit/math.hpp"
 
 namespace corekit::Gpio {
@@ -48,7 +49,14 @@ namespace corekit::Gpio {
         Pin base = (*this)[shift];
 
         if (static_cast<int>(this->base + this->length) < (base + length)) {
-            throw std::runtime_error("Subrange exceeds PinRange bounds");
+            Error::stack.push(
+                RuntimeError(std::format("Slice out of range: base={} "
+                                         "length={} shift={} slice_length={}",
+                                         this->base,
+                                         this->length,
+                                         shift,
+                                         length)));
+            return Range(0, 0);
         }
 
         return Range(base, length);
@@ -80,21 +88,25 @@ namespace corekit::Gpio {
                                            isrEvent);
     }
 
-    void configure(uint                pin,
-                   bool                pullUp,    //
-                   bool                pullDown,  //
-                   gpio_dir            output,    //
-                   gpio_override       override,  //
-                   gpio_function_t     function,  //
-                   gpio_slew_rate      slewRate,  //
-                   gpio_drive_strength strenght   //
+    VoidResult configure(uint                pin,
+                         bool                pullUp,    //
+                         bool                pullDown,  //
+                         gpio_dir            output,    //
+                         gpio_override       override,  //
+                         gpio_function_t     function,  //
+                         gpio_slew_rate      slewRate,  //
+                         gpio_drive_strength strenght   //
     ) {
         if (NUM_BANK0_GPIOS <= pin) {
-            throw std::runtime_error("Pin number out of range");
+            return OutOfRangeError(std::format("Invalid GPIO pin: {} (max={})",
+                                               pin,
+                                               NUM_BANK0_GPIOS - 1));
         }
 
         if (pullUp && pullDown) {
-            throw std::runtime_error("Cannot set both pull-up and pull-down");
+            return InvalidArgumentError(
+                std::format("Invalid GPIO pin configuration: "
+                            "pullUp and pullDown cannot both be true"));
         }
 
         gpio_set_dir(pin, output);
@@ -105,6 +117,7 @@ namespace corekit::Gpio {
         gpio_set_inover(pin, override);
         gpio_set_outover(pin, override);
         gpio_set_irqover(pin, override);
+        return VoidResult();
     }
 
     void setPinLevel(uint pin, bool enabled) {

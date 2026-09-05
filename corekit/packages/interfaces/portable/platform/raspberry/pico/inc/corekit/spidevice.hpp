@@ -27,10 +27,10 @@ namespace corekit::Spi {
         void loopback(bool enabled);
 
         virtual bool write(const uint8_t& data) override;
-        virtual bool write_bulk(std::span<const uint8_t> data) override;
+        virtual bool write_burst(std::span<const uint8_t> data) override;
 
         virtual bool read(uint8_t& data) override;
-        virtual bool read_bulk(std::span<uint8_t> data) override;
+        virtual bool read_burst(std::span<uint8_t> data) override;
 
         virtual bool xfer(const uint8_t& txData, uint8_t& rxData) override;
         virtual bool xferBulk(std::span<const uint8_t> txData,

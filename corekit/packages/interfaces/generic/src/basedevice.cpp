@@ -1,5 +1,7 @@
 #include "corekit/basedevice.hpp"
 
+#include "corekit/check.hpp"
+
 namespace corekit {
 
     BaseDevice::BaseDevice(const std::string& name)
@@ -13,19 +15,21 @@ namespace corekit {
     bool BaseDevice::load() {
         bool expected = false;
         bool desired  = true;
+
         // Transition from not-loaded -> loaded once.
         // Only the thread that successfully flips the flag runs prepare().
+
         if (loaded.compare_exchange(expected, desired)) {
-            try {
-                watch.reset(true);
-                return on_load();
-            } catch (...) {
+            watch.reset(true);
+
+            if (!on_load()) {
                 loaded.store(false);
-                throw;  // Preserve original exception details.
+                Error::stack.push(
+                    RuntimeError("Failed to load device: " + name));
             }
         }
 
-        return false;
+        return is_loaded();
     }
 
     bool BaseDevice::unload() {
@@ -34,22 +38,20 @@ namespace corekit {
         // Transition from loaded -> not-loaded once.
         // The thread that wins runs cleanup().
         if (loaded.compare_exchange(expected, desired)) {
-            try {
-                watch.stop();
-                return on_unload();
-            } catch (...) {
+            if (!on_unload()) {
                 loaded.store(true);
-                throw;  // Preserve original exception details.
+                Error::stack.push(
+                    RuntimeError("Failed to unload device: " + name));
             }
         }
 
-        return false;
+        return !is_loaded();
     }
 
     bool BaseDevice::reload() {
-        bool success = isLoaded();
+        bool success = is_loaded();
 
-        if (isLoaded()) {
+        if (is_loaded()) {
             success &= unload();
         }
 
@@ -57,7 +59,7 @@ namespace corekit {
         return success;
     }
 
-    bool BaseDevice::isLoaded() const {
+    bool BaseDevice::is_loaded() const {
         return loaded.load();
     }
 

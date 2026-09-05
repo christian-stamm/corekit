@@ -63,7 +63,7 @@ namespace corekit::Uart {
         return true;
     }
 
-    bool Device::write_bulk(std::span<const uint8_t> data) {
+    bool Device::write_burst(std::span<const uint8_t> data) {
         uart_write_blocking(instance,
                             data.data(),
                             static_cast<size_t>(data.size()));
@@ -79,7 +79,7 @@ namespace corekit::Uart {
         return true;
     }
 
-    bool Device::read_bulk(std::span<uint8_t> data) {
+    bool Device::read_burst(std::span<uint8_t> data) {
         uart_read_blocking(instance,
                            data.data(),
                            static_cast<size_t>(data.size()));

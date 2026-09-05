@@ -1,5 +1,7 @@
 #include "corekit/platform/executor.hpp"
 
+#include "corekit/check.hpp"
+
 namespace corekit::platform {
 
     Thread::Thread(Task::Ptr task, StopToken token)
@@ -28,12 +30,8 @@ namespace corekit::platform {
             [](void* arg) {
                 auto* self = static_cast<Thread*>(arg);
 
-                auto result = self->m_task_->exec(self->m_token_);
-
-                if (!result) {
-                    self->m_task_->logger()
-                        << std::format("Task execution failed: {}",
-                                       result.error().message);
+                if (!self->m_task_->exec(self->m_token_)) {
+                    corecheck();
                 }
 
                 self->m_state_.store(State::Finished);

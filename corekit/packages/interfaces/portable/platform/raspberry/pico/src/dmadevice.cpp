@@ -5,10 +5,10 @@
 #include <cmath>
 #include <cstdint>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <vector>
 
+#include "corekit/error.hpp"
 #include "corekit/math.hpp"
 
 constexpr uint IRQ_INDEX = 0;
@@ -38,8 +38,7 @@ namespace corekit::Dma {
                        uint                 dreq,
                        bool                 byteswap,
                        bool                 sniff,
-                       int                  chain,
-                       Handle&&             handle)
+                       int                  chain)
         : originAddr(const_cast<volatile void*>(originAddr))
         , targetAddr(const_cast<volatile void*>(targetAddr))
         , encoding(dma_encode_transfer_count(burst_length))
@@ -62,8 +61,6 @@ namespace corekit::Dma {
         if (0 <= chain) {
             channel_config_set_chain_to(&config, chain);
         }
-
-        handles[channel] = std::move(handle);
 
         channel_config_set_dreq(&config, dreq);
         channel_config_set_transfer_data_size(&config, blockSize);
@@ -114,7 +111,9 @@ namespace corekit::Dma {
             }
         }
 
-        throw std::runtime_error("No unused Dma channels available.");
+        Error::stack.push(
+            RuntimeError("DMA Request failed: All channels are in use."));
+        return nullptr;
     }
 
     bool Device::busy() const {
@@ -144,14 +143,18 @@ namespace corekit::Dma {
         return true;
     }
 
-    void Device::enableIRQ() {
+    void Device::enableIRQs() {
         irq_set_exclusive_handler(IRQ_NUM, shared_irq_callback);
         irq_set_enabled(IRQ_NUM, true);
     }
 
-    void Device::disableIRQ() {
+    void Device::disableIRQs() {
         irq_set_enabled(IRQ_NUM, false);
         irq_remove_handler(IRQ_NUM, shared_irq_callback);
+    }
+
+    void Device::setChannelIRQ(Handle handle) {
+        handles[channel] = std::move(handle);
     }
 
 };  // namespace corekit::Dma
