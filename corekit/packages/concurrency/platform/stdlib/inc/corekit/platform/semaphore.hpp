@@ -4,7 +4,7 @@
 #include <memory>
 #include <mutex>
 
-#include "corekit/platform/conditionvariable.hpp"
+#include "corekit/conditionvariable.hpp"  // IWYU pragma: keep
 
 namespace corekit::platform {
 

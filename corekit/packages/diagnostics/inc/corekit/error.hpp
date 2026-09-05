@@ -1,65 +1,120 @@
 #pragma once
 
+#include <deque>
+#include <mutex>
 #include <source_location>
 #include <string>
 
+#include "corekit/mutex.hpp"
+
 namespace corekit {
 
-    using Location = std::source_location;
+    constexpr uint16_t MAX_STACK_SIZE = 8;
 
     struct Error {
-        using Message = std::string;
+       public:
+        struct Location {
+            Location(const std::source_location& location);
 
-        enum class Type {
-            NONE,
-            RUNTIME,
-            NOT_IMPLEMENTED,
-            INVALID_ARGUMENT,
-            OUT_OF_RANGE,
-            TIMEOUT,
+            std::string file;
+            std::string func;
+            int         line;
+            int         column;
         };
 
-        explicit Error(Type            type     = Type::NONE,
-                       const Message&  message  = "<NO ERROR>",
-                       const Location& location = Location::current());
+        struct Stack {
+            const Error* top() const {
+                std::lock_guard lock(m_mutex);
+                if (m_stack.empty()) {
+                    return nullptr;
+                }
+                return &m_stack.back();
+            }
 
-        operator bool() const;
+            void pop() {
+                std::lock_guard lock(m_mutex);
+                m_stack.pop_back();
+            }
 
-        Message traceback() const;
-        Message what() const;
+            bool push(const Error& error) {
+                std::lock_guard lock(m_mutex);
+                if (MAX_STACK_SIZE <= m_stack.size()) {
+                    return false;
+                }
 
-       private:
-        Message type_to_string() const;
+                m_stack.push_back(error);
+                return true;
+            }
 
-       public:
-        Type     type;
-        Message  message;
-        Location location;
+            bool empty() const {
+                std::lock_guard lock(m_mutex);
+                return m_stack.empty();
+            }
+
+           private:
+            std::deque<Error> m_stack;
+            mutable Mutex     m_mutex;
+        };
+
+        explicit Error(
+            uint16_t             code     = 0,
+            std::string          type     = "",
+            std::string          message  = "",
+            std::source_location location = std::source_location::current());
+
+        std::string what() const;
+
+        uint16_t    code;
+        std::string type;
+        std::string message;
+        Location    location;
+
+        friend std::ostream& operator<<(std::ostream& os, const Error& error) {
+            os << error.what();
+            return os;
+        }
+
+        static Stack stack;
     };
 
     class RuntimeError : public Error {
        public:
-        explicit RuntimeError(const Message& message = "");
+        constexpr static uint16_t CODE = 1;
+        explicit RuntimeError(
+            std::string          message  = "",
+            std::source_location location = std::source_location::current());
     };
 
     class NotImplementedError : public Error {
        public:
-        explicit NotImplementedError(const Message& message = "");
+        constexpr static uint16_t CODE = 2;
+        explicit NotImplementedError(
+            std::string          message  = "",
+            std::source_location location = std::source_location::current());
     };
 
     class InvalidArgumentError : public Error {
        public:
-        explicit InvalidArgumentError(const Message& message = "");
+        constexpr static uint16_t CODE = 3;
+        explicit InvalidArgumentError(
+            std::string          message  = "",
+            std::source_location location = std::source_location::current());
     };
 
     class OutOfRangeError : public Error {
        public:
-        explicit OutOfRangeError(const Message& message = "");
+        constexpr static uint16_t CODE = 4;
+        explicit OutOfRangeError(
+            std::string          message  = "",
+            std::source_location location = std::source_location::current());
     };
 
     class TimeoutError : public Error {
        public:
-        explicit TimeoutError(const Message& message = "");
+        constexpr static uint16_t CODE = 5;
+        explicit TimeoutError(
+            std::string          message  = "",
+            std::source_location location = std::source_location::current());
     };
 
 }  // namespace corekit

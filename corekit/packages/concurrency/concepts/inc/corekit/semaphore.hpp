@@ -1,6 +1,6 @@
 #pragma once
 
-#include "corekit/platform/semaphore.hpp"
+#include "corekit/platform/semaphore.hpp"  // IWYU pragma: keep
 
 namespace corekit {
 

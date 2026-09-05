@@ -1,4 +1,4 @@
-#include "corekit/platform/mutex.hpp"
+#include "corekit/platform/mutex.hpp"  // IWYU pragma: keep
 
 namespace corekit::platform {
 
@@ -51,7 +51,7 @@ namespace corekit::platform {
     // ============================================================================
 
     Mutex::Mutex()
-        : handle_(xSemaphoreCreateMutex())
+        : handle_(xSemaphoreCreateBinary())
         , core_set_(handle_)
         , isr_set_(handle_) {}
 

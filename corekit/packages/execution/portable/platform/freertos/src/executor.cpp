@@ -1,89 +1,73 @@
 #include "corekit/platform/executor.hpp"
 
-#include <format>
+#include "corekit/platform/stoptoken.hpp"
 
 namespace corekit::platform {
 
-    ThreadPool::ThreadPool(uint num_workers, uint max_tasks)
-        : num_workers_(num_workers)
-        , m_task_queue_(max_tasks)
-        , m_worker_count_(0, num_workers) {
-        for (size_t i = 0; i < num_workers_; ++i) {
-            TaskHandle_t task_handle = nullptr;
-            std::string  task_name   = std::format("worker_{}", i);
+    Thread::Thread(Task::Ptr task, StopToken token)
+        : m_state_(State::NotStarted)
+        , m_token_(token)
+        , m_task_(task)
+        , m_handle_(nullptr) {}
 
-            BaseType_t result = xTaskCreate(
-                [](void* arg) {
-                    ThreadPool* self = static_cast<ThreadPool*>(arg);
-                    self->worker_loop();
-                    vTaskDelete(nullptr);
-                },
-                task_name.c_str(),
-                configMINIMAL_STACK_SIZE,
-                this,
-                tskIDLE_PRIORITY + 1,
-                &task_handle);
-
-            if (result != pdPASS) {
-                // Handle error
-                continue;
-            }
-
-            m_workers_.emplace_back(task_handle);
-        }
+    Thread::~Thread() {
+        join();
     }
 
-    ThreadPool::~ThreadPool() {
-        cancel();
+    bool Thread::start() {
+        if (!m_task_)
+            return false;
 
-        for (const TaskHandle_t& worker : m_workers_) {
-            m_worker_count_.acquire();
+        auto expected = State::NotStarted;
+        auto desired  = State::Running;
+
+        // Synchronize this transition.
+        if (!m_state_.compare_exchange(expected, desired)) {
+            return false;
         }
+
+        BaseType_t result = xTaskCreate(
+            [](void* arg) {
+                auto* self = static_cast<Thread*>(arg);
+
+                auto result = self->m_task_->exec(self->m_token_);
+
+                if (!result) {
+                    self->m_task_->logger()
+                        << std::format("Task execution failed: {}",
+                                       result.error().message);
+                }
+
+                self->m_state_.store(State::Finished);
+                // Last operation touching self.
+                self->m_joiner_.release();
+                vTaskDelete(nullptr);
+            },
+            m_task_->name.c_str(),
+            configMINIMAL_STACK_SIZE,
+            this,
+            tskIDLE_PRIORITY + 1,
+            &m_handle_);
+
+        if (result != pdPASS) {
+            m_handle_ = nullptr;
+            m_state_.store(State::NotStarted);
+            return false;
+        }
+
+        return true;
     }
 
-    void ThreadPool::cancel(bool discard_tasks) {
-        if (m_stop_source_.stop_requested()) {
+    void Thread::join() {
+        const State state = m_state_.load();
+
+        if (state == State::NotStarted) {
             return;
         }
 
-        m_stop_source_.request_stop();
-
-        if (discard_tasks) {
-            m_task_queue_.clear();
+        if (state == State::Running) {
+            m_joiner_.acquire();
         }
-
-        // Wake each potentially blocked worker.
-        for (size_t i = 0; i < m_workers_.size(); ++i) {
-            m_task_queue_.push(nullptr, true);
-        }
-    }
-
-    VoidResult ThreadPool::enqueue(Task::Ptr task) {
-        if (!task) {
-            return RuntimeError("null task");
-        }
-
-        if (m_stop_source_.stop_requested()) {
-            return RuntimeError("executor stopped");
-        }
-
-        return m_task_queue_.push(std::move(task), false);
-    }
-
-    void ThreadPool::worker_loop() {
-        while (true) {
-            Task::Ptr task;
-
-            m_task_queue_.pop(task, true);
-
-            if (!task) {
-                break;
-            }
-
-            task->exec(m_stop_source_.get_token());
-        }
-
-        m_worker_count_.release();
     }
 
     void Executor::launch() {

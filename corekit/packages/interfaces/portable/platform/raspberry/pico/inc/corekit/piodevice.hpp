@@ -6,10 +6,13 @@
 #include <format>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <vector>
 
 #include "corekit/asyncdevice.hpp"
+#include "corekit/dmadevice.hpp"
+#include "corekit/mutex.hpp"
 #include "corekit/result.hpp"
 
 extern bool pio_sm_is_enabled(PIO block, uint sm);
@@ -31,8 +34,6 @@ namespace corekit::Pio {
         PreloadVal osr        = std::nullopt;
     };
 
-    class Node;
-
     struct Program : public pio_program {
         friend class Node;
 
@@ -53,26 +54,30 @@ namespace corekit::Pio {
         };
 
        public:
-        using Ptr    = std::shared_ptr<Program>;
-        using Target = std::shared_ptr<Node>;
+        using Ptr = std::shared_ptr<Program>;
+
         Program(const pio_program_t& program);
 
-        virtual bool install(PIO block) final;
-        virtual bool uninstall(PIO block) final;
-        virtual bool isInstalled(PIO block) const final;
-        virtual bool modify(PIO block, uint line, Command command) final;
+        virtual VoidResult install(PIO block) final;
+        virtual VoidResult uninstall(PIO block) final;
+        virtual bool       isInstalled(PIO block) const final;
+        virtual VoidResult modify(PIO block, uint line, Command command) final;
 
         virtual NodeConf   buildNodeConf(PIO block, uint node, uint base);
         virtual LaunchConf buildLaunchConf(PIO block, uint node);
 
-        virtual VoidResult configurePins(Target instance);
-        virtual VoidResult configureDmas(Target instance);
+        virtual VoidResult configurePins(PIO block, uint node);
+        virtual VoidResult configureDmas(PIO                block,
+                                         uint               node,
+                                         CtrlBlock          writer,
+                                         CtrlBlock          reader,
+                                         Dma::Device::List& dmas);
 
         virtual const State& getState(PIO block) const final;
 
        private:
-        virtual bool registerNode(PIO block, uint node) final;
-        virtual bool unregisterNode(PIO block, uint node) final;
+        virtual VoidResult registerNode(PIO block, uint node) final;
+        virtual void       unregisterNode(PIO block, uint node) final;
 
         virtual State& requestState(PIO block) const final;
 
@@ -93,7 +98,8 @@ namespace corekit::Pio {
 
         template <typename T = Node>
         static std::shared_ptr<T> request_unused(const PIO block) {
-            const int node = pio_claim_unused_sm(block, false);
+            std::lock_guard lock(claim_mutex);
+            const int       node = pio_claim_unused_sm(block, false);
 
             if (node < 0) {
                 return nullptr;
@@ -103,25 +109,28 @@ namespace corekit::Pio {
             return std::make_shared<T>(block, (uint)(node));
         }
 
-        bool deploy(const Program::Ptr& program);
+        VoidResult deploy(const Program::Ptr& program);
+
         bool isRunning() const;
         uint unique_id() const;
 
-        virtual bool write(const uint32_t& data) override;
-        virtual bool write_bulk(std::span<const uint32_t> data) override;
-        virtual bool read(uint32_t& data) override;
-        virtual bool read_bulk(std::span<uint32_t> data) override;
+        virtual VoidResult write(const uint32_t& data) override;
+        virtual VoidResult write_burst(std::span<const uint32_t> data) override;
+        virtual VoidResult read(uint32_t& data) override;
+        virtual VoidResult read_burst(std::span<uint32_t> data) override;
 
         const PIO  block;
         const uint node;
 
        protected:
-        virtual bool on_load() override;
-        virtual bool on_unload() override;
+        virtual VoidResult on_load() override;
+        virtual VoidResult on_unload() override;
 
-        void preloadReg(pio_src_dest reg, uint32_t value);
+        VoidResult preloadReg(pio_src_dest reg, uint32_t value);
 
-        Program::Ptr program;
+        Program::Ptr      program;
+        Dma::Device::List dmalist;
+        static Mutex      claim_mutex;
     };
 
 }  // namespace corekit::Pio

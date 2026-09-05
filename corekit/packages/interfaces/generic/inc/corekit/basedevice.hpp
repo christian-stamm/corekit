@@ -2,6 +2,7 @@
 #include <memory>
 
 #include "corekit/atomic.hpp"
+#include "corekit/result.hpp"
 #include "corekit/watch.hpp"
 
 namespace corekit {
@@ -16,21 +17,21 @@ namespace corekit {
 
         virtual ~BaseDevice();
 
-        bool   load();
-        bool   unload();
-        bool   reload();
-        bool   isLoaded() const;
-        double uptime() const;
+        VoidResult load();
+        VoidResult unload();
+        VoidResult reload();
+        bool       is_loaded() const;
+        double     uptime() const;
 
         const std::string name;
 
        protected:
-        virtual bool on_load() {
-            return true;
+        virtual VoidResult on_load() {
+            return VoidResult();
         };
 
-        virtual bool on_unload() {
-            return true;
+        virtual VoidResult on_unload() {
+            return VoidResult();
         };
 
        private:

@@ -45,13 +45,13 @@ namespace corekit::platform {
         join();
     }
 
-    VoidResult ThreadPool::enqueue(Task::Ptr task) {
+    bool ThreadPool::enqueue(Task::Ptr task) {
         if (!task) {
-            return RuntimeError("null task");
+            return false;
         }
 
         if (m_stop_source_.stop_requested()) {
-            return RuntimeError("executor stopped");
+            return false;
         }
 
         return m_task_queue_.push(std::move(task), false);

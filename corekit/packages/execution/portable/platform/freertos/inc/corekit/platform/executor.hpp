@@ -3,45 +3,40 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-#include <vector>
-
-#include "corekit/queue.hpp"
-#include "corekit/result.hpp"
 #include "corekit/semaphore.hpp"
 #include "corekit/task.hpp"
+#include "corekit/time.hpp"
 
 namespace corekit::platform {
 
-    class ThreadPool {
+    class Thread {
        public:
-        explicit ThreadPool(uint num_workers = 4, uint max_tasks = 10);
-        ~ThreadPool();
+        using Ptr = std::shared_ptr<Thread>;
 
-        ThreadPool(const ThreadPool&)            = delete;
-        ThreadPool& operator=(const ThreadPool&) = delete;
+        enum class State { NotStarted, Running, Finished };
 
-        ThreadPool(ThreadPool&&)            = delete;
-        ThreadPool& operator=(ThreadPool&&) = delete;
+        Thread(Task::Ptr task, StopToken token);
+        ~Thread();
 
-        VoidResult enqueue(Task::Ptr task);
+        Thread(const Thread&)            = delete;
+        Thread& operator=(const Thread&) = delete;
 
-        void cancel(bool remaining_tasks = false);
+        Thread(Thread&&)            = delete;
+        Thread& operator=(Thread&&) = delete;
 
-        const uint num_workers_;
+        bool start();
+        void join();
 
        private:
-        void worker_loop();
-
-        Semaphore                 m_worker_count_;
-        Queue<Task::Ptr>          m_task_queue_;
-        StopSource                m_stop_source_;
-        std::vector<TaskHandle_t> m_workers_;
+        Atomic<State> m_state_;
+        Task::Ptr     m_task_;
+        TaskHandle_t  m_handle_;
+        StopToken     m_token_;
+        Semaphore     m_joiner_;
     };
 
-    class Executor : public ThreadPool {
+    class Executor {
        public:
-        using ThreadPool::ThreadPool;
-
         static void launch();
         static void terminate();
     };

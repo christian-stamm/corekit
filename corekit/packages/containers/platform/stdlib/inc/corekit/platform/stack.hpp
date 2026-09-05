@@ -4,7 +4,6 @@
 
 #include "corekit/conditionvariable.hpp"
 #include "corekit/mutex.hpp"
-#include "corekit/result.hpp"
 
 namespace corekit::platform {
 
@@ -13,31 +12,31 @@ namespace corekit::platform {
        public:
         explicit Stack(size_t capacity) : capacity_(capacity) {}
 
-        VoidResult push(T item, bool wait = true) {
+        bool push(T item, bool wait = true) {
             {
                 std::unique_lock lock(mutex_);
 
                 if (wait) {
                     producer_.wait(lock, [this] { return !is_full(); });
                 } else if (is_full()) {
-                    return RuntimeError("Stack is full");
+                    return false;
                 }
 
                 stack_.push(std::move(item));
             }
 
             consumer_.notify_one();
-            return VoidResult();
+            return true;
         }
 
-        Result<T> pop(T& item, bool wait = true) {
+        bool pop(T& item, bool wait = true) {
             {
                 std::unique_lock lock(mutex_);
 
                 if (wait) {
                     consumer_.wait(lock, [this] { return !is_empty(); });
                 } else if (is_empty()) {
-                    return RuntimeError("Stack is empty");
+                    return false;
                 }
 
                 item = std::move(stack_.top());
@@ -45,7 +44,7 @@ namespace corekit::platform {
             }
 
             producer_.notify_one();
-            return item;
+            return true;
         }
 
        private:

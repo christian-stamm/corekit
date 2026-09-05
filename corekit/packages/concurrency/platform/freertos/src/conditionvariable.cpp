@@ -1,4 +1,4 @@
-#include "corekit/platform/conditionvariable.hpp"
+#include "corekit/platform/conditionvariable.hpp"  // IWYU pragma: keep
 
 namespace corekit::platform {
 

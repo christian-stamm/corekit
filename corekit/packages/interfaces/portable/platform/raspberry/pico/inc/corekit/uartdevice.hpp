@@ -19,15 +19,15 @@ namespace corekit::Uart {
             uint         rxPin    = PICO_DEFAULT_UART_RX_PIN      //
         );
 
-        virtual bool write(const uint8_t& data) override;
-        virtual bool write_bulk(std::span<const uint8_t> data) override;
+        virtual VoidResult write(const uint8_t& data) override;
+        virtual VoidResult write_burst(std::span<const uint8_t> data) override;
 
-        virtual bool read(uint8_t& data) override;
-        virtual bool read_bulk(std::span<uint8_t> data) override;
+        virtual VoidResult read(uint8_t& data) override;
+        virtual VoidResult read_burst(std::span<uint8_t> data) override;
 
        protected:
-        virtual bool on_load() override;
-        virtual bool on_unload() override;
+        virtual VoidResult on_load() override;
+        virtual VoidResult on_unload() override;
 
         uart_inst_t* instance;
         uint         baudRate;

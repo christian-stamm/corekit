@@ -1,6 +1,7 @@
-#include "corekit/platform/semaphore.hpp"
+#include "corekit/platform/semaphore.hpp"  // IWYU pragma: keep
 
-#include "portmacrocommon.h"
+#include <FreeRTOS.h>
+#include <task.h>
 
 namespace corekit::platform {
 

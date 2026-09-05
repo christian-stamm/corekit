@@ -12,7 +12,7 @@ namespace corekit::platform {
        public:
         struct CoreSet : public Queue<T>::Opset {
             virtual inline BaseType_t send(QueueHandle_t q,
-                                           T             item,
+                                           const T&      item,
                                            TickType_t    wait = portMAX_DELAY) {
                 return xQueueSendToFront(q, &item, wait);
             }
@@ -26,7 +26,7 @@ namespace corekit::platform {
 
         struct IsrSet : public Queue<T>::Opset {
             virtual inline BaseType_t send(QueueHandle_t q,
-                                           T             item,
+                                           const T&      item,
                                            TickType_t) override {
                 return xQueueSendToFrontFromISR(q, &item, nullptr);
             }

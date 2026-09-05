@@ -2,7 +2,7 @@
 
 #include <mutex>
 
-#include "corekit/platform/conditionvariable.hpp"
+#include "corekit/platform/conditionvariable.hpp"  // IWYU pragma: keep
 
 namespace corekit {
 
@@ -10,9 +10,9 @@ namespace corekit {
 
     template <typename T, typename Lock, typename Predicate>
 
-    concept ConditionVariableLike =  //
+    concept ConditionVariableLike =
         std::predicate<Predicate> &&
-        requires(T cv, std::unique_lock<Lock>& lock, Predicate predicate) {
+        requires(T cv, std::unique_lock<Lock> &lock, Predicate predicate) {
             { cv.wait(lock) } -> std::convertible_to<void>;
             { cv.wait(lock, predicate) } -> std::convertible_to<void>;
             { cv.notify_one() } -> std::convertible_to<void>;

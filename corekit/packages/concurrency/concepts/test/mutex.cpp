@@ -28,8 +28,8 @@ namespace corekit::test {
     /*
      * Mutex must be usable with the standard C++ lock wrappers.
      */
-    static_assert(std::is_constructible_v<std::lock_guard<Mutex>, Mutex&>);
-    static_assert(std::is_constructible_v<std::unique_lock<Mutex>, Mutex&>);
+    static_assert(std::is_constructible_v<std::lock_guard<Mutex>, Mutex &>);
+    static_assert(std::is_constructible_v<std::unique_lock<Mutex>, Mutex &>);
 
     /*
      * Basic lock/unlock behavior.

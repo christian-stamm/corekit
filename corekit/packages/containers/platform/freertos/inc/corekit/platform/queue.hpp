@@ -3,17 +3,22 @@
 #include <FreeRTOS.h>
 #include <queue.h>
 
-#include "corekit/error.hpp"
-#include "corekit/result.hpp"
+#include <array>
+#include <type_traits>
+#include <utility>
 
 namespace corekit::platform {
 
     template <typename T>
     class Queue {
+        // static_assert(std::is_trivially_copyable_v<T>,
+        //               "Queue<T> uses FreeRTOS byte-copy queues; T must be "
+        //               "trivially copyable.");
+
        protected:
         struct Opset {
             virtual inline BaseType_t send(QueueHandle_t q,
-                                           T             item,
+                                           const T&      item,
                                            TickType_t    wait = portMAX_DELAY) {
                 return xQueueSendToBack(q, &item, wait);
             }
@@ -29,7 +34,7 @@ namespace corekit::platform {
 
         struct IsrSet : public Opset {
             virtual inline BaseType_t send(QueueHandle_t q,
-                                           T             item,
+                                           const T&      item,
                                            TickType_t) override {
                 return xQueueSendToBackFromISR(q, &item, nullptr);
             }
@@ -49,13 +54,13 @@ namespace corekit::platform {
             , core_set_(cset)
             , isr_set_(iset) {}
 
-        VoidResult push(T item, bool wait = true) {
+        bool push(T item, bool wait = true) {
             return push(xPortIsInsideInterrupt() ? isr_set_ : core_set_,
                         item,
                         wait ? portMAX_DELAY : 0);
         }
 
-        Result<T> pop(T& item, bool wait = true) {
+        bool pop(T& item, bool wait = true) {
             return pop(xPortIsInsideInterrupt() ? isr_set_ : core_set_,
                        item,
                        wait ? portMAX_DELAY : 0);
@@ -70,32 +75,17 @@ namespace corekit::platform {
         }
 
         size_t size() const {
-            return uxQueueGetQueueLength(queue_);
-        }
-
-        bool full() const {
-            return uxQueueSpacesAvailable(queue_) == 0;
+            return uxQueueGetQueueLength(queue_) -
+                   uxQueueSpacesAvailable(queue_);
         }
 
        private:
-        VoidResult push(Opset& op, T item, bool wait = true) {
-            BaseType_t result = op.send(queue_, item, wait);
-
-            if (result != pdTRUE) {
-                return RuntimeError("Queue is full!");
-            }
-
-            return VoidResult();
+        bool push(Opset& op, const T& item, TickType_t wait) {
+            return op.send(queue_, item, wait) == pdTRUE;
         }
 
-        Result<T> pop(Opset& op, T& item, bool wait = true) {
-            BaseType_t result = op.receive(queue_, item, wait);
-
-            if (result != pdTRUE) {
-                return RuntimeError("Queue is empty!");
-            }
-
-            return item;
+        bool pop(Opset& op, T& item, TickType_t wait) {
+            return op.receive(queue_, item, wait) == pdTRUE;
         }
 
         Opset         core_set_;

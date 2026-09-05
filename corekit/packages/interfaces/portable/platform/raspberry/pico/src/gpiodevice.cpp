@@ -48,7 +48,7 @@ namespace corekit::Gpio {
         Pin base = (*this)[shift];
 
         if (static_cast<int>(this->base + this->length) < (base + length)) {
-            throw std::runtime_error("Subrange exceeds PinRange bounds");
+            length = 0;
         }
 
         return Range(base, length);
@@ -80,21 +80,22 @@ namespace corekit::Gpio {
                                            isrEvent);
     }
 
-    void configure(uint                pin,
-                   bool                pullUp,    //
-                   bool                pullDown,  //
-                   gpio_dir            output,    //
-                   gpio_override       override,  //
-                   gpio_function_t     function,  //
-                   gpio_slew_rate      slewRate,  //
-                   gpio_drive_strength strenght   //
+    VoidResult configure(uint                pin,
+                         bool                pullUp,    //
+                         bool                pullDown,  //
+                         gpio_dir            output,    //
+                         gpio_override       override,  //
+                         gpio_function_t     function,  //
+                         gpio_slew_rate      slewRate,  //
+                         gpio_drive_strength strenght   //
     ) {
         if (NUM_BANK0_GPIOS <= pin) {
-            throw std::runtime_error("Pin number out of range");
+            return OutOfRangeError("Pin number out of range");
         }
 
         if (pullUp && pullDown) {
-            throw std::runtime_error("Cannot set both pull-up and pull-down");
+            return InvalidArgumentError(
+                "Cannot set both pull-up and pull-down");
         }
 
         gpio_set_dir(pin, output);
@@ -105,6 +106,8 @@ namespace corekit::Gpio {
         gpio_set_inover(pin, override);
         gpio_set_outover(pin, override);
         gpio_set_irqover(pin, override);
+
+        return VoidResult();
     }
 
     void setPinLevel(uint pin, bool enabled) {

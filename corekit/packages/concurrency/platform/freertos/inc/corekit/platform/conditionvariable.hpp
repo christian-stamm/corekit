@@ -4,11 +4,10 @@
 #include <queue.h>
 #include <semphr.h>
 
-#include <cstdint>
 #include <memory>
 #include <mutex>
 
-#include "corekit/platform/mutex.hpp"
+#include "corekit/mutex.hpp"  // IWYU pragma: keep
 
 namespace corekit::platform {
 
@@ -19,19 +18,19 @@ namespace corekit::platform {
         explicit ConditionVariable(uint32_t max_waiters);
         ~ConditionVariable();
 
-        ConditionVariable(const ConditionVariable&)            = delete;
-        ConditionVariable(ConditionVariable&&)                 = delete;
-        ConditionVariable& operator=(const ConditionVariable&) = delete;
-        ConditionVariable& operator=(ConditionVariable&&)      = delete;
+        ConditionVariable(const ConditionVariable &)            = delete;
+        ConditionVariable(ConditionVariable &&)                 = delete;
+        ConditionVariable &operator=(const ConditionVariable &) = delete;
+        ConditionVariable &operator=(ConditionVariable &&)      = delete;
 
         template <typename Predicate>
-        void wait(std::unique_lock<Mutex>& lock, Predicate predicate) {
+        void wait(std::unique_lock<Mutex> &lock, Predicate predicate) {
             while (!predicate()) {
                 wait(lock);
             }
         }
 
-        void wait(std::unique_lock<Mutex>& lock);
+        void wait(std::unique_lock<Mutex> &lock);
 
         void notify_one();
         void notify_all();

@@ -13,31 +13,31 @@ namespace corekit {
        public:
         explicit Queue(size_t capacity) : capacity_(capacity) {}
 
-        VoidResult push(T item, bool wait = true) {
+        bool push(T item, bool wait = true) {
             {
                 std::unique_lock lock(mutex_);
 
                 if (wait) {
                     producer_.wait(lock, [this] { return !unsafe_full(); });
                 } else if (unsafe_full()) {
-                    return RuntimeError("Queue is full");
+                    return false;
                 }
 
                 queue_.push(std::move(item));
             }
 
             consumer_.notify_one();
-            return VoidResult();
+            return true();
         }
 
-        Result<T> pop(T& item, bool wait = true) {
+        bool pop(T& item, bool wait = true) {
             {
                 std::unique_lock lock(mutex_);
 
                 if (wait) {
                     consumer_.wait(lock, [this] { return !unsafe_empty(); });
                 } else if (unsafe_empty()) {
-                    return RuntimeError("Queue is empty");
+                    return false;
                 }
 
                 item = std::move(queue_.front());
@@ -45,7 +45,7 @@ namespace corekit {
             }
 
             producer_.notify_one();
-            return item;
+            return true;
         }
 
         void clear() {

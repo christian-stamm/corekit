@@ -2,7 +2,7 @@
 #include <condition_variable>
 #include <memory>
 
-#include "corekit/mutex.hpp"
+#include "corekit/mutex.hpp"  // IWYU pragma: keep
 
 namespace corekit::platform {
 

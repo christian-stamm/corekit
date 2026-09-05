@@ -9,8 +9,8 @@ namespace corekit {
 
     template <typename Stack, typename Item>
     concept StackLike = requires(Stack s, Item i) {
-        { s.push(i, false) } -> std::convertible_to<VoidResult>;
-        { s.pop(i, false) } -> std::convertible_to<Result<Item>>;
+        { s.push(i, false) } -> std::convertible_to<bool>;
+        { s.pop(i, false) } -> std::convertible_to<bool>;
     };
 
 }  // namespace corekit

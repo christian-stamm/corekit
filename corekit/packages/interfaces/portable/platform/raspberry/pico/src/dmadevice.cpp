@@ -2,14 +2,16 @@
 
 #include <hardware/dma.h>
 
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <format>
 #include <iostream>
 #include <memory>
-#include <vector>
+#include <mutex>
 
 #include "corekit/math.hpp"
+#include "corekit/mutex.hpp"
 
 constexpr uint IRQ_INDEX = 0;
 constexpr uint IRQ_NUM   = DMA_IRQ_NUM(IRQ_INDEX);
@@ -21,7 +23,8 @@ __isr void shared_irq_callback();
 
 namespace corekit::Dma {
 
-    std::vector<Handle> handles(NUM_DMA_CHANNELS, nullptr);
+    std::array<Handle, NUM_DMA_CHANNELS> handles{};
+    Mutex                                claim_mutex;
 
     // -----------------------------------------------------------------
     // Transfer
@@ -98,23 +101,25 @@ namespace corekit::Dma {
         dma_channel_unclaim(channel);
     }
 
-    bool Device::on_load() {
-        return true;
+    VoidResult Device::on_load() {
+        return VoidResult();
     }
 
-    bool Device::on_unload() {
+    VoidResult Device::on_unload() {
         kill();
-        return true;
+        return VoidResult();
     }
 
     Device::Ptr Device::request_unused() {
+        std::lock_guard lock(claim_mutex);
+
         for (uint channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
             if (!dma_channel_is_claimed(channel)) {
                 return std::make_shared<Device>(channel);
             }
         }
 
-        throw std::runtime_error("No unused Dma channels available.");
+        return nullptr;
     }
 
     bool Device::busy() const {
@@ -153,7 +158,6 @@ namespace corekit::Dma {
         irq_set_enabled(IRQ_NUM, false);
         irq_remove_handler(IRQ_NUM, shared_irq_callback);
     }
-
 };  // namespace corekit::Dma
 
 void shared_irq_callback() {
@@ -161,7 +165,7 @@ void shared_irq_callback() {
 
     for (uint channel = 0; channel < NUM_DMA_CHANNELS; channel++) {
         if (dma_irqn_get_channel_status(IRQ_INDEX, channel)) {
-            const Handle handle = handles[channel];
+            const Handle& handle = handles[channel];
 
             if (handle) {
                 handle(channel);

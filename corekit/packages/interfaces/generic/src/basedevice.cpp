@@ -7,57 +7,46 @@ namespace corekit {
         , loaded(false) {}
 
     BaseDevice::~BaseDevice() {
-        unload();
+        if (is_loaded()) {
+            unload();
+        }
     }
 
-    bool BaseDevice::load() {
+    VoidResult BaseDevice::load() {
         bool expected = false;
         bool desired  = true;
         // Transition from not-loaded -> loaded once.
         // Only the thread that successfully flips the flag runs prepare().
         if (loaded.compare_exchange(expected, desired)) {
-            try {
-                watch.reset(true);
-                return on_load();
-            } catch (...) {
-                loaded.store(false);
-                throw;  // Preserve original exception details.
-            }
+            watch.reset(true);
+            return on_load();
         }
 
-        return false;
+        return VoidResult();
     }
 
-    bool BaseDevice::unload() {
+    VoidResult BaseDevice::unload() {
         bool expected = true;
         bool desired  = false;
         // Transition from loaded -> not-loaded once.
         // The thread that wins runs cleanup().
         if (loaded.compare_exchange(expected, desired)) {
-            try {
-                watch.stop();
-                return on_unload();
-            } catch (...) {
-                loaded.store(true);
-                throw;  // Preserve original exception details.
-            }
+            watch.stop();
+            return on_unload();
         }
 
-        return false;
+        return VoidResult();
     }
 
-    bool BaseDevice::reload() {
-        bool success = isLoaded();
-
-        if (isLoaded()) {
-            success &= unload();
+    VoidResult BaseDevice::reload() {
+        if (!(unload() && load())) {
+            return RuntimeError("Failed to reload device: " + name + ".");
         }
 
-        success &= load();
-        return success;
+        return VoidResult();
     }
 
-    bool BaseDevice::isLoaded() const {
+    bool BaseDevice::is_loaded() const {
         return loaded.load();
     }
 

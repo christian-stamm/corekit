@@ -4,7 +4,9 @@
 
 #include <format>
 
+#include "corekit/error.hpp"
 #include "corekit/gpiodevice.hpp"
+#include "corekit/result.hpp"
 
 namespace corekit::Spi {
 
@@ -35,7 +37,7 @@ namespace corekit::Spi {
         , sckPin(sckPin)
         , csnPin(csnPin) {}
 
-    bool Device::on_load() {
+    VoidResult Device::on_load() {
         Gpio::configure(txPin,
                         false,
                         false,
@@ -65,36 +67,43 @@ namespace corekit::Spi {
         spi_set_slave(instance, slave);
         spi_set_format(instance, 8, cpol, cpha, order);
 
-        return true;
+        return VoidResult();
     }
 
-    bool Device::on_unload() {
+    VoidResult Device::on_unload() {
         spi_deinit(instance);
-        Gpio::configure(txPin,
-                        false,
-                        false,
-                        GPIO_IN,
-                        GPIO_OVERRIDE_NORMAL,
-                        GPIO_FUNC_SIO);
-        Gpio::configure(rxPin,
-                        false,
-                        false,
-                        GPIO_IN,
-                        GPIO_OVERRIDE_NORMAL,
-                        GPIO_FUNC_SIO);
-        Gpio::configure(sckPin,
-                        false,
-                        false,
-                        GPIO_IN,
-                        GPIO_OVERRIDE_NORMAL,
-                        GPIO_FUNC_SIO);
-        Gpio::configure(csnPin,
-                        false,
-                        false,
-                        GPIO_IN,
-                        GPIO_OVERRIDE_NORMAL,
-                        GPIO_FUNC_SIO);
-        return true;
+
+        if (!(Gpio::configure(txPin,
+                              false,
+                              false,
+                              GPIO_IN,
+                              GPIO_OVERRIDE_NORMAL,
+                              GPIO_FUNC_SIO) &&
+
+              Gpio::configure(rxPin,
+                              false,
+                              false,
+                              GPIO_IN,
+                              GPIO_OVERRIDE_NORMAL,
+                              GPIO_FUNC_SIO) &&
+
+              Gpio::configure(sckPin,
+                              false,
+                              false,
+                              GPIO_IN,
+                              GPIO_OVERRIDE_NORMAL,
+                              GPIO_FUNC_SIO) &&
+
+              Gpio::configure(csnPin,
+                              false,
+                              false,
+                              GPIO_IN,
+                              GPIO_OVERRIDE_NORMAL,
+                              GPIO_FUNC_SIO))) {
+            return RuntimeError("Failed to reset SPI pins to GPIO.");
+        }
+
+        return VoidResult();
     }
 
     void Device::loopback(bool enabled) {
@@ -102,37 +111,61 @@ namespace corekit::Spi {
         fn(&spi_get_hw(instance)->cr1, SPI_SSPCR1_LBM_BITS);
     }
 
-    bool Device::write(const uint8_t& data) {
+    VoidResult Device::write(const uint8_t& data) {
         spi_write_blocking(instance, &data, 1);
-        return true;
+        return VoidResult();
     }
 
-    bool Device::write_bulk(std::span<const uint8_t> data) {
-        return spi_write_blocking(instance, data.data(), data.size()) ==
-               data.size();
+    VoidResult Device::write_burst(std::span<const uint8_t> data) {
+        if (spi_write_blocking(instance, data.data(), data.size()) !=
+            data.size()) {
+            return RuntimeError("Failed to write burst data.");
+        }
+
+        return VoidResult();
     }
 
-    bool Device::read(uint8_t& data) {
-        return spi_read_blocking(instance, 0, &data, 1) == 1;
+    VoidResult Device::read(uint8_t& data) {
+        if (spi_read_blocking(instance, 0, &data, 1) != 1) {
+            return RuntimeError("Failed to read data.");
+        }
+
+        return VoidResult();
     }
 
-    bool Device::read_bulk(std::span<uint8_t> data) {
-        return spi_read_blocking(instance, 0, data.data(), data.size()) ==
-               data.size();
+    VoidResult Device::read_burst(std::span<uint8_t> data) {
+        if (spi_read_blocking(instance, 0, data.data(), data.size()) !=
+            data.size()) {
+            return RuntimeError("Failed to read burst data.");
+        }
+
+        return VoidResult();
     }
 
-    bool Device::xfer(const uint8_t& txData, uint8_t& rxData) {
-        return spi_write_read_blocking(instance, &txData, &rxData, 1) == 1;
+    VoidResult Device::xfer(const uint8_t& txData, uint8_t& rxData) {
+        if (spi_write_read_blocking(instance, &txData, &rxData, 1) != 1) {
+            return RuntimeError("Failed to xfer data.");
+        }
+
+        return VoidResult();
     }
 
-    bool Device::xferBulk(std::span<const uint8_t> txData,
-                          std::span<uint8_t>       rxData) {
-        const uint num_cycles = std::min(txData.size(), rxData.size());
+    VoidResult Device::xfer_burst(std::span<const uint8_t> txData,
+                                  std::span<uint8_t>       rxData) {
+        const uint num_cycles = txData.size();
 
-        return spi_write_read_blocking(instance,
-                                       txData.data(),
-                                       rxData.data(),
-                                       num_cycles) == num_cycles;
+        if (rxData.size() < num_cycles) {
+            return RuntimeError("rxData span is smaller than txData span.");
+        }
+
+        if (spi_write_read_blocking(instance,
+                                    txData.data(),
+                                    rxData.data(),
+                                    num_cycles) != num_cycles) {
+            return RuntimeError("Failed to xfer burst data.");
+        }
+
+        return VoidResult();
     }
 
 }  // namespace corekit::Spi

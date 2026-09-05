@@ -4,7 +4,6 @@
 #include <task.h>
 
 #include <cmath>
-#include <iostream>
 
 namespace corekit::platform {
 

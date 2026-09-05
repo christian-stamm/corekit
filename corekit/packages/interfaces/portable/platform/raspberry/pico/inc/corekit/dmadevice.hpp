@@ -52,7 +52,8 @@ namespace corekit::Dma {
 
     class Device : public AsyncDevice<uint32_t> {
        public:
-        using Ptr = std::shared_ptr<Device>;
+        using Ptr  = std::shared_ptr<Device>;
+        using List = std::vector<Ptr>;
 
         Device(uint channel);
         virtual ~Device() override;
@@ -71,17 +72,17 @@ namespace corekit::Dma {
 
         const uint channel;
 
-        virtual bool write(const uint32_t& value) override {
-            return false;
+        virtual VoidResult write(const uint32_t& value) override {
+            return VoidResult();
         }
 
-        virtual bool read(uint32_t& value) override {
-            return false;
+        virtual VoidResult read(uint32_t& value) override {
+            return VoidResult();
         }
 
        protected:
-        virtual bool on_load() override;
-        virtual bool on_unload() override;
+        virtual VoidResult on_load() override;
+        virtual VoidResult on_unload() override;
 
        private:
         void setIRQ(Handle handle = nullptr, bool quiet = false);

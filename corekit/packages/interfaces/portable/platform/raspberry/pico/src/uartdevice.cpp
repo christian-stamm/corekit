@@ -5,6 +5,7 @@
 #include <format>
 
 #include "corekit/gpiodevice.hpp"
+#include "corekit/result.hpp"
 
 namespace corekit::Uart {
 
@@ -24,7 +25,7 @@ namespace corekit::Uart {
         , txPin(txPin)
         , rxPin(rxPin) {}
 
-    bool Device::on_load() {
+    VoidResult Device::on_load() {
         uart_init(instance, baudRate);
         Gpio::configure(txPin,
                         false,
@@ -38,10 +39,10 @@ namespace corekit::Uart {
                         GPIO_IN,
                         GPIO_OVERRIDE_NORMAL,
                         GPIO_FUNC_UART);
-        return true;
+        return VoidResult();
     }
 
-    bool Device::on_unload() {
+    VoidResult Device::on_unload() {
         uart_deinit(instance);
         Gpio::configure(txPin,
                         false,
@@ -55,36 +56,36 @@ namespace corekit::Uart {
                         GPIO_IN,
                         GPIO_OVERRIDE_NORMAL,
                         GPIO_FUNC_SIO);
-        return true;
+        return VoidResult();
     }
 
-    bool Device::write(const uint8_t& data) {
+    VoidResult Device::write(const uint8_t& data) {
         uart_putc(instance, static_cast<char>(data));
-        return true;
+        return VoidResult();
     }
 
-    bool Device::write_bulk(std::span<const uint8_t> data) {
+    VoidResult Device::write_burst(std::span<const uint8_t> data) {
         uart_write_blocking(instance,
                             data.data(),
                             static_cast<size_t>(data.size()));
-        return true;
+        return VoidResult();
     }
 
-    bool Device::read(uint8_t& data) {
+    VoidResult Device::read(uint8_t& data) {
         int c = uart_getc(instance);
         if (c == PICO_ERROR_TIMEOUT) {
-            return false;
+            return RuntimeError("Failed to read data.");
         }
         data = static_cast<uint8_t>(c);
-        return true;
+        return VoidResult();
     }
 
-    bool Device::read_bulk(std::span<uint8_t> data) {
+    VoidResult Device::read_burst(std::span<uint8_t> data) {
         uart_read_blocking(instance,
                            data.data(),
                            static_cast<size_t>(data.size()));
 
-        return true;
+        return VoidResult();
     }
 
 }  // namespace corekit::Uart

@@ -37,12 +37,12 @@ namespace corekit::platform {
 
         Atomic(T value = T()) : value(value) {}
 
-        Atomic(const Atomic&)            = delete;
-        Atomic(Atomic&&)                 = delete;
-        Atomic& operator=(const Atomic&) = delete;
-        Atomic& operator=(Atomic&&)      = delete;
+        Atomic(const Atomic &)            = delete;
+        Atomic(Atomic &&)                 = delete;
+        Atomic &operator=(const Atomic &) = delete;
+        Atomic &operator=(Atomic &&)      = delete;
 
-        const T& load() const {
+        const T &load() const {
             return load(xPortIsInsideInterrupt() ? isr_set_ : core_set_);
         }
 
@@ -50,7 +50,7 @@ namespace corekit::platform {
             store(xPortIsInsideInterrupt() ? isr_set_ : core_set_, value);
         }
 
-        bool compare_exchange(T& expected, T desired) {
+        bool compare_exchange(T &expected, T desired) {
             return compare_exchange(
                 xPortIsInsideInterrupt() ? isr_set_ : core_set_,
                 expected,
@@ -58,21 +58,21 @@ namespace corekit::platform {
         }
 
        private:
-        inline const T& load(const Opset& opset) const {
+        inline const T &load(const Opset &opset) const {
             const UBaseType_t state  = opset.enter();
-            const T&          result = value;
+            const T          &result = value;
             opset.exit(state);
             return result;
         }
 
-        inline void store(const Opset& opset, T value) {
+        inline void store(const Opset &opset, T value) {
             const UBaseType_t state = opset.enter();
             this->value             = value;
             opset.exit(state);
         }
 
-        inline bool compare_exchange(const Opset& opset,
-                                     T&           expected,
+        inline bool compare_exchange(const Opset &opset,
+                                     T           &expected,
                                      T            desired) {
             const UBaseType_t state = opset.enter();
 

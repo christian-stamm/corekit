@@ -131,7 +131,7 @@ namespace corekit {
             return;
         }
 
-        if (!output->isLoaded()) {
+        if (!output->is_loaded()) {
             output->load();
         }
 

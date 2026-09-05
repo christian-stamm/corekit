@@ -26,19 +26,20 @@ namespace corekit::Spi {
 
         void loopback(bool enabled);
 
-        virtual bool write(const uint8_t& data) override;
-        virtual bool write_bulk(std::span<const uint8_t> data) override;
+        virtual VoidResult write(const uint8_t& data) override;
+        virtual VoidResult write_burst(std::span<const uint8_t> data) override;
 
-        virtual bool read(uint8_t& data) override;
-        virtual bool read_bulk(std::span<uint8_t> data) override;
+        virtual VoidResult read(uint8_t& data) override;
+        virtual VoidResult read_burst(std::span<uint8_t> data) override;
 
-        virtual bool xfer(const uint8_t& txData, uint8_t& rxData) override;
-        virtual bool xferBulk(std::span<const uint8_t> txData,
-                              std::span<uint8_t>       rxData) override;
+        virtual VoidResult xfer(const uint8_t& txData,
+                                uint8_t&       rxData) override;
+        virtual VoidResult xfer_burst(std::span<const uint8_t> txData,
+                                      std::span<uint8_t>       rxData) override;
 
        protected:
-        virtual bool on_load() override;
-        virtual bool on_unload() override;
+        virtual VoidResult on_load() override;
+        virtual VoidResult on_unload() override;
 
         spi_inst_t* instance;
         spi_cpol_t  cpol;

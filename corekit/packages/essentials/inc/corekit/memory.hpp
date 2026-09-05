@@ -16,7 +16,9 @@ namespace corekit {
         using Ptr = std::shared_ptr<Memory>;
 
         Memory(size_t size, bool aligned = true)
-            : Memory(mem_alloc(size, aligned), size) {}
+            : Memory(mem_alloc(size, aligned), size) {
+            std::fill(this->begin(), this->end(), 0x00);
+        }
 
         Memory(const Memory&)            = delete;
         Memory& operator=(const Memory&) = delete;

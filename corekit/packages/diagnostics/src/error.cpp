@@ -4,59 +4,74 @@
 
 namespace corekit {
 
-    Error::Error(Type type, const Message& message, const Location& location)
-        : type(type)
+    Error::Stack Error::stack;
+
+    Error::Location::Location(const std::source_location& location)
+        : file(location.file_name())
+        , func(location.function_name())
+        , line(location.line())
+        , column(location.column()) {}
+
+    Error::Error(  //
+        uint16_t             code,
+        std::string          type,
+        std::string          message,
+        std::source_location location  //
+        )
+        : code(code)
+        , type(type)
         , message(message)
         , location(location) {}
 
-    Error::operator bool() const {
-        return type != Type::NONE;
+    std::string Error::what() const {
+        return std::format(  //
+            "\n{}:\n"
+            "\tFile: {}\n"
+            "\tFunc: {}\n"
+            "\tLine: {} ({})\n"
+            "\tDesc: {}",
+            type,
+            location.file,
+            location.func,
+            location.line,
+            location.column,
+            message  //
+        );
     }
 
-    Error::Message Error::traceback() const {
-        return std::format(
-            "{} ERROR\n\n"
-            "File: {}\n"
-            "Func: {}\n"
-            "Line: {} ({})\n"
-            "Desc: {}",
-            type_to_string(),
-            location.file_name(),
-            location.function_name(),
-            location.line(),
-            location.column(),
-            message);
-    }
+    RuntimeError::RuntimeError(std::string          message,
+                               std::source_location location)
+        : Error(CODE,
+                "RUNTIME_ERROR",
+                std::move(message),
+                std::move(location)) {}
 
-    Error::Message Error::what() const {
-        return message;
-    }
+    NotImplementedError::NotImplementedError(std::string          message,
+                                             std::source_location location)
+        : Error(CODE,
+                "NOT_IMPLEMENTED_ERROR",
+                std::move(message),
+                std::move(location)) {}
 
-    Error::Message Error::type_to_string() const {
-        switch (type) {
-            case Type::NONE: return "NONE";
-            case Type::RUNTIME: return "RUNTIME";
-            case Type::NOT_IMPLEMENTED: return "NOT_IMPLEMENTED";
-            case Type::INVALID_ARGUMENT: return "INVALID_ARGUMENT";
-            case Type::OUT_OF_RANGE: return "OUT_OF_RANGE";
-            case Type::TIMEOUT: return "TIMEOUT";
-            default: return "UNDEFINED";
-        }
-    }
+    InvalidArgumentError::InvalidArgumentError(std::string          message,
+                                               std::source_location location)
+        : Error(CODE,
+                "INVALID_ARGUMENT_ERROR",
+                std::move(message),
+                std::move(location)) {}
 
-    RuntimeError::RuntimeError(const Message& message)
-        : Error(Type::RUNTIME, message) {}
+    OutOfRangeError::OutOfRangeError(std::string          message,
+                                     std::source_location location)
+        : Error(CODE,
+                "OUT_OF_RANGE_ERROR",
+                std::move(message),
+                std::move(location)) {}
 
-    NotImplementedError::NotImplementedError(const Message& message)
-        : Error(Type::NOT_IMPLEMENTED, message) {}
-
-    InvalidArgumentError::InvalidArgumentError(const Message& message)
-        : Error(Type::INVALID_ARGUMENT, message) {}
-
-    OutOfRangeError::OutOfRangeError(const Message& message)
-        : Error(Type::OUT_OF_RANGE, message) {}
-
-    TimeoutError::TimeoutError(const Message& message)
-        : Error(Type::TIMEOUT, message) {}
+    TimeoutError::TimeoutError(std::string          message,
+                               std::source_location location)
+        : Error(CODE,
+                "TIMEOUT_ERROR",
+                std::move(message),
+                std::move(location)) {}
 
 }  // namespace corekit

@@ -41,7 +41,7 @@ namespace corekit::test {
 
         atomic.store(stored);
 
-        const Atomic<int>& const_value = atomic;
+        const Atomic<int> &const_value = atomic;
         EXPECT_EQ(const_value.load(), stored);
     }
 
