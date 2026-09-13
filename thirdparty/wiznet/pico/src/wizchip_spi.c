@@ -89,10 +89,10 @@ void wizchip_reset() {
     gpio_set_dir(PIN_RST, GPIO_OUT);
 #endif
     gpio_put(PIN_RST, 0);
-    sleep_ms(100);
+    sleep_ms(10);
 
     gpio_put(PIN_RST, 1);
-    sleep_ms(100);
+    sleep_ms(10);
 }
 
 #ifndef USE_PIO

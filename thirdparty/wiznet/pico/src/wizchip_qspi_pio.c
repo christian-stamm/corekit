@@ -11,8 +11,7 @@
 
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
-#include "pico/error.h"
-#include "pico/stdlib.h"
+#include "pico/time.h"
 #include "wizchip_qspi.h"
 
 #ifndef PIO_SPI_PREFERRED_PIO
@@ -54,6 +53,10 @@
 
 #define SPI_HEADER_LEN 3
 
+#ifndef WIZNET_QSPI_DMA_THRESHOLD
+#    define WIZNET_QSPI_DMA_THRESHOLD 32u
+#endif
+
 typedef struct spi_pio_state {
         wiznet_spi_funcs_t        *funcs;
         const wiznet_spi_config_t *spi_config;
@@ -65,6 +68,8 @@ typedef struct spi_pio_state {
         int8_t                     dma_in;
         uint8_t                    spi_header[SPI_HEADER_LEN];
         uint8_t                    spi_header_count;
+        dma_channel_config         dma_out_config;
+        dma_channel_config         dma_in_config;
 } spi_pio_state_t;
 
 static spi_pio_state_t  spi_pio_state[PICO_WIZNET_SPI_PIO_INSTANCE_COUNT];
@@ -346,6 +351,20 @@ wiznet_spi_handle_t wiznet_spi_pio_open(const wiznet_spi_config_t *spi_config) {
         return NULL;
     }
 
+    // DMA configuration is invariant for the lifetime of this PIO instance.
+    // Build it once instead of reconstructing it for every register/buffer access.
+    state->dma_out_config = dma_channel_get_default_config(state->dma_out);
+    channel_config_set_transfer_data_size(&state->dma_out_config, DMA_SIZE_8);
+    channel_config_set_bswap(&state->dma_out_config, true);
+    channel_config_set_dreq(&state->dma_out_config, pio_get_dreq(state->pio, state->pio_sm, true));
+
+    state->dma_in_config = dma_channel_get_default_config(state->dma_in);
+    channel_config_set_transfer_data_size(&state->dma_in_config, DMA_SIZE_8);
+    channel_config_set_bswap(&state->dma_in_config, true);
+    channel_config_set_dreq(&state->dma_in_config, pio_get_dreq(state->pio, state->pio_sm, false));
+    channel_config_set_write_increment(&state->dma_in_config, true);
+    channel_config_set_read_increment(&state->dma_in_config, false);
+
     return &state->funcs;
 }
 
@@ -415,13 +434,59 @@ static void wiznet_spi_pio_frame_end(void) {
 }
 
 #if (_WIZCHIP_ == W6300)
-// To read a byte we must first have been asked to write a 3 byte spi header
+// PIO is configured for 8-bit autopull/autopush. 8-bit DMA accesses to the
+// FIFO are replicated across the 32-bit peripheral bus. Do the same for CPU
+// writes so the polling path has exactly the same byte ordering as DMA.
+static inline void pio_put_byte_blocking(spi_pio_state_t *state, uint8_t value) {
+    pio_sm_put_blocking(state->pio, state->pio_sm, (uint32_t)value * 0x01010101u);
+}
+
+static inline uint8_t pio_get_byte_blocking(spi_pio_state_t *state) {
+    return (uint8_t)pio_sm_get_blocking(state->pio, state->pio_sm);
+}
+
+static inline uint32_t wiznet_qspi_loop_count(void) {
+#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
+    return 8;
+#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
+    return 4;
+#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
+    return 2;
+#    endif
+}
+
+static inline void wiznet_qspi_set_output_dirs(spi_pio_state_t *state) {
+#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
+    const uint32_t mask = (1u << state->spi_config->data_io0_pin);
+#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
+    const uint32_t mask = (1u << state->spi_config->data_io0_pin) | (1u << state->spi_config->data_io1_pin);
+#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
+    const uint32_t mask = (1u << state->spi_config->data_io0_pin) | (1u << state->spi_config->data_io1_pin) |
+        (1u << state->spi_config->data_io2_pin) | (1u << state->spi_config->data_io3_pin);
+#    endif
+    pio_sm_set_pindirs_with_mask(state->pio, state->pio_sm, mask, mask);
+}
+
+static inline void wiznet_qspi_set_input_dirs(spi_pio_state_t *state) {
+#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
+    pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->data_io0_pin, 1, false);
+#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
+    pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->data_io0_pin, 2, false);
+#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
+    pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->data_io0_pin, 4, false);
+#    endif
+}
+
+// To read from W6300, emit the short command header from the CPU and use DMA
+// only for larger payloads. This avoids paying DMA setup cost for the common
+// 1/2/4-byte register accesses made by recvfrom().
 void wiznet_spi_pio_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, uint16_t rx_length) {
-    uint8_t command_buf[8] = {
-        0,
-    };
-    uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
-    uint32_t loop_cnt    = 0;
+    uint8_t        command_buf[8] = {0};
+    const uint16_t command_len    = mk_cmd_buf(command_buf, op_code, AddrSel);
+    const uint32_t loop_cnt       = wiznet_qspi_loop_count();
+    const bool     use_dma        = rx_length >= WIZNET_QSPI_DMA_THRESHOLD;
+
+    if (rx_length == 0) { return; }
 
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
     pio_sm_set_wrap(
@@ -429,99 +494,52 @@ void wiznet_spi_pio_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
         active_state->pio_sm,
         active_state->pio_offset,
         active_state->pio_offset + PIO_OFFSET_READ_BITS_END - 1);
-    //pio_sm_set_wrap(active_state->pio, active_state->pio_sm, active_state->pio_offset + PIO_SPI_OFFSET_WRITE_BITS, active_state->pio_offset + PIO_SPI_OFFSET_READ_BITS_END - 1);
     pio_sm_clear_fifos(active_state->pio, active_state->pio_sm);
-
-#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
-    loop_cnt = 8;
-    pio_sm_set_pindirs_with_mask(
-        active_state->pio,
-        active_state->pio_sm,
-        (1u << active_state->spi_config->data_io0_pin),
-        (1u << active_state->spi_config->data_io0_pin)); // | (1u << active_state->spi_config->data_io1_pin));
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
-    loop_cnt = 4;
-    pio_sm_set_pindirs_with_mask(
-        active_state->pio,
-        active_state->pio_sm,
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin),
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin));
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
-    loop_cnt = 2;
-    pio_sm_set_pindirs_with_mask(
-        active_state->pio,
-        active_state->pio_sm,
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) |
-            (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin),
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) |
-            (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin));
-
-    /* @todo: Implement to use. */
-#    endif
+    wiznet_qspi_set_output_dirs(active_state);
 
     pio_sm_restart(active_state->pio, active_state->pio_sm);
-    pio_sm_clkdiv_restart(active_state->pio, active_state->pio_sm);
-
+    // No clkdiv restart is needed here; the divider value is constant and the
+    // SM is disabled while the transaction is prepared.
     pio_sm_put(active_state->pio, active_state->pio_sm, command_len * loop_cnt - 1);
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_x, 32));
-
     pio_sm_put(active_state->pio, active_state->pio_sm, rx_length - 1);
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_y, 32));
-
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_jmp(active_state->pio_offset));
 
-    dma_channel_abort(active_state->dma_out);
-    dma_channel_abort(active_state->dma_in);
+    if (use_dma) {
+        // Arm RX DMA before starting the SM. It will wait on the PIO RX DREQ.
+        dma_channel_configure(
+            active_state->dma_in,
+            &active_state->dma_in_config,
+            rx,
+            &active_state->pio->rxf[active_state->pio_sm],
+            rx_length,
+            true);
+    }
 
-    dma_channel_config out_config = dma_channel_get_default_config(active_state->dma_out);
-    channel_config_set_transfer_data_size(&out_config, DMA_SIZE_8);
-    channel_config_set_bswap(&out_config, true);
-    channel_config_set_dreq(&out_config, pio_get_dreq(active_state->pio, active_state->pio_sm, true));
-    dma_channel_configure(
-        active_state->dma_out,
-        &out_config,
-        &active_state->pio->txf[active_state->pio_sm],
-        command_buf,
-        command_len,
-        true);
-
-    dma_channel_config in_config = dma_channel_get_default_config(active_state->dma_in);
-    channel_config_set_transfer_data_size(&in_config, DMA_SIZE_8);
-    channel_config_set_bswap(&in_config, true);
-    channel_config_set_dreq(&in_config, pio_get_dreq(active_state->pio, active_state->pio_sm, false));
-    channel_config_set_write_increment(&in_config, true);
-    channel_config_set_read_increment(&in_config, false);
-    dma_channel_configure(
-        active_state->dma_in,
-        &in_config,
-        rx,
-        &active_state->pio->rxf[active_state->pio_sm],
-        rx_length,
-        true);
-
-#    if 1
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
 
+    // The command is only 4/5/7 bytes depending on bus width. Feeding it from
+    // the CPU is cheaper than configuring and waiting for a TX DMA transfer.
+    for (uint16_t i = 0; i < command_len; ++i) { pio_put_byte_blocking(active_state, command_buf[i]); }
+
+    if (use_dma) {
+        dma_channel_wait_for_finish_blocking(active_state->dma_in);
+    } else {
+        for (uint16_t i = 0; i < rx_length; ++i) { rx[i] = pio_get_byte_blocking(active_state); }
+    }
+
     __compiler_memory_barrier();
-
-    dma_channel_wait_for_finish_blocking(active_state->dma_out);
-    dma_channel_wait_for_finish_blocking(active_state->dma_in);
-
-    __compiler_memory_barrier();
-
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null));
-
-#    endif
 }
 
 void wiznet_spi_pio_write_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *tx, uint16_t tx_length) {
-    uint8_t command_buf[8] = {
-        0,
-    };
-    uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
-    uint32_t loop_cnt    = 0;
-    tx_length            = tx_length + command_len;
+    uint8_t        command_buf[8] = {0};
+    const uint16_t command_len    = mk_cmd_buf(command_buf, op_code, AddrSel);
+    const uint32_t loop_cnt       = wiznet_qspi_loop_count();
+    const uint32_t total_length   = (uint32_t)command_len + tx_length;
+    const bool     use_dma        = tx_length >= WIZNET_QSPI_DMA_THRESHOLD;
 
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
     pio_sm_set_wrap(
@@ -530,103 +548,50 @@ void wiznet_spi_pio_write_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *tx, u
         active_state->pio_offset,
         active_state->pio_offset + PIO_OFFSET_WRITE_BITS_END - 1);
     pio_sm_clear_fifos(active_state->pio, active_state->pio_sm);
-
-#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
-    loop_cnt = 8;
-    pio_sm_set_pindirs_with_mask(
-        active_state->pio,
-        active_state->pio_sm,
-        (1u << active_state->spi_config->data_io0_pin),
-        (1u << active_state->spi_config->data_io0_pin));
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
-    loop_cnt = 4;
-    pio_sm_set_pindirs_with_mask(
-        active_state->pio,
-        active_state->pio_sm,
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin),
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin));
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
-    loop_cnt = 2;
-    pio_sm_set_pindirs_with_mask(
-        active_state->pio,
-        active_state->pio_sm,
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) |
-            (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin),
-        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) |
-            (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin));
-
-#    endif
+    wiznet_qspi_set_output_dirs(active_state);
 
     pio_sm_restart(active_state->pio, active_state->pio_sm);
-    pio_sm_clkdiv_restart(active_state->pio, active_state->pio_sm);
-    pio_sm_put(active_state->pio, active_state->pio_sm, tx_length * loop_cnt - 1);
+    pio_sm_put(active_state->pio, active_state->pio_sm, total_length * loop_cnt - 1);
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_x, 32));
     pio_sm_put(active_state->pio, active_state->pio_sm, 0);
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_y, 32));
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_jmp(active_state->pio_offset));
-    dma_channel_abort(active_state->dma_out);
 
-    dma_channel_config out_config = dma_channel_get_default_config(active_state->dma_out);
-    channel_config_set_transfer_data_size(&out_config, DMA_SIZE_8);
-    channel_config_set_bswap(&out_config, true);
-    channel_config_set_dreq(&out_config, pio_get_dreq(active_state->pio, active_state->pio_sm, true));
-
-    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
-
-    dma_channel_configure(
-        active_state->dma_out,
-        &out_config,
-        &active_state->pio->txf[active_state->pio_sm],
-        command_buf,
-        command_len,
-        true);
-    dma_channel_wait_for_finish_blocking(active_state->dma_out);
-    dma_channel_configure(
-        active_state->dma_out,
-        &out_config,
-        &active_state->pio->txf[active_state->pio_sm],
-        tx,
-        tx_length - command_len,
-        true);
-    dma_channel_wait_for_finish_blocking(active_state->dma_out);
+    if (use_dma) {
+        // Configure the bulk payload DMA but don't start it until the command
+        // bytes have been queued, preserving command -> payload ordering.
+        dma_channel_configure(
+            active_state->dma_out,
+            &active_state->dma_out_config,
+            &active_state->pio->txf[active_state->pio_sm],
+            tx,
+            tx_length,
+            false);
+    }
 
     const uint32_t fdebug_tx_stall = 1u << (PIO_FDEBUG_TXSTALL_LSB + active_state->pio_sm);
     active_state->pio->fdebug      = fdebug_tx_stall;
-    // pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
-    while (!(active_state->pio->fdebug & fdebug_tx_stall)) {
-        tight_loop_contents(); // todo timeout
+    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
+
+    for (uint16_t i = 0; i < command_len; ++i) { pio_put_byte_blocking(active_state, command_buf[i]); }
+
+    if (use_dma) {
+        dma_start_channel_mask(1u << active_state->dma_out);
+        dma_channel_wait_for_finish_blocking(active_state->dma_out);
+    } else {
+        for (uint16_t i = 0; i < tx_length; ++i) { pio_put_byte_blocking(active_state, tx[i]); }
     }
-#    if 1
+
+    // DMA completion only means the FIFO has accepted the bytes. Wait until
+    // PIO has shifted the final byte onto the wire before releasing CS.
+    while (!(active_state->pio->fdebug & fdebug_tx_stall)) { tight_loop_contents(); }
 
     __compiler_memory_barrier();
-    //pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
-#        if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
-    pio_sm_set_consecutive_pindirs(
-        active_state->pio,
-        active_state->pio_sm,
-        active_state->spi_config->data_io0_pin,
-        1,
-        false);
-#        elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
-    pio_sm_set_consecutive_pindirs(
-        active_state->pio,
-        active_state->pio_sm,
-        active_state->spi_config->data_io0_pin,
-        2,
-        false);
-#        elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
-    pio_sm_set_consecutive_pindirs(
-        active_state->pio,
-        active_state->pio_sm,
-        active_state->spi_config->data_io0_pin,
-        4,
-        false);
-#        endif
-
+    wiznet_qspi_set_input_dirs(active_state);
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null));
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
-#    endif
 }
+
 #else
 // send tx then receive rx
 // rx can be null if you just want to send, but tx and tx_length must be valid
@@ -778,9 +743,9 @@ static void wizchip_spi_pio_reset(wiznet_spi_handle_t handle) {
     spi_pio_state_t *state = (spi_pio_state_t *)handle;
     gpio_set_dir(state->spi_config->reset_pin, GPIO_OUT);
     gpio_put(state->spi_config->reset_pin, 0);
-    sleep_ms(100);
+    sleep_ms(10);
     gpio_put(state->spi_config->reset_pin, 1);
-    sleep_ms(100);
+    sleep_ms(10);
 }
 
 static wiznet_spi_funcs_t *get_wiznet_spi_pio_impl(void) {
