@@ -1,7 +1,0 @@
-cmake_minimum_required(VERSION 3.25)
-add_subdirectory(concurrency)
-add_subdirectory(containers)
-add_subdirectory(diagnostics)
-add_subdirectory(essentials)
-add_subdirectory(execution)
-add_subdirectory(interfaces)

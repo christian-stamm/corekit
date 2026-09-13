@@ -15,20 +15,24 @@ function(pioasm_generate_headers)
 
     foreach(program IN LISTS programs)
         get_filename_component(filename "${program}" NAME_WE)
-        set(generated_include "${ARG_EXPORT_DIR}/pioasm/${filename}.hpp")
+
+        set(generated_include
+            "${ARG_EXPORT_DIR}/pioasm/${filename}.h"
+        )
 
         add_custom_command(
             OUTPUT "${generated_include}"
-            COMMAND pioasm ${ARG_FLAGS} "${program}" "${generated_include}"
+            COMMAND pioasm
+                    ${ARG_FLAGS}
+                    "${program}"
+                    "${generated_include}"
             DEPENDS "${program}"
-            COMMENT "Building ${program}..."
+            COMMENT "Generating ${generated_include}"
             VERBATIM
         )
 
         list(APPEND generated_headers "${generated_include}")
     endforeach()
-
-    file(MAKE_DIRECTORY "${ARG_EXPORT_DIR}/pioasm")
 
     add_custom_target(
         ${ARG_LIB_NAME}_generate
@@ -37,17 +41,20 @@ function(pioasm_generate_headers)
 
     add_library(${ARG_LIB_NAME} INTERFACE)
 
-    target_include_directories(${ARG_LIB_NAME} INTERFACE
+    add_dependencies(
+        ${ARG_LIB_NAME}
+        ${ARG_LIB_NAME}_generate
+    )
+
+    target_include_directories(
+        ${ARG_LIB_NAME}
+        INTERFACE
         "${ARG_EXPORT_DIR}"
     )
 
-    target_link_libraries(${ARG_LIB_NAME} INTERFACE
+    target_link_libraries(
+        ${ARG_LIB_NAME}
+        INTERFACE
         hardware_pio
     )
-    
-    set(generate_target GENERATE_${ARG_LIB_NAME})
-    add_custom_target(${generate_target} ALL
-                        DEPENDS ${generated_headers}
-                        COMMENT "Generating pioasm target ${ARG_LIB_NAME}")
-
 endfunction()

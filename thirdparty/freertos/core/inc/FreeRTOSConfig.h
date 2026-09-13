@@ -55,7 +55,7 @@
 #define configUSE_TICKLESS_IDLE  0
 #define configMAX_PRIORITIES     4
 #define configMINIMAL_STACK_SIZE 1024
-#define configTICK_RATE_HZ       1000
+#define configTICK_RATE_HZ       100
 
 /* Synchronization Related */
 #define configUSE_MUTEXES                       1
