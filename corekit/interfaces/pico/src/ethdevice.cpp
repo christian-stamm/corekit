@@ -5,11 +5,8 @@
 #include <limits>
 
 #include "corekit/check.hpp"
-
-extern "C" {
 #include "socket.h"
 #include "wizchip_spi.h"
-}
 
 namespace corekit::Eth {
 
@@ -23,11 +20,22 @@ namespace corekit::Eth {
     Device::~Device() { }
 
     bool Device::on_load() {
+        uint8_t memsize[2][8] = {
+            {TX_RX_MAX_SIZE, 0, 0, 0, 0, 0, 0, 0},
+            {TX_RX_MAX_SIZE, 0, 0, 0, 0, 0, 0, 0}
+        };
+
         wizchip_spi_initialize();
         wizchip_cris_initialize();
 
         wizchip_reset();
         wizchip_initialize();
+        wizchip_initialize_whitout_buffer_set();
+
+        core::check(
+            ctlwizchip(CW_INIT_WIZCHIP, (void*)memsize) == -1,
+            RuntimeError("WIZchip buffer initialization failed"));
+
         wizchip_check();
 
         wiz_NetInfo net{
@@ -46,9 +54,11 @@ namespace corekit::Eth {
 
         network_initialize(net);
 
-        socket_ = socket(0, Sn_MR_UDP, config_.local, 0);
+        core::check(
+            socket(socket_, Sn_MR_UDP, config_.local, 0) == socket_,
+            RuntimeError("Failed to create UDP socket"));
 
-        return true;
+        return core::ok();
     }
 
     bool Device::on_unload() { return core::check(close(socket_) == SOCK_OK, RuntimeError("Failed to close socket")); }
@@ -72,7 +82,7 @@ namespace corekit::Eth {
             payload.size() <= std::numeric_limits<uint16_t>::max(),
             RuntimeError("Payload size exceeds maximum allowed size"));
 
-        IpV4Address addr    = {0, 0, 0, 0};
+        IpV6Address addr    = {};
         Port        port    = 0;
         uint8_t     addrlen = kIpv4Length;
 
