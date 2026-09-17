@@ -20,21 +20,20 @@ namespace corekit::Eth {
     Device::~Device() { }
 
     bool Device::on_load() {
-        uint8_t memsize[2][8] = {
-            {TX_RX_MAX_SIZE, 0, 0, 0, 0, 0, 0, 0},
-            {TX_RX_MAX_SIZE, 0, 0, 0, 0, 0, 0, 0}
-        };
+        // uint8_t memsize[2][8] = {
+        //     {TX_RX_MAX_SIZE, 0, 0, 0, 0, 0, 0, 0},
+        //     {TX_RX_MAX_SIZE, 0, 0, 0, 0, 0, 0, 0}
+        // };
 
         wizchip_spi_initialize();
         wizchip_cris_initialize();
 
         wizchip_reset();
         wizchip_initialize();
-        wizchip_initialize_whitout_buffer_set();
 
-        core::check(
-            ctlwizchip(CW_INIT_WIZCHIP, (void*)memsize) == -1,
-            RuntimeError("WIZchip buffer initialization failed"));
+        // core::check(
+        //     ctlwizchip(CW_INIT_WIZCHIP, (void*)memsize) == -1,
+        //     RuntimeError("WIZchip buffer initialization failed"));
 
         wizchip_check();
 

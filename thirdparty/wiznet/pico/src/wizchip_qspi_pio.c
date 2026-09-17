@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2023 Raspberry Pi (Trading) Ltd.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
+    Copyright (c) 2023 Raspberry Pi (Trading) Ltd.
+
+    SPDX-License-Identifier: BSD-3-Clause
+*/
 
 #include "wizchip_qspi_pio.h"
 
@@ -52,10 +52,6 @@
 
 #define SPI_HEADER_LEN 3
 
-#ifndef WIZNET_QSPI_DMA_THRESHOLD
-#    define WIZNET_QSPI_DMA_THRESHOLD 32u
-#endif
-
 typedef struct spi_pio_state {
         wiznet_spi_funcs_t        *funcs;
         const wiznet_spi_config_t *spi_config;
@@ -67,8 +63,6 @@ typedef struct spi_pio_state {
         int8_t                     dma_in;
         uint8_t                    spi_header[SPI_HEADER_LEN];
         uint8_t                    spi_header_count;
-        dma_channel_config         dma_out_config;
-        dma_channel_config         dma_in_config;
 } spi_pio_state_t;
 
 static spi_pio_state_t  spi_pio_state[PICO_WIZNET_SPI_PIO_INSTANCE_COUNT];
@@ -159,12 +153,9 @@ static void pio_spi_gpio_setup(spi_pio_state_t *state) {
     gpio_set_pulls(state->spi_config->irq_pin, false, false);
 #else //W55RP20
     // Setup MOSI, MISO and IRQ
-    // Setup MOSI, MISO
     gpio_init(state->spi_config->data_out_pin);
     gpio_set_dir(state->spi_config->data_out_pin, GPIO_OUT);
     gpio_put(state->spi_config->data_out_pin, false);
-    gpio_init(state->spi_config->data_in_pin);
-    gpio_set_dir(state->spi_config->data_in_pin, GPIO_IN);
 
     // Setup CS
     gpio_init(state->spi_config->cs_pin);
@@ -214,12 +205,23 @@ wiznet_spi_handle_t wiznet_spi_pio_open(const wiznet_spi_config_t *spi_config) {
     }
 
     state->pio_offset = pio_add_program(state->pio, &PIO_PROGRAM_FUNC);
-    const double pio_clock_divider =
-        state->spi_config->clock_div_major + ((double)state->spi_config->clock_div_minor / 256);
-    printf("[SPI CLOCK SPEED : %.2lf MHz]\r\n\r\n", (clock_get_hz(clk_sys) / pio_clock_divider) / 2e6);
+
+    uint64_t f_sys = clock_get_hz(clk_sys); // Hz
+#if (_WIZCHIP_ == W6300)
+    const char *wizchip_pio_clock_str = "PIO QSPI CLOCK SPEED";
+#else
+    const char *wizchip_pio_clock_str = "PIO SPI CLOCK SPEED";
+#endif
+
+    const float f_sys_mhz = (float)f_sys / 1e6f;
+    const float f_spi_mhz = state->spi_config->clock_freq;
+    const float f_div     = f_sys_mhz / f_spi_mhz;
+
+    printf("[%s : %.2f MHz] (sys=%.2f MHz)\r\n\r\n", wizchip_pio_clock_str, f_sys_mhz / f_div, f_sys / 1e6);
+
     pio_sm_config sm_config = PIO_PROGRAM_GET_DEFAULT_CONFIG_FUNC(state->pio_offset);
 
-    sm_config_set_clkdiv_int_frac(&sm_config, state->spi_config->clock_div_major, state->spi_config->clock_div_minor);
+    sm_config_set_clkdiv(&sm_config, f_div);
     hw_write_masked(
         &pads_bank0_hw->io[state->spi_config->clock_pin],
         (uint)PADS_DRIVE_STRENGTH << PADS_BANK0_GPIO0_DRIVE_LSB,
@@ -326,7 +328,6 @@ wiznet_spi_handle_t wiznet_spi_pio_open(const wiznet_spi_config_t *spi_config) {
     pio_sm_set_config(state->pio, state->pio_sm, &sm_config);
     pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->clock_pin, 1, true);
     gpio_set_function(state->spi_config->data_out_pin, state->pio_func_sel);
-    gpio_set_function(state->spi_config->clock_pin, state->pio_func_sel);
 
     // Set data pin to pull down and schmitt
     gpio_set_pulls(state->spi_config->data_in_pin, false, true);
@@ -341,18 +342,6 @@ wiznet_spi_handle_t wiznet_spi_pio_open(const wiznet_spi_config_t *spi_config) {
         wiznet_spi_pio_close(&state->funcs);
         return NULL;
     }
-
-    state->dma_out_config = dma_channel_get_default_config(state->dma_out);
-    channel_config_set_transfer_data_size(&state->dma_out_config, DMA_SIZE_8);
-    channel_config_set_bswap(&state->dma_out_config, true);
-    channel_config_set_dreq(&state->dma_out_config, pio_get_dreq(state->pio, state->pio_sm, true));
-
-    state->dma_in_config = dma_channel_get_default_config(state->dma_in);
-    channel_config_set_transfer_data_size(&state->dma_in_config, DMA_SIZE_8);
-    channel_config_set_bswap(&state->dma_in_config, true);
-    channel_config_set_dreq(&state->dma_in_config, pio_get_dreq(state->pio, state->pio_sm, false));
-    channel_config_set_write_increment(&state->dma_in_config, true);
-    channel_config_set_read_increment(&state->dma_in_config, false);
 
     return &state->funcs;
 }
@@ -399,7 +388,7 @@ static void wiznet_spi_pio_frame_start(void) {
     gpio_set_function(active_state->spi_config->data_io1_pin, active_state->pio_func_sel);
     gpio_set_function(active_state->spi_config->data_io2_pin, active_state->pio_func_sel);
     gpio_set_function(active_state->spi_config->data_io3_pin, active_state->pio_func_sel);
-/* @todo: Implement to use. */
+    /* @todo: Implement to use. */
 #    endif
     gpio_set_function(active_state->spi_config->clock_pin, active_state->pio_func_sel);
     gpio_pull_down(active_state->spi_config->clock_pin);
@@ -423,114 +412,8 @@ static void wiznet_spi_pio_frame_end(void) {
 }
 
 #if (_WIZCHIP_ == W6300)
-static inline uint32_t wiznet_qspi_loop_count(void) {
-#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
-    return 8;
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
-    return 4;
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
-    return 2;
-#    endif
-}
-
-static inline void wiznet_qspi_set_output_dirs(spi_pio_state_t *state) {
-#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
-    const uint32_t mask = 1u << state->spi_config->data_io0_pin;
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
-    const uint32_t mask = (1u << state->spi_config->data_io0_pin) | (1u << state->spi_config->data_io1_pin);
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
-    const uint32_t mask = (1u << state->spi_config->data_io0_pin) | (1u << state->spi_config->data_io1_pin) |
-        (1u << state->spi_config->data_io2_pin) | (1u << state->spi_config->data_io3_pin);
-#    endif
-    pio_sm_set_pindirs_with_mask(state->pio, state->pio_sm, mask, mask);
-}
-
-static inline void wiznet_qspi_set_input_dirs(spi_pio_state_t *state) {
-#    if (_WIZCHIP_QSPI_MODE_ == QSPI_SINGLE_MODE)
-    pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->data_io0_pin, 1, false);
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_DUAL_MODE)
-    pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->data_io0_pin, 2, false);
-#    elif (_WIZCHIP_QSPI_MODE_ == QSPI_QUAD_MODE)
-    pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->data_io0_pin, 4, false);
-#    endif
-}
-
-static inline void wiznet_qspi_put_byte(spi_pio_state_t *state, uint8_t value) {
-    pio_sm_put_blocking(state->pio, state->pio_sm, (uint32_t)value * 0x01010101u);
-}
-
-static inline uint8_t wiznet_qspi_get_byte(spi_pio_state_t *state) {
-    return (uint8_t)pio_sm_get_blocking(state->pio, state->pio_sm);
-}
-
-static void wiznet_spi_pio_read_small(uint8_t op_code, uint16_t addr, uint8_t *rx, uint16_t rx_length) {
-    uint8_t        command_buf[8] = {0};
-    const uint16_t command_len    = mk_cmd_buf(command_buf, op_code, addr);
-    const uint32_t loop_count     = wiznet_qspi_loop_count();
-
-    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
-    pio_sm_set_wrap(
-        active_state->pio,
-        active_state->pio_sm,
-        active_state->pio_offset,
-        active_state->pio_offset + PIO_OFFSET_READ_BITS_END - 1);
-    pio_sm_clear_fifos(active_state->pio, active_state->pio_sm);
-    wiznet_qspi_set_output_dirs(active_state);
-    pio_sm_restart(active_state->pio, active_state->pio_sm);
-    pio_sm_put(active_state->pio, active_state->pio_sm, command_len * loop_count - 1);
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_x, 32));
-    pio_sm_put(active_state->pio, active_state->pio_sm, rx_length - 1);
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_y, 32));
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_jmp(active_state->pio_offset));
-    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
-
-    for (uint16_t i = 0; i < command_len; ++i) { wiznet_qspi_put_byte(active_state, command_buf[i]); }
-    for (uint16_t i = 0; i < rx_length; ++i) { rx[i] = wiznet_qspi_get_byte(active_state); }
-
-    __compiler_memory_barrier();
-    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null));
-}
-
-static void wiznet_spi_pio_write_small(uint8_t op_code, uint16_t addr, uint8_t *tx, uint16_t tx_length) {
-    uint8_t        command_buf[8]  = {0};
-    const uint16_t command_len     = mk_cmd_buf(command_buf, op_code, addr);
-    const uint32_t loop_count      = wiznet_qspi_loop_count();
-    const uint32_t fdebug_tx_stall = 1u << (PIO_FDEBUG_TXSTALL_LSB + active_state->pio_sm);
-
-    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
-    pio_sm_set_wrap(
-        active_state->pio,
-        active_state->pio_sm,
-        active_state->pio_offset,
-        active_state->pio_offset + PIO_OFFSET_WRITE_BITS_END - 1);
-    pio_sm_clear_fifos(active_state->pio, active_state->pio_sm);
-    wiznet_qspi_set_output_dirs(active_state);
-    pio_sm_restart(active_state->pio, active_state->pio_sm);
-    pio_sm_put(active_state->pio, active_state->pio_sm, (command_len + tx_length) * loop_count - 1);
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_x, 32));
-    pio_sm_put(active_state->pio, active_state->pio_sm, 0);
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_y, 32));
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_jmp(active_state->pio_offset));
-    active_state->pio->fdebug = fdebug_tx_stall;
-    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
-
-    for (uint16_t i = 0; i < command_len; ++i) { wiznet_qspi_put_byte(active_state, command_buf[i]); }
-    for (uint16_t i = 0; i < tx_length; ++i) { wiznet_qspi_put_byte(active_state, tx[i]); }
-    while (!(active_state->pio->fdebug & fdebug_tx_stall)) { tight_loop_contents(); }
-
-    __compiler_memory_barrier();
-    wiznet_qspi_set_input_dirs(active_state);
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null));
-    pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
-}
-
 // To read a byte we must first have been asked to write a 3 byte spi header
 void wiznet_spi_pio_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, uint16_t rx_length) {
-    if (rx_length < WIZNET_QSPI_DMA_THRESHOLD) {
-        wiznet_spi_pio_read_small(op_code, AddrSel, rx, rx_length);
-        return;
-    }
     uint8_t command_buf[8] = {
         0,
     };
@@ -587,19 +470,27 @@ void wiznet_spi_pio_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
     dma_channel_abort(active_state->dma_out);
     dma_channel_abort(active_state->dma_in);
 
-    dma_channel_config *out_config = &active_state->dma_out_config;
+    dma_channel_config out_config = dma_channel_get_default_config(active_state->dma_out);
+    channel_config_set_transfer_data_size(&out_config, DMA_SIZE_8);
+    channel_config_set_bswap(&out_config, true);
+    channel_config_set_dreq(&out_config, pio_get_dreq(active_state->pio, active_state->pio_sm, true));
     dma_channel_configure(
         active_state->dma_out,
-        out_config,
+        &out_config,
         &active_state->pio->txf[active_state->pio_sm],
         command_buf,
         command_len,
         true);
 
-    dma_channel_config *in_config = &active_state->dma_in_config;
+    dma_channel_config in_config = dma_channel_get_default_config(active_state->dma_in);
+    channel_config_set_transfer_data_size(&in_config, DMA_SIZE_8);
+    channel_config_set_bswap(&in_config, true);
+    channel_config_set_dreq(&in_config, pio_get_dreq(active_state->pio, active_state->pio_sm, false));
+    channel_config_set_write_increment(&in_config, true);
+    channel_config_set_read_increment(&in_config, false);
     dma_channel_configure(
         active_state->dma_in,
-        in_config,
+        &in_config,
         rx,
         &active_state->pio->rxf[active_state->pio_sm],
         rx_length,
@@ -622,10 +513,6 @@ void wiznet_spi_pio_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
 }
 
 void wiznet_spi_pio_write_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *tx, uint16_t tx_length) {
-    if (tx_length < WIZNET_QSPI_DMA_THRESHOLD) {
-        wiznet_spi_pio_write_small(op_code, AddrSel, tx, tx_length);
-        return;
-    }
     uint8_t command_buf[8] = {
         0,
     };
@@ -676,13 +563,16 @@ void wiznet_spi_pio_write_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *tx, u
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_jmp(active_state->pio_offset));
     dma_channel_abort(active_state->dma_out);
 
-    dma_channel_config *out_config = &active_state->dma_out_config;
+    dma_channel_config out_config = dma_channel_get_default_config(active_state->dma_out);
+    channel_config_set_transfer_data_size(&out_config, DMA_SIZE_8);
+    channel_config_set_bswap(&out_config, true);
+    channel_config_set_dreq(&out_config, pio_get_dreq(active_state->pio, active_state->pio_sm, true));
 
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
 
     dma_channel_configure(
         active_state->dma_out,
-        out_config,
+        &out_config,
         &active_state->pio->txf[active_state->pio_sm],
         command_buf,
         command_len,
@@ -690,7 +580,7 @@ void wiznet_spi_pio_write_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *tx, u
     dma_channel_wait_for_finish_blocking(active_state->dma_out);
     dma_channel_configure(
         active_state->dma_out,
-        out_config,
+        &out_config,
         &active_state->pio->txf[active_state->pio_sm],
         tx,
         tx_length - command_len,

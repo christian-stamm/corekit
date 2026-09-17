@@ -8,6 +8,7 @@ ENV GIT_SSL_NO_VERIFY=1
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         net-tools \
+        iputils-* \
         usbutils \
         tree \
     && rm -rf /var/lib/apt/lists/*
