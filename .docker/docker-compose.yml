@@ -66,8 +66,11 @@ services:
 
     privileged: true
     stdin_open: true
-    network_mode: host
+    # network_mode: host
     tty: true
+
+    ports:
+    - "1234:1234"
 
     # deploy:
     #   resources:
